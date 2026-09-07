@@ -80,6 +80,16 @@ function goalColor(goal: string) {
   }
 }
 
+// Format an ingredient amount for display. When there is no unit and the
+// quantity is a bare "1" (the placeholder used for recipes imported without
+// real grammage), we render nothing rather than a dangling "1". Once a real
+// unit/quantity is provided (e.g. "200 g"), it renders normally.
+function formatAmount(quantity: number, unit: string): string {
+  const u = (unit || "").trim();
+  if (!u && quantity === 1) return "";
+  return u ? `${quantity} ${u}` : String(quantity);
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function RecipeDetailPage() {
@@ -337,13 +347,16 @@ export default function RecipeDetailPage() {
               <p className="text-golden-sm text-zinc-400">{t.noIngredients}</p>
             ) : (
               <ul className="flex max-h-40 flex-col overflow-y-auto pr-1">
-                {recipe.ingredients.map((item) => (
-                  <li key={item.id} className="flex items-baseline gap-2 py-[3px] text-golden-sm text-zinc-700">
-                    <span>{item.name}</span>
-                    <span className="min-w-0 flex-1 translate-y-[-0.2em] border-b border-dotted border-zinc-200" aria-hidden="true" />
-                    <span className="shrink-0 font-medium text-zinc-500">{item.quantity} {item.unit}</span>
-                  </li>
-                ))}
+                {recipe.ingredients.map((item) => {
+                  const amount = formatAmount(item.quantity, item.unit);
+                  return (
+                    <li key={item.id} className="flex items-baseline gap-2 py-[3px] text-golden-sm text-zinc-700">
+                      <span>{item.name}</span>
+                      <span className="min-w-0 flex-1 translate-y-[-0.2em] border-b border-dotted border-zinc-200" aria-hidden="true" />
+                      {amount && <span className="shrink-0 font-medium text-zinc-500">{amount}</span>}
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
