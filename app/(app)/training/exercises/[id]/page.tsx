@@ -10,6 +10,11 @@ import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type Difficulty = "Beginner" | "Intermediate" | "Advanced";
+type ExerciseCategory = "Strength" | "Calisthenics" | "Cardio" | "Mobility" | "Flexibility";
+type MuscleGroup = "Chest" | "Back" | "Shoulders" | "Biceps" | "Triceps" | "Forearms" | "Core" | "Glutes" | "Quadriceps" | "Hamstrings" | "Calves" | "Full Body";
+
+type ExercisesDict = ReturnType<typeof useDictionary>["dict"]["training"]["exercises"];
+type WorkoutsDict = ReturnType<typeof useDictionary>["dict"]["workouts"];
 
 interface Exercise {
   id: string;
@@ -34,11 +39,39 @@ function difficultyColor(d: Difficulty): string {
   }
 }
 
+// Localized labels. English values stay the logic keys (match the DB enums);
+// the dictionary maps them to the display language. Unknown values fall back
+// to the raw value so nothing ever renders blank.
+function categoryLabel(category: string, t: ExercisesDict): string {
+  switch (category as ExerciseCategory) {
+    case "Strength":     return t.categoryStrength;
+    case "Calisthenics": return t.categoryCalisthenics;
+    case "Cardio":       return t.categoryCardio;
+    case "Mobility":     return t.categoryMobility;
+    case "Flexibility":  return t.categoryFlexibility;
+    default:             return category;
+  }
+}
+
+function muscleLabel(muscle: string, t: ExercisesDict): string {
+  return t.muscles[muscle as MuscleGroup] ?? muscle;
+}
+
+function difficultyLabel(d: Difficulty, w: WorkoutsDict): string {
+  switch (d) {
+    case "Beginner":     return w.difficultyBeginner;
+    case "Intermediate": return w.difficultyIntermediate;
+    case "Advanced":     return w.difficultyAdvanced;
+  }
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function ExerciseDetailPage() {
   const { dict } = useDictionary();
   const t = dict.training.exerciseDetail;
+  const et = dict.training.exercises;
+  const w = dict.workouts;
   const params = useParams<{ id: string }>();
   const [exercise, setExercise] = useState<Exercise | null>(null);
   const [loading, setLoading] = useState(true);
@@ -102,10 +135,10 @@ export default function ExerciseDetailPage() {
         <h1 className="text-2xl font-bold tracking-tight text-zinc-900">{exercise.name}</h1>
         <p className="mt-1 text-sm text-zinc-500">{exercise.description}</p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className="rounded-md bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">{exercise.category}</span>
-          <span className="rounded-md bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-600">{exercise.muscleGroup}</span>
+          <span className="rounded-md bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">{categoryLabel(exercise.category, et)}</span>
+          <span className="rounded-md bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-600">{muscleLabel(exercise.muscleGroup, et)}</span>
           <span className="rounded-md bg-zinc-100 px-2.5 py-1 text-xs font-medium text-zinc-600">{exercise.equipment}</span>
-          <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${difficultyColor(exercise.difficulty)}`}>{exercise.difficulty}</span>
+          <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${difficultyColor(exercise.difficulty)}`}>{difficultyLabel(exercise.difficulty, w)}</span>
         </div>
       </div>
 
@@ -181,11 +214,11 @@ export default function ExerciseDetailPage() {
           <p className="text-xs text-zinc-400">{t.equipment}</p>
         </div>
         <div className="flex flex-col items-center rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-bold text-zinc-900">{exercise.difficulty}</p>
+          <p className="text-sm font-bold text-zinc-900">{difficultyLabel(exercise.difficulty, w)}</p>
           <p className="text-xs text-zinc-400">{t.difficulty}</p>
         </div>
         <div className="flex flex-col items-center rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-bold text-zinc-900">{exercise.category}</p>
+          <p className="text-sm font-bold text-zinc-900">{categoryLabel(exercise.category, et)}</p>
           <p className="text-xs text-zinc-400">{t.category}</p>
         </div>
       </div>

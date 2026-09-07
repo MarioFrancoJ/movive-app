@@ -701,7 +701,21 @@
       "categoryCalisthenics": "Calisthenics",
       "categoryCardio": "Cardio",
       "categoryMobility": "Mobility",
-      "categoryFlexibility": "Flexibility"
+      "categoryFlexibility": "Flexibility",
+      "muscles": {
+        "Chest": "Chest",
+        "Back": "Back",
+        "Shoulders": "Shoulders",
+        "Biceps": "Biceps",
+        "Triceps": "Triceps",
+        "Forearms": "Forearms",
+        "Core": "Core",
+        "Glutes": "Glutes",
+        "Quadriceps": "Quadriceps",
+        "Hamstrings": "Hamstrings",
+        "Calves": "Calves",
+        "Full Body": "Full Body"
+      }
     },
     "exerciseDetail": {
       "loading": "Loading exercise...",

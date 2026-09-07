@@ -701,7 +701,21 @@
       "categoryCalisthenics": "Calistenia",
       "categoryCardio": "Cardio",
       "categoryMobility": "Movilidad",
-      "categoryFlexibility": "Flexibilidad"
+      "categoryFlexibility": "Flexibilidad",
+      "muscles": {
+        "Chest": "Pecho",
+        "Back": "Espalda",
+        "Shoulders": "Hombros",
+        "Biceps": "Bíceps",
+        "Triceps": "Tríceps",
+        "Forearms": "Antebrazos",
+        "Core": "Core",
+        "Glutes": "Glúteos",
+        "Quadriceps": "Cuádriceps",
+        "Hamstrings": "Isquiotibiales",
+        "Calves": "Pantorrillas",
+        "Full Body": "Cuerpo completo"
+      }
     },
     "exerciseDetail": {
       "loading": "Cargando ejercicio...",

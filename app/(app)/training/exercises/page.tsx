@@ -9,6 +9,7 @@ import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type ExercisesDict = ReturnType<typeof useDictionary>["dict"]["training"]["exercises"];
+type WorkoutsDict = ReturnType<typeof useDictionary>["dict"]["workouts"];
 
 type ExerciseCategory = "Strength" | "Calisthenics" | "Cardio" | "Mobility" | "Flexibility";
 type MuscleGroup = "Chest" | "Back" | "Shoulders" | "Biceps" | "Triceps" | "Forearms" | "Core" | "Glutes" | "Quadriceps" | "Hamstrings" | "Calves" | "Full Body";
@@ -59,11 +60,27 @@ function categoryLabel(c: ExerciseCategory, t: ExercisesDict): string {
   }
 }
 
+// Localized label for a muscle group. The English value stays the logic key
+// (matches the DB enum); the dictionary maps it to the display language.
+function muscleLabel(m: MuscleGroup, t: ExercisesDict): string {
+  return t.muscles[m] ?? m;
+}
+
+// Localized label for a difficulty level, reusing the shared workouts.* keys.
+function difficultyLabel(d: Difficulty, w: WorkoutsDict): string {
+  switch (d) {
+    case "Beginner":     return w.difficultyBeginner;
+    case "Intermediate": return w.difficultyIntermediate;
+    case "Advanced":     return w.difficultyAdvanced;
+  }
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function ExercisesPage() {
   const { dict } = useDictionary();
   const t = dict.training.exercises;
+  const w = dict.workouts;
   const [allExercises, setAllExercises] = useState<Exercise[]>([]);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<"All" | ExerciseCategory>("All");
@@ -145,13 +162,13 @@ export default function ExercisesPage() {
         <select value={muscleFilter} onChange={(e) => setMuscleFilter(e.target.value as "All" | MuscleGroup)} aria-label="Filter by muscle group"
           className="h-9 rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-700 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200">
           <option value="All">{t.allMuscles}</option>
-          {MUSCLE_GROUPS.map((m) => <option key={m} value={m}>{m}</option>)}
+          {MUSCLE_GROUPS.map((m) => <option key={m} value={m}>{muscleLabel(m, t)}</option>)}
         </select>
 
         <select value={difficultyFilter} onChange={(e) => setDifficultyFilter(e.target.value as "All" | Difficulty)} aria-label="Filter by difficulty"
           className="h-9 rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-700 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200">
           <option value="All">{t.allLevels}</option>
-          {DIFFICULTIES.map((d) => <option key={d} value={d}>{d}</option>)}
+          {DIFFICULTIES.map((d) => <option key={d} value={d}>{difficultyLabel(d, w)}</option>)}
         </select>
       </div>
 
@@ -165,12 +182,12 @@ export default function ExercisesPage() {
                 className="flex flex-col rounded-xl border border-zinc-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
                 <div className="mb-2 flex items-start justify-between gap-2">
                   <h3 className="text-sm font-semibold text-zinc-900">{ex.name}</h3>
-                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${difficultyColor(ex.difficulty)}`}>{ex.difficulty}</span>
+                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${difficultyColor(ex.difficulty)}`}>{difficultyLabel(ex.difficulty, w)}</span>
                 </div>
                 <p className="mb-3 text-xs text-zinc-400 line-clamp-2">{ex.description}</p>
                 <div className="mt-auto flex items-center gap-2 border-t border-zinc-100 pt-3">
                   <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${categoryColor(ex.category)}`}>{categoryLabel(ex.category, t)}</span>
-                  <span className="rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">{ex.muscleGroup}</span>
+                  <span className="rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">{muscleLabel(ex.muscleGroup, t)}</span>
                 </div>
               </Link>
             ))}
@@ -193,10 +210,10 @@ export default function ExercisesPage() {
                       className="flex flex-col rounded-xl border border-zinc-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
                       <div className="mb-2 flex items-start justify-between gap-2">
                         <h3 className="text-sm font-semibold text-zinc-900">{ex.name}</h3>
-                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${difficultyColor(ex.difficulty)}`}>{ex.difficulty}</span>
+                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${difficultyColor(ex.difficulty)}`}>{difficultyLabel(ex.difficulty, w)}</span>
                       </div>
                       <div className="mt-auto flex items-center gap-2">
-                        <span className="rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">{ex.muscleGroup}</span>
+                        <span className="rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">{muscleLabel(ex.muscleGroup, t)}</span>
                         <span className="text-xs text-zinc-400">{ex.equipment}</span>
                       </div>
                     </Link>
@@ -217,12 +234,12 @@ export default function ExercisesPage() {
               className="flex flex-col rounded-xl border border-zinc-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
               <div className="mb-2 flex items-start justify-between gap-2">
                 <h3 className="text-sm font-semibold text-zinc-900">{ex.name}</h3>
-                <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${difficultyColor(ex.difficulty)}`}>{ex.difficulty}</span>
+                <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${difficultyColor(ex.difficulty)}`}>{difficultyLabel(ex.difficulty, w)}</span>
               </div>
               <p className="mb-2 text-xs text-zinc-400 line-clamp-2">{ex.description}</p>
               <div className="mt-auto flex items-center gap-2 border-t border-zinc-100 pt-3">
                 <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${categoryColor(ex.category)}`}>{categoryLabel(ex.category, t)}</span>
-                <span className="rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">{ex.muscleGroup}</span>
+                <span className="rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">{muscleLabel(ex.muscleGroup, t)}</span>
               </div>
             </Link>
           ))}
