@@ -11,18 +11,12 @@ type FAQItem = {
 const FAQ_KEYS = [
   "personalizedPlans",
   "whatMakesDifferent",
-  "planUpdateFreq",
+  "trainAtHome",
+  "customMeals",
   "missPlan",
   "progressMeasured",
-  "aiCoach",
-  "customMeals",
-  "modifyRecipe",
-  "cantExercise",
-  "trainAtHome",
   "switchPlans",
-  "deleteAccount",
-  "requestData",
-  "reportBug",
+  "manageAccount",
 ] as const;
 
 function FAQItem({ question, answer }: FAQItem) {
