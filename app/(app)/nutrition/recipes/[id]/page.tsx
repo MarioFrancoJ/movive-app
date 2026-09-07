@@ -428,7 +428,10 @@ export default function RecipeDetailPage() {
               >
                 <span aria-hidden="true">+</span> {t.addToMealPlan}
               </button>
-              <div className="flex gap-2">
+              {/* Two equal 50/50 columns. On mobile/tablet both buttons share the
+                  same outline style + 12px gap for a balanced row; desktop (lg:)
+                  keeps the original secondary(outline)/tertiary(ghost) hierarchy. */}
+              <div className="flex gap-3 lg:gap-2">
                 {/* Secondary — outlined */}
                 <button
                   type="button"
@@ -438,12 +441,13 @@ export default function RecipeDetailPage() {
                 >
                   {busy === "log" ? t.logging : t.logAsMealToday}
                 </button>
-                {/* Tertiary — ghost/text, lowest weight */}
+                {/* Shopping — outline on mobile/tablet (balanced 50/50); reverts to
+                    ghost/text on desktop to preserve the original hierarchy. */}
                 <button
                   type="button"
                   onClick={handleAddToShopping}
                   disabled={busy !== null || recipe.ingredients.length === 0}
-                  className="inline-flex flex-1 items-center justify-center rounded-lg px-3 py-2 text-golden-sm font-medium text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
+                  className="inline-flex flex-1 items-center justify-center rounded-lg border border-zinc-300 bg-white px-3 py-2 text-golden-sm font-semibold text-zinc-800 transition-colors hover:bg-zinc-50 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 lg:border-transparent lg:bg-transparent lg:font-medium lg:text-zinc-500 lg:hover:bg-zinc-100 lg:hover:text-zinc-700"
                 >
                   {busy === "shop" ? t.adding : t.addIngredientsToShopping}
                 </button>
