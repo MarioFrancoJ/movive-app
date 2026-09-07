@@ -74,7 +74,7 @@ interface Recipe {
 function goalColor(goal: string) {
   switch (goal) {
     case "Fat Loss":    return "bg-success-light text-success";
-    case "Muscle Gain": return "bg-blue-50 text-blue-700";
+    case "Muscle Gain": return "bg-primary text-white";
     case "Maintenance": return "bg-amber-50 text-amber-700";
     default:            return "bg-zinc-100 text-zinc-700";
   }
