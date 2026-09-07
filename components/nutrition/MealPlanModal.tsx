@@ -209,13 +209,13 @@ export default function MealPlanModal({
           <div className="flex flex-col gap-golden-2">
             {rows.map((row) => (
               <div key={row.id} className="rounded-golden-lg border border-zinc-200 bg-zinc-50/50 p-golden-2">
-                <div className="flex items-center gap-golden-2">
+                <div className="flex flex-col gap-golden-2 sm:flex-row sm:items-center">
                   {/* Day */}
                   <select
                     value={row.day}
                     onChange={(e) => updateRow(row.id, { day: e.target.value as PlanDay })}
                     aria-label="Day"
-                    className="h-9 min-w-0 flex-1 rounded-golden-md border border-zinc-200 bg-white px-golden-2 text-golden-sm text-zinc-700 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200"
+                    className="h-11 w-full min-w-0 rounded-golden-md border border-zinc-200 bg-white px-golden-2 text-golden-sm text-zinc-700 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200 sm:h-9 sm:flex-1"
                   >
                     {PLAN_DAYS.map((d) => (
                       <option key={d} value={d}>{d}</option>
@@ -227,15 +227,16 @@ export default function MealPlanModal({
                     value={row.slot}
                     onChange={(e) => updateRow(row.id, { slot: e.target.value as MealSlot })}
                     aria-label="Meal slot"
-                    className="h-9 min-w-0 flex-1 rounded-golden-md border border-zinc-200 bg-white px-golden-2 text-golden-sm text-zinc-700 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200"
+                    className="h-11 w-full min-w-0 rounded-golden-md border border-zinc-200 bg-white px-golden-2 text-golden-sm text-zinc-700 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200 sm:h-9 sm:flex-1"
                   >
                     {MEAL_SLOTS.map((s) => (
                       <option key={s} value={s}>{s}</option>
                     ))}
                   </select>
 
-                  {/* Servings */}
-                  <div className="flex items-center gap-1">
+                  {/* Servings + remove — kept on one row on mobile */}
+                  <div className="flex items-center gap-golden-2 sm:gap-1">
+                    <div className="flex items-center gap-1">
                     <input
                       type="number"
                       min={1}
@@ -243,7 +244,7 @@ export default function MealPlanModal({
                       value={row.servings}
                       onChange={(e) => updateRow(row.id, { servings: Math.max(1, Math.round(Number(e.target.value) || 1)) })}
                       aria-label="Servings"
-                      className="h-9 w-14 rounded-golden-md border border-zinc-200 bg-white px-golden-1 text-center text-golden-sm text-zinc-700 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200"
+                      className="h-11 w-16 rounded-golden-md border border-zinc-200 bg-white px-golden-1 text-center text-golden-sm text-zinc-700 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200 sm:h-9 sm:w-14"
                     />
                     <span className="text-golden-xs text-zinc-400">x</span>
                   </div>
@@ -254,10 +255,11 @@ export default function MealPlanModal({
                     onClick={() => removeRow(row.id)}
                     disabled={rows.length <= 1}
                     aria-label="Remove assignment"
-                    className="shrink-0 rounded-golden-md p-1.5 text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-30"
+                    className="ml-auto inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-golden-md p-1.5 text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-30 sm:ml-0 sm:min-h-0 sm:min-w-0"
                   >
                     <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4"><path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.519.149.023a.75.75 0 0 0 .23-1.482A41 41 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4Z" clipRule="evenodd" /></svg>
                   </button>
+                  </div>
                 </div>
 
                 {/* Repeat Days toggle */}
@@ -282,7 +284,7 @@ export default function MealPlanModal({
           <button
             type="button"
             onClick={addRow}
-            className="mt-golden-3 w-full rounded-golden-md border border-dashed border-zinc-300 py-golden-2 text-golden-sm font-semibold text-zinc-600 transition-colors hover:border-zinc-400 hover:bg-zinc-50"
+            className="mt-golden-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-golden-md border border-dashed border-zinc-300 py-golden-2 text-golden-sm font-semibold text-zinc-600 transition-colors hover:border-zinc-400 hover:bg-zinc-50 lg:min-h-0"
           >
             + Add Assignment
           </button>
@@ -299,7 +301,7 @@ export default function MealPlanModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-golden-md border border-zinc-200 bg-white px-golden-4 py-golden-2 text-golden-sm font-semibold text-zinc-600 transition-colors hover:bg-zinc-50"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-golden-md border border-zinc-200 bg-white px-golden-4 py-golden-2 text-golden-sm font-semibold text-zinc-600 transition-colors hover:bg-zinc-50 lg:min-h-0"
           >
             Cancel
           </button>
@@ -307,7 +309,7 @@ export default function MealPlanModal({
             type="button"
             onClick={handleSave}
             disabled={saving || rows.length === 0}
-            className="rounded-golden-md bg-primary px-golden-4 py-golden-2 text-golden-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-golden-md bg-primary px-golden-4 py-golden-2 text-golden-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50 lg:min-h-0"
           >
             {saving ? "Saving…" : `Save ${rows.length} assignment${rows.length === 1 ? "" : "s"}`}
           </button>

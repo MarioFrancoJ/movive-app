@@ -332,7 +332,7 @@ export default function RecipesPage() {
       {/* Filters */}
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="relative w-64">
+          <div className="relative w-full sm:w-64">
             <svg viewBox="0 0 20 20" fill="currentColor" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" aria-hidden="true">
               <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clipRule="evenodd" />
             </svg>
@@ -342,10 +342,10 @@ export default function RecipesPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               aria-label={t.searchPlaceholder}
-              className="h-9 w-full rounded-lg border border-zinc-200 bg-white pl-9 pr-3 text-golden-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200"
+              className="h-11 w-full rounded-lg border border-zinc-200 bg-white pl-9 pr-3 text-golden-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200 sm:h-9"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {(["All", ...RECIPE_GOALS] as const).map((g) => (
               <button
                 key={g}
@@ -353,7 +353,7 @@ export default function RecipesPage() {
                 onClick={() => setGoalFilter(g)}
                 aria-pressed={goalFilter === g}
                 className={[
-                  "rounded-lg border px-3 py-1.5 text-golden-xs font-semibold transition-colors",
+                  "inline-flex min-h-[44px] items-center rounded-lg border px-3 py-1.5 text-golden-xs font-semibold transition-colors lg:min-h-0",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300",
                   goalFilter === g
                     ? "border-primary bg-primary text-white"
@@ -375,7 +375,7 @@ export default function RecipesPage() {
               onClick={() => setMealTypeFilter(m)}
               aria-pressed={mealTypeFilter === m}
               className={[
-                "rounded-full border px-3 py-1 text-golden-xs font-medium transition-colors",
+                "inline-flex min-h-[44px] items-center rounded-full border px-3 py-1 text-golden-xs font-medium transition-colors lg:min-h-0",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300",
                 mealTypeFilter === m
                   ? "border-zinc-700 bg-zinc-100 text-zinc-900"

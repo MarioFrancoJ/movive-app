@@ -731,7 +731,7 @@ export default function MealPlannerPage() {
               type="button"
               onClick={() => setSelectedDay(day)}
               className={[
-                "shrink-0 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors",
+                "inline-flex min-h-[44px] shrink-0 items-center rounded-md px-4 py-1.5 text-xs font-semibold transition-colors lg:min-h-0",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300",
                 selectedDay === day
                   ? "bg-primary text-white shadow-sm"
@@ -752,7 +752,7 @@ export default function MealPlannerPage() {
             aria-label={`${selectedDay} options`}
             aria-haspopup="menu"
             aria-expanded={openDayMenu === selectedDay}
-            className="flex h-8 w-8 items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
+            className="flex h-11 w-11 items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
           >
             <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true"><path d="M10 6a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM10 11.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM11.5 15.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" /></svg>
           </button>
@@ -812,7 +812,7 @@ export default function MealPlannerPage() {
                       <button
                         type="button"
                         onClick={() => handleClear(meal)}
-                        className="text-xs font-medium text-zinc-400 transition-colors hover:text-red-600"
+                        className="-mr-2 inline-flex min-h-[44px] items-center rounded-md px-2 text-xs font-medium text-zinc-400 transition-colors hover:text-red-600 lg:min-h-0"
                       >
                         {t.slotRemove}
                       </button>
@@ -1216,7 +1216,7 @@ function RecipePicker({
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t.pickerSearchPlaceholder}
               aria-label={t.pickerSearchPlaceholder}
-              className="h-10 w-full rounded-lg border border-zinc-200 bg-white pl-9 pr-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200"
+              className="h-11 w-full rounded-lg border border-zinc-200 bg-white pl-9 pr-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200 sm:h-10"
             />
           </div>
           {goals.length > 1 && (
@@ -1228,7 +1228,7 @@ function RecipePicker({
                   onClick={() => setGoalFilter(g)}
                   aria-pressed={goalFilter === g}
                   className={[
-                    "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
+                    "inline-flex min-h-[44px] items-center rounded-full border px-2.5 py-1 text-xs font-medium transition-colors lg:min-h-0",
                     goalFilter === g ? "border-primary bg-primary text-white" : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-400",
                   ].join(" ")}
                 >

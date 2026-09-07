@@ -132,8 +132,8 @@ function LineChart({
   const maxV = Math.max(...values);
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white p-4">
-      <svg viewBox={`0 0 ${WIDTH} ${height}`} className="w-full" style={{ minWidth: 400, height }} preserveAspectRatio="none">
+    <div className="rounded-lg border border-zinc-200 bg-white p-4">
+      <svg viewBox={`0 0 ${WIDTH} ${height}`} className="w-full" style={{ height }} preserveAspectRatio="none">
         {[0, 0.25, 0.5, 0.75, 1].map((pct) => {
           const y = PADDING + (1 - pct) * (height - 2 * PADDING);
           const val = minV + pct * (maxV - minV);
@@ -487,7 +487,7 @@ export default function ProgressPage() {
                 value={selectedMeasurement}
                 onChange={(e) => setSelectedMeasurement(Number(e.target.value))}
                 aria-label="Select measurement to chart"
-                className="h-8 rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-xs font-medium text-zinc-700 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200"
+                className="h-11 rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-xs font-medium text-zinc-700 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200 lg:h-8"
               >
                 {chartMeasurementOptions.map((opt, i) => (
                   <option key={opt.label} value={i}>{opt.label}</option>
@@ -506,7 +506,7 @@ export default function ProgressPage() {
                   key={tab}
                   type="button"
                   onClick={() => setPhotoTab(tab)}
-                  className={["rounded-md px-4 py-1.5 text-xs font-semibold capitalize transition-colors", "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300", photoTab === tab ? "bg-primary text-white shadow-sm" : "text-zinc-500 hover:text-zinc-900"].join(" ")}
+                  className={["min-h-[44px] rounded-md px-4 py-1.5 text-xs font-semibold capitalize transition-colors lg:min-h-0", "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300", photoTab === tab ? "bg-primary text-white shadow-sm" : "text-zinc-500 hover:text-zinc-900"].join(" ")}
                 >
                   {tab}
                 </button>

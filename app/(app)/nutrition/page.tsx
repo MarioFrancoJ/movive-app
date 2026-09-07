@@ -499,7 +499,7 @@ export default function NutritionPage() {
                                   type="button"
                                   onClick={() => openEditForm(meal)}
                                   aria-label={`Edit ${meal.name}`}
-                                  className="rounded-md p-1.5 text-zinc-400 transition-colors hover:bg-zinc-200 hover:text-zinc-700 focus-visible:outline-none"
+                                  className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md p-1.5 text-zinc-400 transition-colors hover:bg-zinc-200 hover:text-zinc-700 focus-visible:outline-none lg:min-h-0 lg:min-w-0"
                                 >
                                   <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
                                     <path d="m5.433 13.917 1.262-3.155A4 4 0 0 1 7.58 9.42l6.92-6.918a2.121 2.121 0 0 1 3 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 0 1-.65-.65Z" />
@@ -510,7 +510,7 @@ export default function NutritionPage() {
                                   type="button"
                                   onClick={() => handleDelete(meal.id)}
                                   aria-label={`Delete ${meal.name}`}
-                                  className="rounded-md p-1.5 text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none"
+                                  className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md p-1.5 text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none lg:min-h-0 lg:min-w-0"
                                 >
                                   <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
                                     <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z" clipRule="evenodd" />
@@ -630,7 +630,7 @@ export default function NutritionPage() {
                   id="mealType"
                   value={formType}
                   onChange={(e) => setFormType(e.target.value as MealType)}
-                  className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200"
+                  className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm sm:h-10 text-zinc-900 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200"
                 >
                   {MEAL_TYPES.map((mt) => <option key={mt} value={mt}>{mealTypeLabel(mt)}</option>)}
                 </select>
@@ -646,7 +646,7 @@ export default function NutritionPage() {
                   onChange={(e) => setFormName(e.target.value)}
                   placeholder={t.form.mealNamePlaceholder}
                   required
-                  className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200"
+                  className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm sm:h-10 text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200"
                 />
               </div>
 
@@ -659,7 +659,7 @@ export default function NutritionPage() {
                   value={formDesc}
                   onChange={(e) => setFormDesc(e.target.value)}
                   placeholder={t.form.descriptionPlaceholder}
-                  className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200"
+                  className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm sm:h-10 text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200"
                 />
               </div>
 
@@ -667,19 +667,19 @@ export default function NutritionPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="mealCal" className="text-sm font-medium text-zinc-700">{t.form.calories}</label>
-                  <input id="mealCal" type="number" min={0} max={5000} value={formCalories} onChange={(e) => setFormCalories(e.target.value)} placeholder="0" className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200" />
+                  <input id="mealCal" type="number" min={0} max={5000} value={formCalories} onChange={(e) => setFormCalories(e.target.value)} placeholder="0" className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm sm:h-10 text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200" />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="mealPro" className="text-sm font-medium text-zinc-700">{t.form.proteinG}</label>
-                  <input id="mealPro" type="number" min={0} max={500} value={formProtein} onChange={(e) => setFormProtein(e.target.value)} placeholder="0" className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200" />
+                  <input id="mealPro" type="number" min={0} max={500} value={formProtein} onChange={(e) => setFormProtein(e.target.value)} placeholder="0" className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm sm:h-10 text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200" />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="mealCarbs" className="text-sm font-medium text-zinc-700">{t.form.carbsG}</label>
-                  <input id="mealCarbs" type="number" min={0} max={500} value={formCarbs} onChange={(e) => setFormCarbs(e.target.value)} placeholder="0" className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200" />
+                  <input id="mealCarbs" type="number" min={0} max={500} value={formCarbs} onChange={(e) => setFormCarbs(e.target.value)} placeholder="0" className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm sm:h-10 text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200" />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="mealFat" className="text-sm font-medium text-zinc-700">{t.form.fatG}</label>
-                  <input id="mealFat" type="number" min={0} max={500} value={formFat} onChange={(e) => setFormFat(e.target.value)} placeholder="0" className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200" />
+                  <input id="mealFat" type="number" min={0} max={500} value={formFat} onChange={(e) => setFormFat(e.target.value)} placeholder="0" className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm sm:h-10 text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200" />
                 </div>
               </div>
 
@@ -687,11 +687,11 @@ export default function NutritionPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="mealDate" className="text-sm font-medium text-zinc-700">{t.form.date}</label>
-                  <input id="mealDate" type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200" />
+                  <input id="mealDate" type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm sm:h-10 text-zinc-900 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200" />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label htmlFor="mealTime" className="text-sm font-medium text-zinc-700">{t.form.time}</label>
-                  <input id="mealTime" type="time" value={formTime} onChange={(e) => setFormTime(e.target.value)} className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200" />
+                  <input id="mealTime" type="time" value={formTime} onChange={(e) => setFormTime(e.target.value)} className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm sm:h-10 text-zinc-900 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200" />
                 </div>
               </div>
 

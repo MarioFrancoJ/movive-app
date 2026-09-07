@@ -260,7 +260,7 @@ export default function ShoppingListPage() {
           <button
             type="button"
             onClick={handleGenerate}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
+            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 lg:min-h-0"
           >
             {t.generate}
           </button>
@@ -268,7 +268,7 @@ export default function ShoppingListPage() {
             <button
               type="button"
               onClick={handleClearAll}
-              className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-medium text-zinc-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+              className="inline-flex min-h-[44px] items-center rounded-lg border border-zinc-200 px-3 py-2 text-xs font-medium text-zinc-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 lg:min-h-0"
             >
               {t.clearAll}
             </button>
@@ -293,7 +293,7 @@ export default function ShoppingListPage() {
       >
         <p className="mb-4 text-sm font-semibold text-zinc-700">{t.addIngredient}</p>
         <div className="flex flex-wrap items-end gap-4">
-          <div className="w-56">
+          <div className="w-full sm:w-56">
             <label htmlFor="ingredient-name" className="mb-1 block text-xs font-medium text-zinc-600">{t.ingredient}</label>
             <input
               id="ingredient-name"
@@ -301,10 +301,10 @@ export default function ShoppingListPage() {
               placeholder={t.ingredientPlaceholder}
               value={name}
               onChange={(e) => { setName(e.target.value); if (error) setError(""); }}
-              className="h-9 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200"
+              className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200 sm:h-9"
             />
           </div>
-          <div className="w-36">
+          <div className="w-full sm:w-36">
             <label htmlFor="ingredient-qty" className="mb-1 block text-xs font-medium text-zinc-600">{t.quantity}</label>
             <input
               id="ingredient-qty"
@@ -312,12 +312,12 @@ export default function ShoppingListPage() {
               placeholder={t.quantityPlaceholder}
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
-              className="h-9 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200"
+              className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200 sm:h-9"
             />
           </div>
           <button
             type="submit"
-            className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:w-auto lg:min-h-0"
           >
             {dict.common.add}
           </button>
@@ -369,7 +369,7 @@ export default function ShoppingListPage() {
                   type="button"
                   onClick={() => handleRemove(item.id)}
                   aria-label={`Remove ${item.name}`}
-                  className="rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                  className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-600 lg:min-h-0 lg:min-w-0"
                 >
                   <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
                     <path
