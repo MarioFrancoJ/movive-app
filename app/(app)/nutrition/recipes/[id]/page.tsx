@@ -279,8 +279,12 @@ export default function RecipeDetailPage() {
           carries a one-line nutrition summary, compact ingredients + instructions,
           and the actions. On mobile everything stacks (photo first). */}
       <div className="grid gap-5 lg:grid-cols-[7fr_13fr] lg:items-start">
-        {/* Photo — ~33% (col-span-4). Fills the info column's height on desktop. */}
-        <div className="overflow-hidden rounded-2xl bg-zinc-100 aspect-[4/3] max-h-64 lg:aspect-auto lg:max-h-none lg:h-full lg:self-stretch lg:min-h-[320px]">
+        {/* Photo — ~33% (col-span-4). Fills the info column's height on desktop.
+            On mobile/tablet the box is full-width with a fixed height (object-cover
+            handles the crop) so it never shrinks narrower than the info cards.
+            Using aspect-ratio + max-height would force the box to shrink its WIDTH
+            to preserve the ratio once the capped height is hit — that was the bug. */}
+        <div className="w-full overflow-hidden rounded-2xl bg-zinc-100 h-56 lg:h-full lg:max-h-none lg:self-stretch lg:min-h-[320px]">
           {recipe.imageUrl ? (
             // object-cover fills the column edge-to-edge (no empty box), centered.
             // eslint-disable-next-line @next/next/no-img-element
