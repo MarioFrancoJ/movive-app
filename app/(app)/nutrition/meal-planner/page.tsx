@@ -14,9 +14,10 @@ type MealPlannerDict = NutritionDict["mealPlanner"];
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] as const;
-// 5 meal slots in chronological order. Legacy plans stored a "Snack" key; it is
-// read as "Snack PM" for backward compatibility (see normalizeDaySlots).
-const MEALS = ["Breakfast", "Snack AM", "Lunch", "Dinner", "Snack PM"] as const;
+// 5 meal slots in chronological order (Snack PM comes before Dinner). Legacy
+// plans stored a "Snack" key; it is read as "Snack PM" for backward
+// compatibility (see normalizeDaySlots).
+const MEALS = ["Breakfast", "Snack AM", "Lunch", "Snack PM", "Dinner"] as const;
 
 type Day = (typeof DAYS)[number];
 type Meal = (typeof MEALS)[number];
@@ -102,7 +103,7 @@ function fullWeekdayLabel(day: string, t: MealPlannerDict): string {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function emptySlots(): Record<Meal, PlanSlotValue> {
-  return { "Breakfast": null, "Snack AM": null, "Lunch": null, "Dinner": null, "Snack PM": null };
+  return { "Breakfast": null, "Snack AM": null, "Lunch": null, "Snack PM": null, "Dinner": null };
 }
 
 function emptyPlan(): MealPlan {
@@ -168,8 +169,8 @@ const MEAL_META: Record<string, { accent: string; tint: string }> = {
   "Breakfast": { accent: "text-amber-600", tint: "bg-amber-50" },
   "Snack AM": { accent: "text-orange-600", tint: "bg-orange-50" },
   "Lunch": { accent: "text-success", tint: "bg-success-light" },
-  "Dinner": { accent: "text-indigo-600", tint: "bg-indigo-50" },
   "Snack PM": { accent: "text-rose-600", tint: "bg-rose-50" },
+  "Dinner": { accent: "text-indigo-600", tint: "bg-indigo-50" },
 };
 
 /** Small recipe photo thumbnail (falls back to a soft food glyph). */
