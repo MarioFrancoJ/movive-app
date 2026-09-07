@@ -65,7 +65,7 @@
     "nutrition": {
       "meals": "Comidas",
       "recipes": "Recetas",
-      "mealPlanner": "Planificador de comidas",
+      "mealPlanner": "Plan de Comidas",
       "shoppingList": "Lista de compras"
     },
     "progress": {
@@ -555,8 +555,8 @@
       "toastLogError": "No se pudo registrar la comida."
     },
     "mealPlanner": {
-      "loading": "Cargando planificador de comidas...",
-      "title": "Planificador de comidas",
+      "loading": "Cargando plan de comidas...",
+      "title": "Plan de Comidas",
       "subtitle": "Planifica tus comidas de la semana asignando recetas a cada franja.",
       "loadingWeek": "(Cargando semana...)",
       "templates": "Plantillas",
