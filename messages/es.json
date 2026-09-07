@@ -250,6 +250,54 @@
       "switchPlans": {
         "question": "¿Puedo cambiar de plan en cualquier momento?",
         "answer": "Por supuesto. Puedes mejorar o bajar de plan en cualquier momento desde los ajustes de tu cuenta. Las mejoras se aplican de inmediato. Al bajar de plan, conservas las funciones Pro hasta el final del periodo de facturación actual."
+      },
+      "missPlan": {
+        "question": "¿Qué pasa si no sigo exactamente mi plan?",
+        "answer": "No pasa nada. Movive está diseñado para ayudarte a progresar de forma sostenible. Si te desvías ocasionalmente de tu plan de entrenamiento o alimentación, simplemente retómalo en la siguiente sesión o comida sin intentar compensar en exceso."
+      },
+      "planUpdateFreq": {
+        "question": "¿Con qué frecuencia se actualiza mi plan?",
+        "answer": "Tu plan puede ajustarse según tu progreso, objetivos y actividad registrada. Movive busca adaptarse a tu evolución para mantener recomendaciones relevantes y realistas."
+      },
+      "customMeals": {
+        "question": "¿Puedo registrar comidas personalizadas?",
+        "answer": "Sí. Además de las recetas sugeridas, puedes registrar comidas personalizadas para mantener un seguimiento más preciso de tu alimentación diaria."
+      },
+      "modifyRecipe": {
+        "question": "¿Puedo modificar una receta sugerida?",
+        "answer": "Sí. Puedes usar las recetas como referencia y adaptarlas según tus preferencias, disponibilidad de ingredientes o necesidades nutricionales."
+      },
+      "progressMeasured": {
+        "question": "¿Cómo se mide mi progreso?",
+        "answer": "Movive utiliza diferentes indicadores como entrenamientos completados, adherencia al plan, registros nutricionales y métricas corporales para ayudarte a visualizar tu evolución."
+      },
+      "cantExercise": {
+        "question": "¿Qué hago si no puedo realizar un ejercicio?",
+        "answer": "Puedes sustituirlo por una alternativa similar o adaptar la intensidad según tu nivel. Si tienes una lesión o limitación física, consulta con un profesional de la salud antes de entrenar."
+      },
+      "trainAtHome": {
+        "question": "¿Puedo entrenar en casa?",
+        "answer": "Sí. Muchos programas pueden realizarse en casa con poco o ningún equipamiento, dependiendo de los objetivos seleccionados."
+      },
+      "personalizedPlans": {
+        "question": "¿Movive crea planes personalizados?",
+        "answer": "Sí. Las recomendaciones de entrenamiento y nutrición se adaptan a la información, objetivos y actividad registrada por cada usuario."
+      },
+      "whatMakesDifferent": {
+        "question": "¿Qué diferencia a Movive de otras apps fitness?",
+        "answer": "Movive integra entrenamiento, nutrición y seguimiento de progreso en una sola plataforma, buscando ofrecer una experiencia práctica y fácil de mantener a largo plazo."
+      },
+      "deleteAccount": {
+        "question": "¿Cómo elimino mi cuenta definitivamente?",
+        "answer": "Puedes solicitar la eliminación permanente de tu cuenta contactando al equipo de soporte o utilizando las opciones disponibles dentro de la aplicación cuando estén habilitadas."
+      },
+      "requestData": {
+        "question": "¿Cómo solicito una copia de mis datos?",
+        "answer": "Puedes contactar al equipo de soporte para solicitar una copia de los datos asociados a tu cuenta, de acuerdo con la normativa de protección de datos aplicable."
+      },
+      "reportBug": {
+        "question": "¿Cómo reporto un error o problema técnico?",
+        "answer": "Puedes comunicarte con nuestro equipo de soporte indicando el problema, el dispositivo utilizado y los pasos para reproducirlo. Esto nos ayuda a resolverlo más rápidamente."
       }
     }
   },

@@ -250,6 +250,54 @@
       "switchPlans": {
         "question": "Can I switch plans at any time?",
         "answer": "Absolutely. You can upgrade or downgrade your plan at any point from your account settings. Upgrades take effect immediately. When downgrading, you retain Pro features until the end of the current billing period."
+      },
+      "missPlan": {
+        "question": "What happens if I don't follow my plan exactly?",
+        "answer": "That's okay. Movive is designed to support sustainable progress. If you occasionally miss part of your workout or nutrition plan, simply continue with your next scheduled activity without trying to overcompensate."
+      },
+      "planUpdateFreq": {
+        "question": "How often is my plan updated?",
+        "answer": "Your plan may be adjusted based on your progress, goals, and logged activity. Movive aims to keep recommendations relevant and aligned with your evolution."
+      },
+      "customMeals": {
+        "question": "Can I log custom meals?",
+        "answer": "Yes. In addition to suggested recipes, you can log custom meals to keep accurate track of your daily nutrition."
+      },
+      "modifyRecipe": {
+        "question": "Can I modify a suggested recipe?",
+        "answer": "Yes. Recipes can be used as guidance and adapted to your preferences, ingredient availability, or nutritional needs."
+      },
+      "progressMeasured": {
+        "question": "How is my progress measured?",
+        "answer": "Movive uses indicators such as completed workouts, plan adherence, nutrition tracking, and body metrics to help you visualize your progress over time."
+      },
+      "cantExercise": {
+        "question": "What should I do if I can't perform an exercise?",
+        "answer": "You can replace it with a similar alternative or adjust the intensity according to your level. If you have an injury or medical condition, consult a healthcare professional before exercising."
+      },
+      "trainAtHome": {
+        "question": "Can I train at home?",
+        "answer": "Yes. Many programs can be performed at home with little or no equipment, depending on your selected goals."
+      },
+      "personalizedPlans": {
+        "question": "Does Movive create personalized plans?",
+        "answer": "Yes. Training and nutrition recommendations are adapted to each user's information, goals, and recorded activity."
+      },
+      "whatMakesDifferent": {
+        "question": "What makes Movive different from other fitness apps?",
+        "answer": "Movive combines training, nutrition, and progress tracking in a single platform, providing a practical and sustainable fitness experience."
+      },
+      "deleteAccount": {
+        "question": "How do I permanently delete my account?",
+        "answer": "You can request permanent account deletion by contacting support or using the account management tools available within the application when enabled."
+      },
+      "requestData": {
+        "question": "How can I request a copy of my data?",
+        "answer": "You can contact support to request a copy of the data associated with your account, in accordance with applicable data protection regulations."
+      },
+      "reportBug": {
+        "question": "How do I report a bug or technical issue?",
+        "answer": "You can contact our support team with details about the issue, your device, and the steps to reproduce it. This helps us resolve problems more quickly."
       }
     }
   },

@@ -45,6 +45,10 @@ const PUBLIC_ROUTES = new Set([
   "/beta",
   "/onboarding",
   "/forbidden",
+  // Legal pages — publicly accessible without authentication.
+  "/privacy",
+  "/terms",
+  "/cookies",
 ]);
 
 const AUTH_ROUTES = new Set(["/login", "/register", "/forgot-password"]);
