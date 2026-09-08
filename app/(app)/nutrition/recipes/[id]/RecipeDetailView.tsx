@@ -286,13 +286,13 @@ export default function RecipeDetailView({ recipe }: { recipe: Recipe }) {
 
           {/* Actions — Meal + Servings + short buttons */}
           <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 shadow-sm">
-            <div className="flex flex-wrap items-end gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
               <div className="min-w-0 flex-1">
                 <span id="meal-slot-label" className="mb-1 block text-golden-xs font-medium text-zinc-600">{t.mealLabel}</span>
                 <div
                   role="radiogroup"
                   aria-labelledby="meal-slot-label"
-                  className="flex flex-wrap gap-1.5"
+                  className="grid grid-cols-2 gap-1 sm:grid-cols-5"
                 >
                   {MEAL_SLOTS.map((m) => (
                     <Chip
@@ -306,7 +306,7 @@ export default function RecipeDetailView({ recipe }: { recipe: Recipe }) {
                   ))}
                 </div>
               </div>
-              <div>
+              <div className="shrink-0">
                 <span className="mb-1 block text-golden-xs font-medium text-zinc-600">{t.servingsLabel}</span>
                 <QuantityStepper
                   value={servings}
