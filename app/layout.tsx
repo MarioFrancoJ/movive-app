@@ -35,14 +35,18 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
-  // Browser + PWA icons. The isotipo (icon-only mark) is used for the favicon,
-  // Apple touch icon and manifest icons; the .ico is kept as a legacy fallback.
+  // Browser + PWA icons — single source of truth for every route (child
+  // layouts/pages inherit and merge with this root metadata; none override it).
+  // The favicon.ico now lives in /public (NOT app/), so there is no competing
+  // app/favicon.ico file-convention link that could shadow this config and make
+  // the icon appear only on some routes. Modern browsers pick the SVG; older
+  // ones fall back to the .ico; Apple devices use the PNG touch icon.
   icons: {
     icon: [
-      { url: "/favicon.ico", sizes: "any" },
       { url: "/movive/isotipo-movive.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "any", type: "image/x-icon" },
     ],
-    shortcut: "/movive/isotipo-movive.svg",
+    shortcut: "/favicon.ico",
     apple: "/movive/isotipo-movive.png",
   },
   manifest: "/manifest.webmanifest",
