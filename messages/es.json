@@ -541,7 +541,6 @@
       "decreaseServings": "Menos porciones",
       "increaseServings": "Más porciones",
       "repeatDaysShow": "Repetir días",
-      "repeatDaysApplies": "Aplica {slot} · {servings}x a cada día marcado.",
       "repeatApply": "Aplicar a {n} día{plural}",
       "addAssignment": "+ Agregar asignación",
       "cancel": "Cancelar",

@@ -407,7 +407,6 @@ function RepeatDays({
   const { dict } = useDictionary();
   const t = dict.nutrition.mealPlanModal;
   const cal = dict.calendar;
-  const mp = dict.nutrition.mealPlanner;
   // Default selection: weekdays (Mon–Fri), plus the base row's own day.
   const [selected, setSelected] = useState<Set<PlanDay>>(() => {
     const initial = new Set<PlanDay>(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]);
@@ -426,28 +425,27 @@ function RepeatDays({
 
   return (
     <div className="mt-golden-2 rounded-golden-md border border-zinc-200 bg-white p-golden-2">
-      <p className="mb-golden-1 text-golden-xs text-zinc-500">
-        {t.repeatDaysApplies.replace("{slot}", slotLabel(baseRow.slot, mp)).replace("{servings}", String(baseRow.servings))}
-      </p>
-      <div className="grid grid-cols-2 gap-1 sm:grid-cols-4">
+      {/* Day chips — same visual language as the main day selector above
+          (segmented chips, active = bg-primary/text-white). No checkboxes. */}
+      <div role="group" aria-label={t.day} className="flex flex-wrap gap-1">
         {PLAN_DAYS.map((day) => {
-          const checked = selected.has(day);
+          const active = selected.has(day);
           return (
-            <label
+            <button
               key={day}
+              type="button"
+              onClick={() => toggle(day)}
+              aria-pressed={active}
+              title={day}
               className={[
-                "flex cursor-pointer items-center gap-2 rounded-golden-md border px-golden-2 py-golden-1 text-golden-xs font-medium transition-colors",
-                checked ? "border-zinc-700 bg-zinc-100 text-zinc-900" : "border-zinc-200 bg-white text-zinc-500 hover:border-zinc-300",
+                "min-h-[40px] min-w-[2.75rem] flex-1 rounded-golden-md px-golden-1 text-golden-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 sm:min-h-[36px]",
+                active
+                  ? "bg-primary text-white"
+                  : "bg-white text-zinc-600 ring-1 ring-inset ring-zinc-200 hover:bg-zinc-100",
               ].join(" ")}
             >
-              <input
-                type="checkbox"
-                checked={checked}
-                onChange={() => toggle(day)}
-                className="h-3.5 w-3.5 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-400"
-              />
               {dayShort(day, cal)}
-            </label>
+            </button>
           );
         })}
       </div>

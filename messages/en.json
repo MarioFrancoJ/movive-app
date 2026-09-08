@@ -541,7 +541,6 @@
       "decreaseServings": "Decrease servings",
       "increaseServings": "Increase servings",
       "repeatDaysShow": "Repeat Days",
-      "repeatDaysApplies": "Applies {slot} · {servings}x to each checked day.",
       "repeatApply": "Apply to {n} day{plural}",
       "addAssignment": "+ Add Assignment",
       "cancel": "Cancel",
