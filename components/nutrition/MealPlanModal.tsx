@@ -21,6 +21,7 @@ import {
   type MealPlanAssignment,
 } from "@/lib/nutrition";
 import QuantityStepper from "@/components/ui/QuantityStepper";
+import Chip from "@/components/ui/Chip";
 import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 
 // ── Display helpers (UI only — internal values stay PlanDay / MealSlot) ───────
@@ -271,50 +272,32 @@ export default function MealPlanModal({
 
                 {/* Day — segmented chips (one tap; wraps on mobile) */}
                 <div role="group" aria-label={t.day} className="flex flex-wrap gap-1">
-                  {PLAN_DAYS.map((d) => {
-                    const active = row.day === d;
-                    return (
-                      <button
-                        key={d}
-                        type="button"
-                        onClick={() => updateRow(row.id, { day: d })}
-                        aria-pressed={active}
-                        title={d}
-                        className={[
-                          "min-h-[40px] min-w-[2.75rem] flex-1 rounded-golden-md px-golden-1 text-golden-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 sm:min-h-[36px]",
-                          active
-                            ? "bg-primary text-white"
-                            : "bg-white text-zinc-600 ring-1 ring-inset ring-zinc-200 hover:bg-zinc-100",
-                        ].join(" ")}
-                      >
-                        {dayShort(d, cal)}
-                      </button>
-                    );
-                  })}
+                  {PLAN_DAYS.map((d) => (
+                    <Chip
+                      key={d}
+                      active={row.day === d}
+                      onClick={() => updateRow(row.id, { day: d })}
+                      title={d}
+                      fill
+                      className="min-w-[2.75rem]"
+                    >
+                      {dayShort(d, cal)}
+                    </Chip>
+                  ))}
                 </div>
 
                 {/* Slot — text-only buttons (one tap; 2-col mobile / 5-col desktop).
                     Uses the SAME 5 slots + labels as the Meal Planner. */}
                 <div role="group" aria-label={t.mealSlot} className="mt-golden-2 grid grid-cols-2 gap-1 sm:grid-cols-5">
-                  {MEAL_SLOTS.map((s) => {
-                    const active = row.slot === s;
-                    return (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => updateRow(row.id, { slot: s })}
-                        aria-pressed={active}
-                        className={[
-                          "inline-flex min-h-[44px] items-center justify-center rounded-golden-md px-golden-1 text-golden-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 sm:min-h-[38px]",
-                          active
-                            ? "bg-primary text-white"
-                            : "bg-white text-zinc-600 ring-1 ring-inset ring-zinc-200 hover:bg-zinc-100",
-                        ].join(" ")}
-                      >
-                        {slotLabel(s, mp)}
-                      </button>
-                    );
-                  })}
+                  {MEAL_SLOTS.map((s) => (
+                    <Chip
+                      key={s}
+                      active={row.slot === s}
+                      onClick={() => updateRow(row.id, { slot: s })}
+                    >
+                      {slotLabel(s, mp)}
+                    </Chip>
+                  ))}
                 </div>
 
                 {/* Servings — shared QuantityStepper [-] n [+] */}
@@ -424,21 +407,16 @@ function RepeatDays({
         {PLAN_DAYS.map((day) => {
           const active = selected.has(day);
           return (
-            <button
+            <Chip
               key={day}
-              type="button"
+              active={active}
               onClick={() => toggle(day)}
-              aria-pressed={active}
               title={day}
-              className={[
-                "min-h-[40px] min-w-[2.75rem] flex-1 rounded-golden-md px-golden-1 text-golden-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 sm:min-h-[36px]",
-                active
-                  ? "bg-primary text-white"
-                  : "bg-white text-zinc-600 ring-1 ring-inset ring-zinc-200 hover:bg-zinc-100",
-              ].join(" ")}
+              fill
+              className="min-w-[2.75rem]"
             >
               {dayShort(day, cal)}
-            </button>
+            </Chip>
           );
         })}
       </div>

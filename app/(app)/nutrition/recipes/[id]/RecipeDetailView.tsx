@@ -13,6 +13,7 @@ import {
 } from "@/lib/nutrition";
 import MealPlanModal, { type MealPlanModalRecipe } from "@/components/nutrition/MealPlanModal";
 import QuantityStepper from "@/components/ui/QuantityStepper";
+import Chip from "@/components/ui/Chip";
 import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -293,27 +294,16 @@ export default function RecipeDetailView({ recipe }: { recipe: Recipe }) {
                   aria-labelledby="meal-slot-label"
                   className="flex flex-wrap gap-1.5"
                 >
-                  {MEAL_SLOTS.map((m) => {
-                    const active = slot === m;
-                    return (
-                      <button
-                        key={m}
-                        type="button"
-                        role="radio"
-                        aria-checked={active}
-                        onClick={() => setSlot(m)}
-                        className={[
-                          "inline-flex min-h-[36px] items-center rounded-full border px-3 py-1 text-golden-xs font-medium transition-colors",
-                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
-                          active
-                            ? "border-primary bg-primary text-white shadow-sm"
-                            : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-400",
-                        ].join(" ")}
-                      >
-                        {mealTypeLabel(m, nt)}
-                      </button>
-                    );
-                  })}
+                  {MEAL_SLOTS.map((m) => (
+                    <Chip
+                      key={m}
+                      active={slot === m}
+                      onClick={() => setSlot(m)}
+                      selectionMode="single"
+                    >
+                      {mealTypeLabel(m, nt)}
+                    </Chip>
+                  ))}
                 </div>
               </div>
               <div>

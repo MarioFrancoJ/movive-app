@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import PageLoader from "@/components/ui/PageLoader";
+import Chip from "@/components/ui/Chip";
 import { useToast } from "@/components/ui/Toast";
 import { readSlot, getWeekBounds, type PlanSlotValue } from "@/lib/nutrition";
 import { useDictionary } from "@/lib/i18n/DictionaryProvider";
@@ -1223,18 +1224,9 @@ function RecipePicker({
           {goals.length > 1 && (
             <div className="mt-2 flex flex-wrap gap-1.5">
               {(["All", ...goals] as const).map((g) => (
-                <button
-                  key={g}
-                  type="button"
-                  onClick={() => setGoalFilter(g)}
-                  aria-pressed={goalFilter === g}
-                  className={[
-                    "inline-flex min-h-[44px] items-center rounded-full border px-2.5 py-1 text-xs font-medium transition-colors lg:min-h-0",
-                    goalFilter === g ? "border-primary bg-primary text-white" : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-400",
-                  ].join(" ")}
-                >
+                <Chip key={g} active={goalFilter === g} onClick={() => setGoalFilter(g)}>
                   {goalDisplay(g)}
-                </button>
+                </Chip>
               ))}
             </div>
           )}

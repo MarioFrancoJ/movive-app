@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import EmptyState from "@/components/ui/EmptyState";
+import Chip from "@/components/ui/Chip";
 import { useToast } from "@/components/ui/Toast";
 import { addRecipeIngredientsToShoppingList } from "@/lib/nutrition";
 import MealPlanModal, { type MealPlanModalRecipe } from "@/components/nutrition/MealPlanModal";
@@ -296,21 +297,9 @@ export default function RecipesView({ initialRecipes }: { initialRecipes: Recipe
           </div>
           <div className="flex flex-wrap gap-2">
             {(["All", ...RECIPE_GOALS] as const).map((g) => (
-              <button
-                key={g}
-                type="button"
-                onClick={() => setGoalFilter(g)}
-                aria-pressed={goalFilter === g}
-                className={[
-                  "inline-flex min-h-[44px] items-center rounded-lg border px-3 py-1.5 text-golden-xs font-semibold transition-colors lg:min-h-0",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300",
-                  goalFilter === g
-                    ? "border-primary bg-primary text-white"
-                    : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-400",
-                ].join(" ")}
-              >
+              <Chip key={g} active={goalFilter === g} onClick={() => setGoalFilter(g)}>
                 {goalFilterLabel(g, t)}
-              </button>
+              </Chip>
             ))}
           </div>
         </div>
@@ -318,21 +307,9 @@ export default function RecipesView({ initialRecipes }: { initialRecipes: Recipe
         {/* Meal-type filter (Breakfast / Lunch / Dinner / Snack) */}
         <div className="flex flex-wrap gap-2">
           {(["All", ...MEAL_TYPES] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => setMealTypeFilter(m)}
-              aria-pressed={mealTypeFilter === m}
-              className={[
-                "inline-flex min-h-[44px] items-center rounded-full border px-3 py-1 text-golden-xs font-medium transition-colors lg:min-h-0",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300",
-                mealTypeFilter === m
-                  ? "border-zinc-700 bg-zinc-100 text-zinc-900"
-                  : "border-zinc-200 bg-white text-zinc-500 hover:border-zinc-400",
-              ].join(" ")}
-            >
+            <Chip key={m} active={mealTypeFilter === m} onClick={() => setMealTypeFilter(m)}>
               {m === "All" ? t.goalAll : mealTypeLabel(m, nt)}
-            </button>
+            </Chip>
           ))}
         </div>
       </div>
