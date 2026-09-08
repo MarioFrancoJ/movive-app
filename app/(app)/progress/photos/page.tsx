@@ -136,7 +136,7 @@ export default function ProgressPhotosPage() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filtered.map((photo) => (
                 <div key={photo.id} className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
-                  <img src={photo.image_url} alt={`${photo.photo_type} - ${photo.upload_date}`} className="h-48 w-full object-cover" />
+                  <img src={photo.image_url} alt={`${photo.photo_type} - ${photo.upload_date}`} loading="lazy" decoding="async" className="h-48 w-full object-cover" />
                   <div className="p-4">
                     <div className="flex items-center justify-between"><span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">{photoTypeLabel(photo.photo_type, t)}</span><span className="text-xs text-zinc-400">{photo.upload_date}</span></div>
                     {(photo.weight_kg || photo.notes) && (<div className="mt-2 text-xs text-zinc-500">{photo.weight_kg && <span>{photo.weight_kg} kg</span>}{photo.weight_kg && photo.notes && <span> · </span>}{photo.notes && <span>{photo.notes}</span>}</div>)}
@@ -148,7 +148,7 @@ export default function ProgressPhotosPage() {
             <div className="flex flex-col gap-4">
               {filtered.map((photo) => (
                 <div key={photo.id} className="flex gap-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-                  <img src={photo.image_url} alt={`${photo.photo_type} - ${photo.upload_date}`} className="h-24 w-24 shrink-0 rounded-lg object-cover" />
+                  <img src={photo.image_url} alt={`${photo.photo_type} - ${photo.upload_date}`} loading="lazy" decoding="async" className="h-24 w-24 shrink-0 rounded-lg object-cover" />
                   <div className="flex flex-col justify-center">
                     <div className="flex items-center gap-2"><span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">{photoTypeLabel(photo.photo_type, t)}</span><span className="text-xs text-zinc-400">{photo.upload_date}</span></div>
                     {photo.weight_kg && <p className="mt-1 text-sm font-medium text-zinc-700">{photo.weight_kg} kg</p>}

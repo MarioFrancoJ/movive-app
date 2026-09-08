@@ -108,7 +108,7 @@ function RecipeCard({ recipe, onAddToPlan, t, nt }: { recipe: Recipe; onAddToPla
         <div className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-100">
           {recipe.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={recipe.imageUrl} alt={recipe.name} className="h-full w-full object-cover" />
+            <img src={recipe.imageUrl} alt={recipe.name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-zinc-50 to-zinc-100 text-zinc-300">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="h-10 w-10" strokeWidth="1.5" aria-hidden="true">

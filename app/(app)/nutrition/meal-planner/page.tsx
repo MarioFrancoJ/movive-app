@@ -177,7 +177,7 @@ const MEAL_META: Record<string, { accent: string; tint: string }> = {
 function MealThumb({ imageUrl, name, className = "" }: { imageUrl: string | null; name: string; className?: string }) {
   if (imageUrl) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={imageUrl} alt={name} className={`object-cover ${className}`} />;
+    return <img src={imageUrl} alt={name} loading="lazy" decoding="async" className={`object-cover ${className}`} />;
   }
   return (
     <div className={`flex items-center justify-center bg-gradient-to-br from-zinc-100 to-zinc-200 text-zinc-300 ${className}`}>

@@ -194,11 +194,20 @@ export default function NutritionPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setHydrated(true); return; }
 
-      // Load all meals
-      const { data: mealData } = await supabase
-        .from("meal_logs")
-        .select("id, name, description, meal_type, calories, protein, carbs, fat, date, time, photo_url")
-        .order("date", { ascending: false });
+      // Meals + profile targets are independent (both keyed by user) → fetch
+      // them concurrently instead of sequentially.
+      const [mealRes, profileRes] = await Promise.all([
+        supabase
+          .from("meal_logs")
+          .select("id, name, description, meal_type, calories, protein, carbs, fat, date, time, photo_url")
+          .order("date", { ascending: false }),
+        supabase
+          .from("users")
+          .select("weight_kg, fitness_goal")
+          .eq("id", user.id)
+          .single(),
+      ]);
+      const mealData = mealRes.data;
 
       if (mealData) {
         setMeals(mealData.map((m) => ({
@@ -216,13 +225,8 @@ export default function NutritionPage() {
         })));
       }
 
-      // Load targets from profile
-      const { data: profile } = await supabase
-        .from("users")
-        .select("weight_kg, fitness_goal")
-        .eq("id", user.id)
-        .single();
-
+      // Targets from the profile fetched above.
+      const profile = profileRes.data;
       if (profile?.weight_kg) {
         const weight = Number(profile.weight_kg);
         const goal = profile.fitness_goal || "";
@@ -476,7 +480,7 @@ export default function NutritionPage() {
                             <div key={meal.id} className="flex items-center gap-3 rounded-lg border border-zinc-100 bg-zinc-50 p-3">
                               {/* Photo thumbnail */}
                               {meal.photoUrl ? (
-                                <img src={meal.photoUrl} alt={meal.name} className="h-10 w-10 shrink-0 rounded-lg object-cover" />
+                                <img src={meal.photoUrl} alt={meal.name} loading="lazy" decoding="async" className="h-10 w-10 shrink-0 rounded-lg object-cover" />
                               ) : (
                                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-200">
                                   <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-zinc-400" aria-hidden="true">

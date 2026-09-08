@@ -117,28 +117,28 @@ export default function WorkoutsPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
 
-    // Load user's workouts (non-template)
-    const { data: userWorkouts } = await supabase
-      .from("workouts")
-      .select("id, name, description, goal, difficulty, duration, is_template, workout_days(workout_exercises(id))")
-      .eq("user_id", user.id)
-      .eq("is_template", false)
-      .order("created_at", { ascending: false });
+    // User workouts (non-template) + system templates are independent → fetch
+    // both concurrently instead of one after the other.
+    const [userWorkoutsRes, templateRes] = await Promise.all([
+      supabase
+        .from("workouts")
+        .select("id, name, description, goal, difficulty, duration, is_template, workout_days(workout_exercises(id))")
+        .eq("user_id", user.id)
+        .eq("is_template", false)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("workouts")
+        .select("id, name, description, goal, difficulty, duration, is_template, workout_days(workout_exercises(id))")
+        .is("user_id", null)
+        .eq("is_template", true)
+        .order("name"),
+    ]);
 
-    if (userWorkouts) {
-      setWorkouts(userWorkouts.map(mapWorkout));
+    if (userWorkoutsRes.data) {
+      setWorkouts(userWorkoutsRes.data.map(mapWorkout));
     }
-
-    // Load system templates (user_id IS NULL, is_template = true)
-    const { data: templateData } = await supabase
-      .from("workouts")
-      .select("id, name, description, goal, difficulty, duration, is_template, workout_days(workout_exercises(id))")
-      .is("user_id", null)
-      .eq("is_template", true)
-      .order("name");
-
-    if (templateData) {
-      setTemplates(templateData.map(mapWorkout));
+    if (templateRes.data) {
+      setTemplates(templateRes.data.map(mapWorkout));
     }
 
     setLoading(false);
