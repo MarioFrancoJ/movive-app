@@ -1051,6 +1051,63 @@ export type Database = {
           },
         ]
       }
+      shopping_list_items: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          qty: number | null
+          unit: string
+          category: Database["public"]["Enums"]["shopping_item_category"]
+          checked: boolean
+          source_recipe_id: string | null
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          qty?: number | null
+          unit?: string
+          category?: Database["public"]["Enums"]["shopping_item_category"]
+          checked?: boolean
+          source_recipe_id?: string | null
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          qty?: number | null
+          unit?: string
+          category?: Database["public"]["Enums"]["shopping_item_category"]
+          checked?: boolean
+          source_recipe_id?: string | null
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shopping_list_items_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shopping_list_items_source_recipe_id_fkey"
+            columns: ["source_recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           id: string
@@ -1583,6 +1640,7 @@ export type Database = {
       photo_type: "Front" | "Side" | "Back"
       plan_type: "FREE" | "PREMIUM_MONTHLY" | "PREMIUM_YEARLY"
       recipe_goal: "Fat Loss" | "Muscle Gain" | "Maintenance"
+      shopping_item_category: "Produce" | "Protein" | "Dairy" | "Grains" | "Pantry" | "Beverages" | "Other"
       recommendation_category: "Nutrition" | "Training" | "Recovery" | "Weight Management" | "Consistency" | "Motivation" | "Goal Achievement"
       recommendation_priority: "Low" | "Medium" | "High" | "Critical"
       recommendation_status: "New" | "Viewed" | "Dismissed" | "Completed"
