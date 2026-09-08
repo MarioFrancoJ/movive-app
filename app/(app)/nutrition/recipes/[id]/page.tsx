@@ -37,10 +37,12 @@ function goalLabel(goal: string, nt: NutritionDict): string {
 // Localized label for a meal type / slot value.
 function mealTypeLabel(type: string, nt: NutritionDict): string {
   switch (type) {
-    case "Breakfast": return nt.mealTypeBreakfast;
-    case "Lunch":     return nt.mealTypeLunch;
-    case "Dinner":    return nt.mealTypeDinner;
-    case "Snack":     return nt.mealTypeSnack;
+    case "Breakfast": return nt.mealPlanner.slotBreakfast;
+    case "Snack AM":  return nt.mealPlanner.slotSnackAm;
+    case "Lunch":     return nt.mealPlanner.slotLunch;
+    case "Snack PM":  return nt.mealPlanner.slotSnackPm;
+    case "Dinner":    return nt.mealPlanner.slotDinner;
+    case "Snack":     return nt.mealPlanner.slotSnackPm; // legacy alias
     default:          return type;
   }
 }
@@ -105,7 +107,7 @@ export default function RecipeDetailPage() {
   const [notFound, setNotFound] = useState(false);
 
   // Action controls (for logging + shopping; meal-plan uses the modal)
-  const [slot, setSlot] = useState<MealSlot>("Snack");
+  const [slot, setSlot] = useState<MealSlot>("Snack PM");
   const [servings, setServings] = useState(1);
   const [busy, setBusy] = useState<null | "shop" | "log">(null);
   const [planModalRecipe, setPlanModalRecipe] = useState<MealPlanModalRecipe | null>(null);

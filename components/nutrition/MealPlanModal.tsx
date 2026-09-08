@@ -12,6 +12,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   saveMealPlanAssignments,
+  MEAL_SLOTS,
   PLAN_DAYS,
   getPlanDayForDate,
   defaultSlotForRecipe,
@@ -23,31 +24,47 @@ import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 
 // ── Display helpers (UI only — internal values stay PlanDay / MealSlot) ───────
 
-// Short label for a day chip (first 3 letters of the internal English value).
-function dayShort(day: PlanDay): string {
-  return day.slice(0, 3);
+type CalendarDict = ReturnType<typeof useDictionary>["dict"]["calendar"];
+type MealPlannerDict = ReturnType<typeof useDictionary>["dict"]["nutrition"]["mealPlanner"];
+
+// Localized weekday abbreviation — reuses the shared calendar.weekday* keys
+// (Mon…Sun / Lun…Dom) so it follows the active locale automatically.
+function dayShort(day: string, cal: CalendarDict): string {
+  switch (day) {
+    case "Monday":    return cal.weekdayMon;
+    case "Tuesday":   return cal.weekdayTue;
+    case "Wednesday": return cal.weekdayWed;
+    case "Thursday":  return cal.weekdayThu;
+    case "Friday":    return cal.weekdayFri;
+    case "Saturday":  return cal.weekdaySat;
+    case "Sunday":    return cal.weekdaySun;
+    default:          return day.slice(0, 3);
+  }
 }
 
-// Emoji per meal slot. Keys are the internal MealSlot values so the stored
-// value is unchanged; the visible label comes from i18n
-// (nutrition.mealPlanModal.slots.<value>).
-const SLOT_EMOJI: Record<MealSlot, string> = {
-  Breakfast: "🍳",
-  Snack: "🍎",
-  Lunch: "☀️",
-  Dinner: "🌙",
-};
-
-// Display order for the slot buttons (Breakfast → Snack → Lunch → Dinner),
-// independent of MEAL_SLOTS' internal order.
-const SLOT_DISPLAY_ORDER: MealSlot[] = ["Breakfast", "Snack", "Lunch", "Dinner"];
+// Localized meal-slot label — reuses the SAME Meal Planner slot keys
+// (nutrition.mealPlanner.slot*) so the modal and the Meal Planner show
+// identical labels. The internal MealSlot value is unchanged.
+function slotLabel(slot: MealSlot, mp: MealPlannerDict): string {
+  switch (slot) {
+    case "Breakfast": return mp.slotBreakfast;
+    case "Snack AM":  return mp.slotSnackAm;
+    case "Lunch":     return mp.slotLunch;
+    case "Snack PM":  return mp.slotSnackPm;
+    case "Dinner":    return mp.slotDinner;
+    default:          return slot;
+  }
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface MealPlanModalRecipe {
   id: string;
   name: string;
-  mealType?: MealSlot | null;
+  // The recipe's own meal_type (e.g. "Breakfast".. or legacy "Snack"). It is
+  // only used to suggest the default slot via defaultSlotForRecipe, which
+  // normalizes any value to a valid MealSlot — so accept a plain string.
+  mealType?: string | null;
   calories?: number;
   goal?: string | null;
 }
@@ -78,6 +95,8 @@ export default function MealPlanModal({
 }: MealPlanModalProps) {
   const { dict } = useDictionary();
   const t = dict.nutrition.mealPlanModal;
+  const cal = dict.calendar;
+  const mp = dict.nutrition.mealPlanner;
   const overlayRef = useRef<HTMLDivElement>(null);
   const [rows, setRows] = useState<AssignmentRow[]>([]);
   const [repeatFor, setRepeatFor] = useState<string | null>(null); // row id whose Repeat Days is open
@@ -233,7 +252,7 @@ export default function MealPlanModal({
                 {/* Row header: summary + remove */}
                 <div className="mb-golden-1 flex items-center justify-between gap-golden-2">
                   <span className="min-w-0 truncate text-golden-xs font-semibold text-zinc-500">
-                    {dayShort(row.day)} · {t.slots[row.slot]} · {row.servings}x
+                    {dayShort(row.day, cal)} · {slotLabel(row.slot, mp)} · {row.servings}x
                   </span>
                   <button
                     type="button"
@@ -264,15 +283,16 @@ export default function MealPlanModal({
                             : "bg-white text-zinc-600 ring-1 ring-inset ring-zinc-200 hover:bg-zinc-100",
                         ].join(" ")}
                       >
-                        {dayShort(d)}
+                        {dayShort(d, cal)}
                       </button>
                     );
                   })}
                 </div>
 
-                {/* Slot — visual emoji buttons (one tap; 2-col mobile / 4-col desktop) */}
-                <div role="group" aria-label={t.mealSlot} className="mt-golden-2 grid grid-cols-2 gap-1 sm:grid-cols-4">
-                  {SLOT_DISPLAY_ORDER.map((s) => {
+                {/* Slot — text-only buttons (one tap; 2-col mobile / 5-col desktop).
+                    Uses the SAME 5 slots + labels as the Meal Planner. */}
+                <div role="group" aria-label={t.mealSlot} className="mt-golden-2 grid grid-cols-2 gap-1 sm:grid-cols-5">
+                  {MEAL_SLOTS.map((s) => {
                     const active = row.slot === s;
                     return (
                       <button
@@ -281,14 +301,13 @@ export default function MealPlanModal({
                         onClick={() => updateRow(row.id, { slot: s })}
                         aria-pressed={active}
                         className={[
-                          "inline-flex min-h-[44px] items-center justify-center gap-1 rounded-golden-md px-golden-1 text-golden-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 sm:min-h-[38px]",
+                          "inline-flex min-h-[44px] items-center justify-center rounded-golden-md px-golden-1 text-golden-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 sm:min-h-[38px]",
                           active
                             ? "bg-primary text-white"
                             : "bg-white text-zinc-600 ring-1 ring-inset ring-zinc-200 hover:bg-zinc-100",
                         ].join(" ")}
                       >
-                        <span aria-hidden="true">{SLOT_EMOJI[s]}</span>
-                        {t.slots[s]}
+                        {slotLabel(s, mp)}
                       </button>
                     );
                   })}
@@ -387,6 +406,8 @@ function RepeatDays({
 }) {
   const { dict } = useDictionary();
   const t = dict.nutrition.mealPlanModal;
+  const cal = dict.calendar;
+  const mp = dict.nutrition.mealPlanner;
   // Default selection: weekdays (Mon–Fri), plus the base row's own day.
   const [selected, setSelected] = useState<Set<PlanDay>>(() => {
     const initial = new Set<PlanDay>(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]);
@@ -406,7 +427,7 @@ function RepeatDays({
   return (
     <div className="mt-golden-2 rounded-golden-md border border-zinc-200 bg-white p-golden-2">
       <p className="mb-golden-1 text-golden-xs text-zinc-500">
-        {t.repeatDaysApplies.replace("{slot}", t.slots[baseRow.slot]).replace("{servings}", String(baseRow.servings))}
+        {t.repeatDaysApplies.replace("{slot}", slotLabel(baseRow.slot, mp)).replace("{servings}", String(baseRow.servings))}
       </p>
       <div className="grid grid-cols-2 gap-1 sm:grid-cols-4">
         {PLAN_DAYS.map((day) => {
@@ -425,7 +446,7 @@ function RepeatDays({
                 onChange={() => toggle(day)}
                 className="h-3.5 w-3.5 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-400"
               />
-              {day.slice(0, 3)}
+              {dayShort(day, cal)}
             </label>
           );
         })}

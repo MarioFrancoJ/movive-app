@@ -14,8 +14,18 @@ import { createClient } from "@/lib/supabase/client";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export const MEAL_SLOTS = ["Breakfast", "Lunch", "Dinner", "Snack"] as const;
+// Canonical meal slots — the SAME set the Meal Planner uses, in chronological
+// order. This is the single source of truth for slots across the app (modal,
+// recipe detail, assignment save). Legacy plan_data may still contain a bare
+// "Snack" key from older versions; readers normalize it to "Snack PM" (see the
+// Meal Planner's normalizeDaySlots), and no migration is required because
+// plan_data is schemaless JSONB.
+export const MEAL_SLOTS = ["Breakfast", "Snack AM", "Lunch", "Snack PM", "Dinner"] as const;
 export type MealSlot = (typeof MEAL_SLOTS)[number];
+
+// The meal_logs.meal_type column uses a 4-value domain (no AM/PM split). Plan
+// slots map to it when logging a meal: "Snack AM"/"Snack PM" → "Snack".
+export type MealLogType = "Breakfast" | "Lunch" | "Dinner" | "Snack";
 
 export const PLAN_DAYS = [
   "Monday",
@@ -132,7 +142,7 @@ function todayKey(): string {
 function emptyPlan(): PlanData {
   const plan: PlanData = {};
   for (const day of PLAN_DAYS) {
-    plan[day] = { Breakfast: null, Lunch: null, Dinner: null, Snack: null };
+    plan[day] = { "Breakfast": null, "Snack AM": null, "Lunch": null, "Snack PM": null, "Dinner": null };
   }
   return plan;
 }
@@ -142,16 +152,18 @@ function emptyPlan(): PlanData {
  * meal_type when present; otherwise falls back to "Snack" (the neutral slot).
  */
 export function defaultSlotForRecipe(mealType?: string | null): MealSlot {
+  // Legacy value "Snack" (from older data / recipe meal_type) maps to "Snack PM".
+  if (mealType === "Snack") return "Snack PM";
   if (mealType && (MEAL_SLOTS as readonly string[]).includes(mealType)) {
     return mealType as MealSlot;
   }
-  return "Snack";
+  return "Snack PM";
 }
 
 // Keyword hints for slot inference. Matched (accent-insensitive, lowercased)
 // against the recipe name + ingredient names. Order of checks below decides
 // precedence when a recipe matches more than one group.
-const SLOT_KEYWORDS: Record<Exclude<MealSlot, "Snack">, string[]> = {
+const SLOT_KEYWORDS: Record<"Breakfast" | "Lunch" | "Dinner", string[]> = {
   Breakfast: [
     "egg", "huevo", "oat", "avena", "oatmeal", "pancake", "panqueque", "toast",
     "tostada", "pan", "bread", "yogur", "yogurt", "yoghurt", "granola",
@@ -185,7 +197,8 @@ export function suggestSlotForRecipe(input: {
   name?: string | null;
   ingredients?: { name?: string | null }[] | null;
 }): MealSlot {
-  // 1. Explicit meal_type wins.
+  // 1. Explicit meal_type wins (legacy "Snack" maps to "Snack PM").
+  if (input.mealType === "Snack") return "Snack PM";
   if (input.mealType && (MEAL_SLOTS as readonly string[]).includes(input.mealType)) {
     return input.mealType as MealSlot;
   }
@@ -202,13 +215,13 @@ export function suggestSlotForRecipe(input: {
     new RegExp(`\\b${kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "i").test(haystack);
 
   // Check in a sensible precedence order (Breakfast → Lunch → Dinner).
-  const order: Exclude<MealSlot, "Snack">[] = ["Breakfast", "Lunch", "Dinner"];
+  const order: ("Breakfast" | "Lunch" | "Dinner")[] = ["Breakfast", "Lunch", "Dinner"];
   for (const slot of order) {
     if (SLOT_KEYWORDS[slot].some(matches)) return slot;
   }
 
   // 3. Neutral fallback.
-  return "Snack";
+  return "Snack PM";
 }
 
 // ── 1. Recipe → Meal Plan ─────────────────────────────────────────────────────
@@ -239,7 +252,7 @@ export async function addRecipeToMealPlan(
   if (loadErr) return { ok: false, error: loadErr.message };
 
   const plan: PlanData = (existing?.plan_data as PlanData) ?? emptyPlan();
-  if (!plan[day]) plan[day] = { Breakfast: null, Lunch: null, Dinner: null, Snack: null };
+  if (!plan[day]) plan[day] = { "Breakfast": null, "Snack AM": null, "Lunch": null, "Snack PM": null, "Dinner": null };
   plan[day][opts.slot] = recipeId;
 
   if (existing?.id) {
@@ -329,7 +342,7 @@ export async function saveMealPlanAssignments(
 
   for (const a of requested.values()) {
     if (!plan[a.day]) {
-      plan[a.day] = { Breakfast: null, Lunch: null, Dinner: null, Snack: null };
+      plan[a.day] = { "Breakfast": null, "Snack AM": null, "Lunch": null, "Snack PM": null, "Dinner": null };
     }
     const current = readSlot(plan[a.day][a.slot]);
     if (current?.recipeId === recipeId) {
@@ -386,11 +399,16 @@ export async function logMealFromRecipe(
 
   const servings = opts.servings && opts.servings > 0 ? opts.servings : 1;
   const slot = opts.slot ?? defaultSlotForRecipe(recipe.meal_type);
+  // meal_logs.meal_type uses the 4-value domain (Breakfast/Lunch/Dinner/Snack).
+  // Collapse the plan's AM/PM snack slots to "Snack" for that column — no schema
+  // change; meal-plan slots remain 5 in plan_data.
+  const mealLogType: MealLogType =
+    slot === "Snack AM" || slot === "Snack PM" ? "Snack" : slot;
 
   const { error } = await supabase.from("meal_logs").insert({
     user_id: user.id,
     recipe_id: recipe.id,
-    meal_type: slot,
+    meal_type: mealLogType,
     name: recipe.name,
     calories: Math.round((recipe.calories || 0) * servings),
     protein: Math.round((recipe.protein || 0) * servings),

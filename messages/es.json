@@ -551,22 +551,7 @@
       "warningAllDuplicate": "Esta receta ya está programada en {n} de esos espacios. No se agregó nada nuevo.",
       "errorSave": "No se pudo guardar el plan de comidas.",
       "toastAdded": "Receta agregada a {n} espacio{plural} del plan",
-      "toastSkippedSuffix": " · {n} omitido(s) (ya programado)",
-      "slots": {
-        "Breakfast": "Desayuno",
-        "Lunch": "Almuerzo",
-        "Dinner": "Cena",
-        "Snack": "Snack"
-      },
-      "days": {
-        "Monday": "Lunes",
-        "Tuesday": "Martes",
-        "Wednesday": "Miércoles",
-        "Thursday": "Jueves",
-        "Friday": "Viernes",
-        "Saturday": "Sábado",
-        "Sunday": "Domingo"
-      }
+      "toastSkippedSuffix": " · {n} omitido(s) (ya programado)"
     },
     "mealPlanner": {
       "loading": "Cargando plan de comidas...",
