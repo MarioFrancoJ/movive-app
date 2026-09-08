@@ -44,6 +44,10 @@ interface IngredientOption {
   protein_per_100g: number;
   carbs_per_100g: number;
   fat_per_100g: number;
+  // Grams that one `unit` of this ingredient weighs (for non-gram units:
+  // 'unit', 'ml', 'slice', 'scoop'…). Null for gram-based ingredients
+  // (unit === 'g'), where it's unused.
+  unit_weight: number | null;
 }
 
 const RECIPE_GOALS: RecipeGoal[] = ["Fat Loss", "Muscle Gain", "Maintenance"];
@@ -71,21 +75,45 @@ function resolveIngredient(
   return catalog.find((i) => i.name.trim().toLowerCase() === key);
 }
 
+// Convert a recipe ingredient's quantity to grams. Macros are stored per 100 g,
+// so a non-gram unit ('unit', 'ml', 'slice', 'scoop'…) must be scaled by
+// unit_weight before applying them:
+//   unit === 'g'  → effectiveGrams = quantity
+//   unit !== 'g'  → effectiveGrams = quantity × unit_weight
+// Returns null when the ingredient is measured in a non-gram unit but has no
+// unit_weight configured — the caller warns instead of miscalculating.
+function effectiveGramsFor(ri: RecipeIngredient, ing: IngredientOption): number | null {
+  if (ing.unit === "g") return ri.quantity;
+  const w = ing.unit_weight;
+  if (w == null || w <= 0) return null; // not configured → cannot convert
+  return ri.quantity * w;
+}
+
 function calculateNutrition(
   ings: RecipeIngredient[],
   catalog: IngredientOption[]
-): { calories: number; protein: number; carbs: number; fat: number } {
+): {
+  calories: number; protein: number; carbs: number; fat: number;
+  // Ingredient names measured in a non-gram unit without unit_weight set.
+  missingConversion: string[];
+} {
   let cal = 0, pro = 0, car = 0, fa = 0;
+  const missingConversion: string[] = [];
   for (const ri of ings) {
     const ing = resolveIngredient(ri, catalog);
     if (!ing) continue;
-    const factor = ri.quantity / 100;
+    const grams = effectiveGramsFor(ri, ing);
+    if (grams == null) { missingConversion.push(ri.name); continue; }
+    const factor = grams / 100;
     cal += ing.calories_per_100g * factor;
     pro += ing.protein_per_100g * factor;
     car += ing.carbs_per_100g * factor;
     fa += ing.fat_per_100g * factor;
   }
-  return { calories: Math.round(cal), protein: Math.round(pro), carbs: Math.round(car), fat: Math.round(fa) };
+  return {
+    calories: Math.round(cal), protein: Math.round(pro),
+    carbs: Math.round(car), fat: Math.round(fa), missingConversion,
+  };
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -123,7 +151,7 @@ export default function AdminRecipesPage() {
       // Load ingredient options
       const { data: ingData } = await supabase
         .from("ingredients")
-        .select("id, name, unit, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g")
+        .select("id, name, unit, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, unit_weight")
         .order("name");
       if (ingData) setIngredientOptions(ingData as IngredientOption[]);
 
@@ -371,7 +399,11 @@ function RecipeForm({
   // placeholder (which makes every macro round to ~0).
   function handleAutoFillNutrition() {
     const unresolved = recipeIngredients.filter((ri) => !resolveIngredient(ri, ingredientOptions)).map((ri) => ri.name);
-    const placeholderQty = recipeIngredients.filter((ri) => Number(ri.quantity) <= 1).map((ri) => ri.name);
+    // Placeholder check only for gram-based ingredients — for unit-based ones a
+    // quantity of 1–2 (e.g. 2 eggs) is perfectly valid.
+    const placeholderQty = recipeIngredients
+      .filter((ri) => { const ing = resolveIngredient(ri, ingredientOptions); return ing?.unit === "g" && Number(ri.quantity) <= 1; })
+      .map((ri) => ri.name);
     const n = calculateNutrition(recipeIngredients, ingredientOptions);
 
     if (unresolved.length === recipeIngredients.length) {
@@ -387,6 +419,7 @@ function RecipeForm({
 
     const notes: string[] = [];
     if (unresolved.length > 0) notes.push(`Not in catalog (excluded): ${unresolved.join(", ")}`);
+    if (n.missingConversion.length > 0) notes.push(`Measured in units but missing unit weight (excluded — set unit_weight on the ingredient): ${n.missingConversion.join(", ")}`);
     if (placeholderQty.length > 0) notes.push(`Quantity is ≤1 g (looks like a placeholder — set the real grams): ${placeholderQty.join(", ")}`);
     if (n.calories === 0 && n.protein === 0 && n.carbs === 0 && n.fat === 0) notes.push("Result is 0 — check the quantities above.");
     setFormNotice(notes.join(" · "));

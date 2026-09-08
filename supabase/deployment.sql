@@ -211,6 +211,7 @@ CREATE TABLE ingredients (
   carbs_per_100g    DECIMAL(6,1) NOT NULL,
   fat_per_100g      DECIMAL(6,1) NOT NULL,
   unit              VARCHAR(20) NOT NULL DEFAULT 'g',
+  unit_weight       DECIMAL(7,2),
   created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -1973,6 +1974,12 @@ VALUES
   ('a0000001-0000-0000-0000-000000000049', 'Chocolate Oscuro 70%', 'Other', 598, 7.8, 46.0, 43.0, 'g'),
   ('a0000001-0000-0000-0000-000000000050', 'Linaza Molida', 'Other', 534, 18.0, 29.0, 42.0, 'g')
 ON CONFLICT (id) DO NOTHING;
+
+-- unit_weight (grams per unit) for non-gram ingredients (unit/volume → grams). See migration 00013.
+UPDATE ingredients SET unit_weight = 50   WHERE id = 'a0000001-0000-0000-0000-000000000002'; -- Huevo Entero (unit)
+UPDATE ingredients SET unit_weight = 0.91 WHERE id = 'a0000001-0000-0000-0000-000000000020'; -- Aceite de Oliva (ml)
+UPDATE ingredients SET unit_weight = 1.03 WHERE id = 'a0000001-0000-0000-0000-000000000041'; -- Leche Entera (ml)
+UPDATE ingredients SET unit_weight = 1.00 WHERE unit = 'ml' AND unit_weight IS NULL;         -- other water-like liquids
 
 -- ════════════════════════════════════════════════════════════════════════════════
 -- 2. EXERCISES (50 items)

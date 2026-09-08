@@ -316,6 +316,7 @@ export type Database = {
           carbs_per_100g: number
           fat_per_100g: number
           unit: string
+          unit_weight: number | null
           created_at: string
         }
         Insert: {
@@ -327,6 +328,7 @@ export type Database = {
           carbs_per_100g: number
           fat_per_100g: number
           unit?: string
+          unit_weight?: number | null
           created_at?: string
         }
         Update: {
@@ -338,6 +340,7 @@ export type Database = {
           carbs_per_100g?: number
           fat_per_100g?: number
           unit?: string
+          unit_weight?: number | null
           created_at?: string
         }
         Relationships: []
