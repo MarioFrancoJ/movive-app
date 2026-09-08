@@ -65,6 +65,17 @@ export default function AdminRecipesPage() {
   const [prepTime, setPrepTime] = useState("");
   const [instructionsText, setInstructionsText] = useState("");
   const [recipeIngredients, setRecipeIngredients] = useState<RecipeIngredient[]>([]);
+  // Nutrition is now editable state (kept as strings so inputs can be cleared
+  // while typing). Persisted from here — no longer silently recomputed from
+  // ingredients on save, which is what wiped macros when ingredient names did
+  // not match the catalog. See calculateNutrition / handleAutoFillNutrition.
+  const [calories, setCalories] = useState("");
+  const [protein, setProtein] = useState("");
+  const [carbs, setCarbs] = useState("");
+  const [fat, setFat] = useState("");
+  // One-shot acknowledgement so an intentional all-zero save is possible after
+  // an explicit warning (Parte 3 requirement).
+  const [nutritionWarningAck, setNutritionWarningAck] = useState(false);
   const [formError, setFormError] = useState("");
   const [addIngId, setAddIngId] = useState("");
   const [addIngQty, setAddIngQty] = useState("");
@@ -109,6 +120,7 @@ export default function AdminRecipesPage() {
   function resetForm() {
     setName(""); setDescription(""); setGoal("Maintenance"); setServings("1");
     setPrepTime(""); setInstructionsText(""); setRecipeIngredients([]);
+    setCalories(""); setProtein(""); setCarbs(""); setFat(""); setNutritionWarningAck(false);
     setFormError(""); setEditId(null); setShowForm(false); setAddIngId(""); setAddIngQty("");
   }
 
@@ -116,6 +128,9 @@ export default function AdminRecipesPage() {
     setName(recipe.name); setDescription(recipe.description); setGoal(recipe.goal);
     setServings(recipe.servings.toString()); setPrepTime(recipe.prep_time.toString());
     setRecipeIngredients([...recipe.ingredients]);
+    // Pre-fill the current nutrition so editing anything else never blanks it.
+    setCalories(recipe.calories.toString()); setProtein(recipe.protein.toString());
+    setCarbs(recipe.carbs.toString()); setFat(recipe.fat.toString()); setNutritionWarningAck(false);
     setEditId(recipe.id); setShowForm(true);
     // Load instructions
     const supabase = createClient();
@@ -158,14 +173,47 @@ export default function AdminRecipesPage() {
     return { calories: Math.round(cal), protein: Math.round(pro), carbs: Math.round(car), fat: Math.round(fa) };
   }
 
+  // Assisted auto-fill: recompute macros from the ingredient catalog and write
+  // them INTO the editable fields — only when the recompute is meaningful.
+  // Never silently overwrites existing values with 0 (the original bug); if the
+  // recompute yields all-zero because ingredient names don't match the catalog,
+  // we warn instead of clobbering.
+  function handleAutoFillNutrition() {
+    const n = calculateNutrition(recipeIngredients);
+    if (n.calories === 0 && n.protein === 0 && n.carbs === 0 && n.fat === 0) {
+      setFormError("Cannot auto-calculate: none of the ingredients match the catalog. Enter macros manually.");
+      return;
+    }
+    setCalories(String(n.calories)); setProtein(String(n.protein));
+    setCarbs(String(n.carbs)); setFat(String(n.fat));
+    setFormError("");
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!name.trim()) { setFormError("Name is required."); return; }
     if (recipeIngredients.length === 0) { setFormError("Add at least one ingredient."); return; }
 
+    // Persist the macros the user sees in the form (not a forced recompute).
+    // Empty string → 0 only intentionally; the guard below stops accidental
+    // all-zero saves so editing a description can never blank the nutrition.
+    const nutrition = {
+      calories: Math.max(0, Math.round(Number(calories) || 0)),
+      protein: Math.max(0, Math.round(Number(protein) || 0)),
+      carbs: Math.max(0, Math.round(Number(carbs) || 0)),
+      fat: Math.max(0, Math.round(Number(fat) || 0)),
+    };
+    const macrosEmpty =
+      nutrition.calories === 0 && nutrition.protein === 0 &&
+      nutrition.carbs === 0 && nutrition.fat === 0;
+    if (macrosEmpty && !nutritionWarningAck) {
+      setNutritionWarningAck(true);
+      setFormError("This recipe has no nutrition info (all macros are 0). Click Save again to confirm, or enter values / use Auto-calculate.");
+      return;
+    }
+
     setSaving(true);
     const supabase = createClient();
-    const nutrition = calculateNutrition(recipeIngredients);
     const instructions = instructionsText.split("\n").filter((l) => l.trim());
 
     try {
@@ -251,6 +299,30 @@ export default function AdminRecipesPage() {
             <div className="sm:col-span-2"><Input id="rec-desc" type="text" label="Description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Short description" /></div>
           </div>
 
+          {/* Nutrition — always-visible editable fields. Pre-filled with the
+              recipe's current macros on edit; persisted as-is on save so editing
+              anything else never blanks them. */}
+          <div className="mt-5 rounded-lg border border-zinc-100 bg-zinc-50 p-4">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs font-semibold uppercase tracking-widest text-zinc-400">Nutrition (per serving)</p>
+              <button
+                type="button"
+                onClick={handleAutoFillNutrition}
+                disabled={recipeIngredients.length === 0}
+                className="rounded-golden-md border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 disabled:opacity-40"
+                title="Recalculate macros from the ingredient catalog"
+              >
+                Auto-calculate from ingredients
+              </button>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <Input id="rec-cal" type="number" label="Calories (kcal)" value={calories} min={0} onChange={(e) => { setCalories(e.target.value); setNutritionWarningAck(false); setFormError(""); }} placeholder="0" />
+              <Input id="rec-pro" type="number" label="Protein (g)" value={protein} min={0} step={0.1} onChange={(e) => { setProtein(e.target.value); setNutritionWarningAck(false); setFormError(""); }} placeholder="0" />
+              <Input id="rec-carb" type="number" label="Carbs (g)" value={carbs} min={0} step={0.1} onChange={(e) => { setCarbs(e.target.value); setNutritionWarningAck(false); setFormError(""); }} placeholder="0" />
+              <Input id="rec-fat" type="number" label="Fat (g)" value={fat} min={0} step={0.1} onChange={(e) => { setFat(e.target.value); setNutritionWarningAck(false); setFormError(""); }} placeholder="0" />
+            </div>
+          </div>
+
           {/* Ingredients */}
           <div className="mt-5 rounded-lg border border-zinc-100 bg-zinc-50 p-4">
             <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-zinc-400">Ingredients</p>
@@ -272,11 +344,14 @@ export default function AdminRecipesPage() {
               </div>
             )}
             {recipeIngredients.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-4 border-t border-zinc-200 pt-3 text-xs">
-                <span className="text-zinc-600"><strong className="text-zinc-900">{previewNutrition.calories}</strong> kcal</span>
-                <span className="text-zinc-600"><strong className="text-blue-600">{previewNutrition.protein}g</strong> protein</span>
-                <span className="text-zinc-600"><strong className="text-amber-600">{previewNutrition.carbs}g</strong> carbs</span>
-                <span className="text-zinc-600"><strong className="text-success">{previewNutrition.fat}g</strong> fat</span>
+              <div className="mt-3 border-t border-zinc-200 pt-3">
+                <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-zinc-400">Calculated from catalog (reference only — use Auto-calculate to apply)</p>
+                <div className="flex flex-wrap gap-4 text-xs">
+                  <span className="text-zinc-600"><strong className="text-zinc-900">{previewNutrition.calories}</strong> kcal</span>
+                  <span className="text-zinc-600"><strong className="text-blue-600">{previewNutrition.protein}g</strong> protein</span>
+                  <span className="text-zinc-600"><strong className="text-amber-600">{previewNutrition.carbs}g</strong> carbs</span>
+                  <span className="text-zinc-600"><strong className="text-success">{previewNutrition.fat}g</strong> fat</span>
+                </div>
               </div>
             )}
           </div>
