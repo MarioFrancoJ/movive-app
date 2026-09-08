@@ -137,17 +137,9 @@ export default function LoginForm({ redirectTo = "/dashboard", callbackError }: 
 
           {/* Password */}
           <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <label htmlFor="password" className="text-sm font-medium text-zinc-700">
-                {t.fieldPassword}
-              </label>
-              <Link
-                href="/forgot-password"
-                className="text-xs font-medium text-zinc-500 transition-colors hover:text-zinc-900"
-              >
-                {t.forgotPassword}
-              </Link>
-            </div>
+            <label htmlFor="password" className="text-sm font-medium text-zinc-700">
+              {t.fieldPassword}
+            </label>
             <Input
               id="password"
               type="password"
@@ -156,6 +148,13 @@ export default function LoginForm({ redirectTo = "/dashboard", callbackError }: 
               value={password}
               onChange={(e) => { setPassword(e.target.value); if (error) setError(""); }}
             />
+            {/* Forgot password — moved below the field, small top margin */}
+            <Link
+              href="/forgot-password"
+              className="mt-2 text-xs font-medium text-zinc-500 transition-colors hover:text-zinc-900"
+            >
+              {t.forgotPassword}
+            </Link>
           </div>
 
           {/* Sign in button */}
