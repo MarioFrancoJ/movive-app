@@ -50,6 +50,9 @@ CREATE INDEX IF NOT EXISTS idx_shopping_list_items_user
   ON shopping_list_items(user_id);
 CREATE INDEX IF NOT EXISTS idx_shopping_list_items_user_cat
   ON shopping_list_items(user_id, category);
+-- checked is a primary filter for the shopping list UI (bought vs pending).
+CREATE INDEX IF NOT EXISTS idx_shopping_list_items_user_checked
+  ON shopping_list_items(user_id, checked);
 
 -- updated_at auto-touch (reuses the project's shared trigger function).
 DROP TRIGGER IF EXISTS shopping_list_items_updated_at ON shopping_list_items;

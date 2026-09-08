@@ -448,8 +448,9 @@ CREATE TABLE shopping_list_items (
   updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_shopping_list_items_user     ON shopping_list_items(user_id);
-CREATE INDEX idx_shopping_list_items_user_cat ON shopping_list_items(user_id, category);
+CREATE INDEX idx_shopping_list_items_user         ON shopping_list_items(user_id);
+CREATE INDEX idx_shopping_list_items_user_cat     ON shopping_list_items(user_id, category);
+CREATE INDEX idx_shopping_list_items_user_checked ON shopping_list_items(user_id, checked);
 
 CREATE TRIGGER shopping_list_items_updated_at
   BEFORE UPDATE ON shopping_list_items
