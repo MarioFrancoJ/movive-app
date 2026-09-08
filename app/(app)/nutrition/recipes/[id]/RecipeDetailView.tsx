@@ -284,19 +284,36 @@ export default function RecipeDetailView({ recipe }: { recipe: Recipe }) {
 
           {/* Actions — Meal + Servings + short buttons */}
           <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 shadow-sm">
-            <div className="flex items-end gap-3">
-              <div className="w-40">
-                <label htmlFor="meal-slot" className="mb-1 block text-golden-xs font-medium text-zinc-600">{t.mealLabel}</label>
-                <select
-                  id="meal-slot"
-                  value={slot}
-                  onChange={(e) => setSlot(e.target.value as MealSlot)}
-                  className="h-9 w-full rounded-lg border border-zinc-200 bg-white px-3 text-golden-sm text-zinc-700 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="min-w-0 flex-1">
+                <span id="meal-slot-label" className="mb-1 block text-golden-xs font-medium text-zinc-600">{t.mealLabel}</span>
+                <div
+                  role="radiogroup"
+                  aria-labelledby="meal-slot-label"
+                  className="flex flex-wrap gap-1.5"
                 >
-                  {MEAL_SLOTS.map((m) => (
-                    <option key={m} value={m}>{mealTypeLabel(m, nt)}</option>
-                  ))}
-                </select>
+                  {MEAL_SLOTS.map((m) => {
+                    const active = slot === m;
+                    return (
+                      <button
+                        key={m}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        onClick={() => setSlot(m)}
+                        className={[
+                          "inline-flex min-h-[36px] items-center rounded-full border px-3 py-1 text-golden-xs font-medium transition-colors",
+                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
+                          active
+                            ? "border-primary bg-primary text-white shadow-sm"
+                            : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-400",
+                        ].join(" ")}
+                      >
+                        {mealTypeLabel(m, nt)}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
               <div className="w-20">
                 <label htmlFor="servings" className="mb-1 block text-golden-xs font-medium text-zinc-600">{t.servingsLabel}</label>
