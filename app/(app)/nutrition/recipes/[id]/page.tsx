@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import PageLoader from "@/components/ui/PageLoader";
@@ -296,11 +297,18 @@ export default function RecipeDetailPage() {
             handles the crop) so it never shrinks narrower than the info cards.
             Using aspect-ratio + max-height would force the box to shrink its WIDTH
             to preserve the ratio once the capped height is hit — that was the bug. */}
-        <div className="w-full overflow-hidden rounded-2xl bg-zinc-100 h-64 xl:h-full xl:max-h-none xl:self-stretch xl:min-h-[320px]">
+        <div className="relative w-full overflow-hidden rounded-2xl bg-zinc-100 h-64 xl:h-full xl:max-h-none xl:self-stretch xl:min-h-[320px]">
           {recipe.imageUrl ? (
             // object-cover fills the column edge-to-edge (no empty box), centered.
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={recipe.imageUrl} alt={recipe.name} className="h-full w-full object-cover object-center" />
+            // Hero image → priority (it's the LCP for this route).
+            <Image
+              src={recipe.imageUrl}
+              alt={recipe.name}
+              fill
+              priority
+              sizes="(min-width: 1280px) 30vw, 100vw"
+              className="object-cover object-center"
+            />
           ) : (
             <div className="flex h-full min-h-[180px] w-full items-center justify-center">
               <div className="flex flex-col items-center gap-2 text-zinc-400">
