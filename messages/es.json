@@ -530,6 +530,44 @@
       "toastLogged": "Registraste {n} porciones de \"{name}\" ({cal} kcal).",
       "toastLogError": "No se pudo registrar la comida."
     },
+    "mealPlanModal": {
+      "titleCreate": "Agregar receta al plan de comidas",
+      "assignments": "Asignaciones",
+      "rowsCount": "{n} fila{plural}",
+      "day": "Día",
+      "mealSlot": "Tipo de comida",
+      "servings": "Porciones",
+      "removeAssignment": "Quitar asignación",
+      "decreaseServings": "Menos porciones",
+      "increaseServings": "Más porciones",
+      "repeatDaysShow": "Repetir días",
+      "repeatDaysApplies": "Aplica {slot} · {servings}x a cada día marcado.",
+      "repeatApply": "Aplicar a {n} día{plural}",
+      "addAssignment": "+ Agregar asignación",
+      "cancel": "Cancelar",
+      "saving": "Guardando…",
+      "save": "Guardar {n} asignación{plural}",
+      "close": "Cerrar",
+      "warningAllDuplicate": "Esta receta ya está programada en {n} de esos espacios. No se agregó nada nuevo.",
+      "errorSave": "No se pudo guardar el plan de comidas.",
+      "toastAdded": "Receta agregada a {n} espacio{plural} del plan",
+      "toastSkippedSuffix": " · {n} omitido(s) (ya programado)",
+      "slots": {
+        "Breakfast": "Desayuno",
+        "Lunch": "Almuerzo",
+        "Dinner": "Cena",
+        "Snack": "Snack"
+      },
+      "days": {
+        "Monday": "Lunes",
+        "Tuesday": "Martes",
+        "Wednesday": "Miércoles",
+        "Thursday": "Jueves",
+        "Friday": "Viernes",
+        "Saturday": "Sábado",
+        "Sunday": "Domingo"
+      }
+    },
     "mealPlanner": {
       "loading": "Cargando plan de comidas...",
       "title": "Plan de Comidas",
@@ -1080,7 +1118,48 @@
     "toastUpdateError": "Error al actualizar el evento: {msg}",
     "toastUpdated": "Evento actualizado correctamente",
     "toastDeleteError": "Error al eliminar el evento: {msg}",
-    "toastDeleted": "Evento eliminado"
+    "toastDeleted": "Evento eliminado",
+    "eventModal": {
+      "titleCreate": "Nuevo evento",
+      "titleEdit": "Editar evento",
+      "close": "Cerrar",
+      "fieldTitle": "Título",
+      "fieldTitlePlaceholder": "Ej.: Día de piernas, Preparación de comidas",
+      "fieldDescription": "Descripción",
+      "fieldDescriptionPlaceholder": "Detalles opcionales...",
+      "fieldType": "Tipo",
+      "fieldColor": "Color",
+      "allDay": "Evento de todo el día",
+      "startDate": "Fecha de inicio",
+      "startTime": "Hora de inicio",
+      "endDate": "Fecha de fin",
+      "endTime": "Hora de fin",
+      "cancel": "Cancelar",
+      "saving": "Guardando...",
+      "create": "Crear evento",
+      "saveChanges": "Guardar cambios",
+      "delete": "Eliminar",
+      "confirmDelete": "Confirmar eliminación",
+      "deleting": "Eliminando...",
+      "types": {
+        "custom": "Personalizado",
+        "workout": "Entrenamiento",
+        "meal": "Comida",
+        "measurement": "Medición",
+        "goal": "Objetivo",
+        "water": "Agua",
+        "supplements": "Suplementos"
+      },
+      "colors": {
+        "blue": "Azul",
+        "green": "Verde",
+        "amber": "Ámbar",
+        "red": "Rojo",
+        "purple": "Morado",
+        "pink": "Rosa",
+        "gray": "Gris"
+      }
+    }
   },
   "ai": {
     "dashboardTitle": "Asistente de IA",

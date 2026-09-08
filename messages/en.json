@@ -530,6 +530,44 @@
       "toastLogged": "Logged {n} servings of \"{name}\" ({cal} kcal).",
       "toastLogError": "Could not log meal."
     },
+    "mealPlanModal": {
+      "titleCreate": "Add Recipe to Meal Plan",
+      "assignments": "Assignments",
+      "rowsCount": "{n} row{plural}",
+      "day": "Day",
+      "mealSlot": "Meal slot",
+      "servings": "Servings",
+      "removeAssignment": "Remove assignment",
+      "decreaseServings": "Decrease servings",
+      "increaseServings": "Increase servings",
+      "repeatDaysShow": "Repeat Days",
+      "repeatDaysApplies": "Applies {slot} · {servings}x to each checked day.",
+      "repeatApply": "Apply to {n} day{plural}",
+      "addAssignment": "+ Add Assignment",
+      "cancel": "Cancel",
+      "saving": "Saving…",
+      "save": "Save {n} assignment{plural}",
+      "close": "Close",
+      "warningAllDuplicate": "This recipe is already scheduled in {n} of those slots. Nothing new was added.",
+      "errorSave": "Could not save the meal plan.",
+      "toastAdded": "Recipe added to {n} meal plan slot{plural}",
+      "toastSkippedSuffix": " · {n} skipped (already scheduled)",
+      "slots": {
+        "Breakfast": "Breakfast",
+        "Lunch": "Lunch",
+        "Dinner": "Dinner",
+        "Snack": "Snack"
+      },
+      "days": {
+        "Monday": "Monday",
+        "Tuesday": "Tuesday",
+        "Wednesday": "Wednesday",
+        "Thursday": "Thursday",
+        "Friday": "Friday",
+        "Saturday": "Saturday",
+        "Sunday": "Sunday"
+      }
+    },
     "mealPlanner": {
       "loading": "Loading meal planner...",
       "title": "Meal Planner",
@@ -1080,7 +1118,48 @@
     "toastUpdateError": "Error updating event: {msg}",
     "toastUpdated": "Event updated successfully",
     "toastDeleteError": "Error deleting event: {msg}",
-    "toastDeleted": "Event deleted"
+    "toastDeleted": "Event deleted",
+    "eventModal": {
+      "titleCreate": "New Event",
+      "titleEdit": "Edit Event",
+      "close": "Close",
+      "fieldTitle": "Title",
+      "fieldTitlePlaceholder": "e.g., Leg Day, Meal Prep Sunday",
+      "fieldDescription": "Description",
+      "fieldDescriptionPlaceholder": "Optional details...",
+      "fieldType": "Type",
+      "fieldColor": "Color",
+      "allDay": "All day event",
+      "startDate": "Start Date",
+      "startTime": "Start Time",
+      "endDate": "End Date",
+      "endTime": "End Time",
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "create": "Create Event",
+      "saveChanges": "Save Changes",
+      "delete": "Delete",
+      "confirmDelete": "Confirm Delete",
+      "deleting": "Deleting...",
+      "types": {
+        "custom": "Custom",
+        "workout": "Workout",
+        "meal": "Meal",
+        "measurement": "Measurement",
+        "goal": "Goal",
+        "water": "Water",
+        "supplements": "Supplements"
+      },
+      "colors": {
+        "blue": "Blue",
+        "green": "Green",
+        "amber": "Amber",
+        "red": "Red",
+        "purple": "Purple",
+        "pink": "Pink",
+        "gray": "Gray"
+      }
+    }
   },
   "ai": {
     "dashboardTitle": "AI Assistant",

@@ -83,6 +83,8 @@ const TYPE_ICONS: Record<string, string> = {
   meal: "🍽️",
   measurement: "📏",
   goal: "🎯",
+  water: "💧",
+  supplements: "💊",
 };
 
 // ── Component ─────────────────────────────────────────────────────────────────
