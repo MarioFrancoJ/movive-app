@@ -94,7 +94,7 @@ function RecipeCard({ recipe, onAddToPlan, t, nt }: { recipe: Recipe; onAddToPla
     e.stopPropagation();
     if (busy) return;
     setBusy("shop");
-    const res = await addRecipeIngredientsToShoppingList(recipe.ingredients);
+    const res = await addRecipeIngredientsToShoppingList(recipe.ingredients, { sourceRecipeId: recipe.id });
     setBusy(null);
     if (res.ok) success(t.toastAddedIngredients.replace("{n}", String(res.addedCount)));
     else toastError(res.error || t.toastAddError);

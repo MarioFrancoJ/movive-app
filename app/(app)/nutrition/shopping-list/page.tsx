@@ -1,18 +1,30 @@
 "use client";
 
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect, useMemo, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 import PageLoader from "@/components/ui/PageLoader";
-import { readSlot, type PlanSlotValue } from "@/lib/nutrition";
+import { useToast } from "@/components/ui/Toast";
+import {
+  readSlot,
+  type PlanSlotValue,
+  SHOPPING_CATEGORIES,
+  type ShoppingCategory,
+  type ShoppingListItemRow,
+  type MergeIngredientInput,
+  mapIngredientCategory,
+  mergeRows,
+  mergeTwoRows,
+  loadShoppingListItems,
+} from "@/lib/nutrition";
 import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// Common units offered in the add form + inline editor.
+const UNIT_OPTIONS = ["g", "kg", "ml", "l", "unit", "slice", "scoop", "cup", "tbsp", "tsp", ""] as const;
 
-interface ShoppingItem {
-  id: string;
-  name: string;
-  quantity: string;
-  checked: boolean;
+// Format a row's quantity for display: "500 g", "2 unit", or "—" when empty.
+function formatQty(qty: number | null, unit: string): string {
+  if (qty == null) return "—";
+  return unit ? `${qty} ${unit}` : String(qty);
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -20,84 +32,199 @@ interface ShoppingItem {
 export default function ShoppingListPage() {
   const { dict } = useDictionary();
   const t = dict.nutrition.shoppingList;
-  const [items, setItems] = useState<ShoppingItem[]>([]);
-  const [listId, setListId] = useState<string | null>(null);
-  const [name, setName] = useState("");
-  const [quantity, setQuantity] = useState("");
-  const [error, setError] = useState("");
+  const { success, info, error: toastError } = useToast();
+
+  const [rows, setRows] = useState<ShoppingListItemRow[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [generated, setGenerated] = useState(false);
+  const [error, setError] = useState("");
+
+  // Add form
+  const [name, setName] = useState("");
+  const [qty, setQty] = useState("");
+  const [unit, setUnit] = useState("g");
+  const [category, setCategory] = useState<ShoppingCategory>("Other");
+
+  // Inline edit
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editQty, setEditQty] = useState("");
+  const [editUnit, setEditUnit] = useState("");
+
+  // Bought section collapsed by default (active list is the protagonist).
+  const [boughtOpen, setBoughtOpen] = useState(false);
+
+  const supabase = createClient();
 
   useEffect(() => {
-    async function loadData() {
-      const supabase = createClient();
+    async function load() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
-
-      // Load shopping list (most recent)
-      const { data: listData } = await supabase
-        .from("shopping_lists")
-        .select("id, items")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (listData) {
-        setListId(listData.id);
-        const storedItems = (listData.items as any[]) || [];
-        setItems(storedItems.map((item: any) => ({
-          id: item.id || crypto.randomUUID(),
-          name: item.name || "",
-          quantity: item.quantity || "—",
-          checked: item.checked || false,
-        })));
-      }
-
+      setUserId(user.id);
+      setRows(await loadShoppingListItems());
       setLoading(false);
     }
-    loadData();
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Persist to Supabase ─────────────────────────────────────────────────────
+  // Localized category label.
+  const catLabel = (c: ShoppingCategory) => t.categories?.[c] ?? c;
 
-  async function saveItems(updatedItems: ShoppingItem[]) {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    setSaving(true);
-
-    if (listId) {
-      await supabase
-        .from("shopping_lists")
-        .update({ items: updatedItems as any })
-        .eq("id", listId);
-    } else {
-      const { data: inserted } = await supabase
-        .from("shopping_lists")
-        .insert({
-          user_id: user.id,
-          items: updatedItems as any,
-        })
-        .select("id")
-        .single();
-
-      if (inserted) setListId(inserted.id);
+  // Split rows into pending (grouped by category) and bought.
+  const { pendingByCat, bought } = useMemo(() => {
+    const pending = rows.filter((r) => !r.checked);
+    const done = rows.filter((r) => r.checked);
+    const byCat: Record<string, ShoppingListItemRow[]> = {};
+    for (const c of SHOPPING_CATEGORIES) {
+      const inCat = pending.filter((r) => r.category === c);
+      if (inCat.length) byCat[c] = inCat;
     }
+    return { pendingByCat: byCat, bought: done };
+  }, [rows]);
 
+  // ── Persistence helpers (granular, per row) ────────────────────────────────
+
+  async function insertRow(row: Omit<ShoppingListItemRow, "id">): Promise<ShoppingListItemRow | null> {
+    if (!userId) return null;
+    setSaving(true);
+    const { data, error: e } = await supabase
+      .from("shopping_list_items")
+      .insert({
+        user_id: userId, name: row.name, qty: row.qty, unit: row.unit,
+        category: row.category, checked: row.checked,
+        source_recipe_id: row.source_recipe_id ?? null, sort_order: row.sort_order ?? rows.length,
+      } as never)
+      .select("id, name, qty, unit, category, checked, source_recipe_id, sort_order")
+      .single();
     setSaving(false);
+    if (e) { setError(e.message); return null; }
+    return data as ShoppingListItemRow;
   }
 
-  // ── Generate from Meal Plan ─────────────────────────────────────────────────
+  async function updateRow(id: string, patch: Partial<ShoppingListItemRow>) {
+    setSaving(true);
+    const { error: e } = await supabase.from("shopping_list_items").update(patch as never).eq("id", id);
+    setSaving(false);
+    if (e) setError(e.message);
+  }
+
+  async function deleteRow(id: string) {
+    setSaving(true);
+    const { error: e } = await supabase.from("shopping_list_items").delete().eq("id", id);
+    setSaving(false);
+    if (e) setError(e.message);
+  }
+
+  // ── Actions ─────────────────────────────────────────────────────────────────
+
+  async function handleAdd(e: FormEvent) {
+    e.preventDefault();
+    if (!name.trim()) { setError(t.errorNameRequired); return; }
+    setError("");
+
+    const qNum = qty.trim() === "" ? null : Math.round((Number(qty) || 0) * 100) / 100;
+    const incoming: MergeIngredientInput = { name: name.trim(), quantity: qNum ?? 0, unit, category };
+
+    // Single engine: does this collide with an existing row (name+unit)?
+    const merged = mergeRows(rows, [incoming]);
+    const isMerge = merged.length === rows.length; // no new row → merged into existing
+
+    if (isMerge) {
+      // Find the changed row and persist just it.
+      const changed = merged.find((m) => {
+        const prev = rows.find((r) => r.id === m.id);
+        return prev && (prev.qty !== m.qty || prev.checked !== m.checked);
+      });
+      if (changed) {
+        setRows(merged);
+        await updateRow(changed.id, { qty: changed.qty, checked: changed.checked });
+        info(t.toastMerged);
+      }
+    } else {
+      const created = await insertRow({
+        name: name.trim(), qty: qNum, unit, category, checked: false, sort_order: rows.length,
+      });
+      if (created) setRows((prev) => [...prev, created]);
+    }
+    setName(""); setQty(""); setUnit("g"); setCategory("Other");
+  }
+
+  async function handleToggle(id: string) {
+    const row = rows.find((r) => r.id === id);
+    if (!row) return;
+    const next = !row.checked;
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, checked: next } : r)));
+    await updateRow(id, { checked: next });
+  }
+
+  async function handleRemove(id: string) {
+    setRows((prev) => prev.filter((r) => r.id !== id));
+    if (editingId === id) setEditingId(null);
+    await deleteRow(id);
+  }
+
+  async function handleClearAll() {
+    if (!userId || rows.length === 0) return;
+    setRows([]);
+    setSaving(true);
+    const { error: e } = await supabase.from("shopping_list_items").delete().eq("user_id", userId);
+    setSaving(false);
+    if (e) setError(e.message);
+  }
+
+  async function handleChangeCategory(id: string, c: ShoppingCategory) {
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, category: c } : r)));
+    await updateRow(id, { category: c });
+  }
+
+  function startEdit(row: ShoppingListItemRow) {
+    setEditingId(row.id);
+    setEditName(row.name);
+    setEditQty(row.qty == null ? "" : String(row.qty));
+    setEditUnit(row.unit);
+  }
+  function cancelEdit() { setEditingId(null); }
+
+  async function saveEdit(id: string) {
+    const row = rows.find((r) => r.id === id);
+    if (!row) return;
+    const newName = editName.trim() || row.name;
+    const newQty = editQty.trim() === "" ? null : Math.round((Number(editQty) || 0) * 100) / 100;
+    const newUnit = editUnit;
+
+    // Collision check: another row with same normalized name + unit → auto-merge.
+    const collision = rows.find(
+      (r) => r.id !== id &&
+        r.name.trim().toLowerCase() === newName.trim().toLowerCase() &&
+        r.unit === newUnit
+    );
+
+    if (collision) {
+      const editedRow: ShoppingListItemRow = { ...row, name: newName, qty: newQty, unit: newUnit };
+      const mergedInto = mergeTwoRows(collision, editedRow);
+      // Persist: update the surviving row, delete the edited one.
+      setRows((prev) => prev
+        .filter((r) => r.id !== id)
+        .map((r) => (r.id === collision.id ? mergedInto : r)));
+      setEditingId(null);
+      await updateRow(collision.id, { qty: mergedInto.qty, checked: mergedInto.checked });
+      await deleteRow(id);
+      info(t.toastMerged);
+      return;
+    }
+
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, name: newName, qty: newQty, unit: newUnit } : r)));
+    setEditingId(null);
+    await updateRow(id, { name: newName, qty: newQty, unit: newUnit });
+  }
+
+  // ── Generate from meal plan (single engine) ─────────────────────────────────
 
   async function handleGenerate() {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    // Get the current week's meal plan
+    if (!userId) return;
+    setError("");
     const now = new Date();
     const dayOfWeek = now.getDay();
     const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
@@ -108,22 +235,15 @@ export default function ShoppingListPage() {
     const { data: planData } = await supabase
       .from("meal_plans")
       .select("plan_data")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("week_start_date", weekStart)
       .maybeSingle();
 
-    if (!planData || !planData.plan_data) {
-      setError(t.errorNoPlan);
-      return;
-    }
+    if (!planData || !planData.plan_data) { setError(t.errorNoPlan); return; }
 
-    // Extract recipe IDs from plan. Slots may be legacy strings or structured
-    // { recipeId, servings } — readSlot normalizes both. The multiplier is the
-    // SUM of servings across occurrences (a 2x lunch buys 2x its ingredients).
     const plan = planData.plan_data as Record<string, Record<string, PlanSlotValue>>;
     const recipeIds = new Set<string>();
     const recipeCounts: Record<string, number> = {};
-
     for (const day of Object.values(plan)) {
       for (const rawSlot of Object.values(day)) {
         const entry = readSlot(rawSlot);
@@ -133,126 +253,64 @@ export default function ShoppingListPage() {
         }
       }
     }
+    if (recipeIds.size === 0) { setError(t.errorPlanEmpty); return; }
 
-    if (recipeIds.size === 0) {
-      setError(t.errorPlanEmpty);
-      return;
-    }
-
-    // Load recipe ingredients
     const { data: recipesData } = await supabase
       .from("recipes")
-      .select(`
-        id,
-        recipe_ingredients (
-          name,
-          quantity,
-          unit
-        )
-      `)
+      .select("id, recipe_ingredients ( name, quantity, unit, ingredient_id )")
       .in("id", Array.from(recipeIds));
+    if (!recipesData || recipesData.length === 0) { setError(t.errorLoadIngredients); return; }
 
-    if (!recipesData || recipesData.length === 0) {
-      setError(t.errorLoadIngredients);
-      return;
+    // Resolve categories from the catalog by name.
+    const allNames = new Set<string>();
+    for (const r of recipesData) for (const ing of (r.recipe_ingredients || [])) allNames.add(ing.name);
+    const { data: catRows } = await supabase
+      .from("ingredients").select("name, category").in("name", Array.from(allNames));
+    const catByName = new Map<string, string>();
+    for (const c of (catRows as { name: string; category: string }[] | null) ?? []) {
+      catByName.set(c.name.trim().toLowerCase(), c.category);
     }
 
-    // Aggregate ingredients
-    const ingredientMap: Record<string, { qty: number; unit: string }> = {};
-
+    // Build merge inputs with per-recipe servings multiplier.
+    const incoming: MergeIngredientInput[] = [];
     for (const recipe of recipesData) {
       const count = recipeCounts[recipe.id] || 1;
       for (const ing of (recipe.recipe_ingredients || [])) {
-        const key = ing.name;
-        if (ingredientMap[key]) {
-          ingredientMap[key].qty += (ing.quantity || 0) * count;
-        } else {
-          ingredientMap[key] = { qty: (ing.quantity || 0) * count, unit: ing.unit || "" };
-        }
+        incoming.push({
+          name: ing.name,
+          quantity: (ing.quantity || 0) * count,
+          unit: ing.unit || "",
+          category: mapIngredientCategory(catByName.get(ing.name.trim().toLowerCase())),
+          sourceRecipeId: recipe.id,
+        });
       }
     }
 
-    // Convert to ShoppingItem format
-    const generatedItems: ShoppingItem[] = Object.entries(ingredientMap).map(([itemName, { qty, unit }]) => ({
-      id: crypto.randomUUID(),
-      name: itemName,
-      quantity: `${qty} ${unit}`.trim(),
-      checked: false,
-    }));
-
-    const updated = [...items, ...generatedItems];
-    setItems(updated);
-    await saveItems(updated);
-    setGenerated(true);
-    setError("");
-    setTimeout(() => setGenerated(false), 2500);
-  }
-
-  // ── Add item ────────────────────────────────────────────────────────────────
-
-  async function handleAdd(e: FormEvent) {
-    e.preventDefault();
-
-    if (!name.trim()) {
-      setError(t.errorNameRequired);
-      return;
-    }
-
-    setError("");
-
-    const newItem: ShoppingItem = {
-      id: crypto.randomUUID(),
-      name: name.trim(),
-      quantity: quantity.trim() || "—",
-      checked: false,
-    };
-
-    const updated = [...items, newItem];
-    setItems(updated);
-    await saveItems(updated);
-    setName("");
-    setQuantity("");
-  }
-
-  // ── Remove / toggle / clear ─────────────────────────────────────────────────
-
-  async function handleRemove(id: string) {
-    const updated = items.filter((item) => item.id !== id);
-    setItems(updated);
-    await saveItems(updated);
-  }
-
-  async function handleToggle(id: string) {
-    const updated = items.map((item) =>
-      item.id === id ? { ...item, checked: !item.checked } : item
-    );
-    setItems(updated);
-    await saveItems(updated);
-  }
-
-  async function handleClearAll() {
-    setItems([]);
-    await saveItems([]);
+    // Single engine — idempotent: regenerating merges instead of duplicating.
+    const merged = mergeRows(rows, incoming);
+    const { persistMergedRows } = await import("@/lib/nutrition");
+    setSaving(true);
+    const res = await persistMergedRows(userId, rows, merged);
+    setSaving(false);
+    if (!res.ok) { setError(res.error || t.errorLoadIngredients); return; }
+    setRows(await loadShoppingListItems());
+    success(t.generatedSuccess);
   }
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
-  if (loading) {
-    return (
-      <PageLoader text={t.loading} />
-    );
-  }
+  if (loading) return <PageLoader text={t.loading} />;
+
+  const pendingCount = rows.length - bought.length;
 
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-900">
-            {t.title}
-          </h1>
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-900">{t.title}</h1>
           <p className="mt-1 text-sm text-zinc-500">
-            {t.itemCount.replace("{n}", String(items.length))}
+            {t.itemCount.replace("{n}", String(rows.length))}
             {saving && <span className="ml-2 text-xs text-zinc-400">({dict.common.saving})</span>}
           </p>
         </div>
@@ -260,15 +318,15 @@ export default function ShoppingListPage() {
           <button
             type="button"
             onClick={handleGenerate}
-            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 lg:min-h-0"
+            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-golden-md border border-zinc-200 bg-white px-4 py-2 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 lg:min-h-0"
           >
             {t.generate}
           </button>
-          {items.length > 0 && (
+          {rows.length > 0 && (
             <button
               type="button"
               onClick={handleClearAll}
-              className="inline-flex min-h-[44px] items-center rounded-lg border border-zinc-200 px-3 py-2 text-xs font-medium text-zinc-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 lg:min-h-0"
+              className="inline-flex min-h-[44px] items-center rounded-golden-md border border-zinc-200 px-3 py-2 text-xs font-medium text-zinc-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 lg:min-h-0"
             >
               {t.clearAll}
             </button>
@@ -276,114 +334,163 @@ export default function ShoppingListPage() {
         </div>
       </div>
 
-      {generated && (
-        <p className="text-sm font-medium text-success">
-          {t.generatedSuccess}
-        </p>
-      )}
+      {error && <p className="text-sm text-red-500" role="alert">{error}</p>}
 
-      {error && (
-        <p className="text-sm text-red-500">{error}</p>
-      )}
-
-      {/* Add form */}
-      <form
-        onSubmit={handleAdd}
-        className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm"
-      >
-        <p className="mb-4 text-sm font-semibold text-zinc-700">{t.addIngredient}</p>
-        <div className="flex flex-wrap items-end gap-4">
-          <div className="w-full sm:w-56">
-            <label htmlFor="ingredient-name" className="mb-1 block text-xs font-medium text-zinc-600">{t.ingredient}</label>
-            <input
-              id="ingredient-name"
-              type="text"
-              placeholder={t.ingredientPlaceholder}
-              value={name}
+      {/* Add form — mobile-first: stacks on small, row on sm+ */}
+      <form onSubmit={handleAdd} className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5">
+        <p className="mb-3 text-sm font-semibold text-zinc-700">{t.addIngredient}</p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+          <div className="min-w-0 flex-1">
+            <label htmlFor="sl-name" className="mb-1 block text-xs font-medium text-zinc-600">{t.ingredient}</label>
+            <input id="sl-name" type="text" placeholder={t.ingredientPlaceholder} value={name}
               onChange={(e) => { setName(e.target.value); if (error) setError(""); }}
-              className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200 sm:h-9"
-            />
+              className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200 sm:h-9" />
           </div>
-          <div className="w-full sm:w-36">
-            <label htmlFor="ingredient-qty" className="mb-1 block text-xs font-medium text-zinc-600">{t.quantity}</label>
-            <input
-              id="ingredient-qty"
-              type="text"
-              placeholder={t.quantityPlaceholder}
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-              className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200 sm:h-9"
-            />
+          <div className="w-24">
+            <label htmlFor="sl-qty" className="mb-1 block text-xs font-medium text-zinc-600">{t.quantity}</label>
+            <input id="sl-qty" type="number" min={0} step="0.01" placeholder="0" value={qty}
+              onChange={(e) => setQty(e.target.value)}
+              className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200 sm:h-9" />
           </div>
-          <button
-            type="submit"
-            className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:w-auto lg:min-h-0"
-          >
+          <div className="w-24">
+            <label htmlFor="sl-unit" className="mb-1 block text-xs font-medium text-zinc-600">{t.unit}</label>
+            <select id="sl-unit" value={unit} onChange={(e) => setUnit(e.target.value)}
+              className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-2 text-sm text-zinc-900 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200 sm:h-9">
+              {UNIT_OPTIONS.map((u) => <option key={u || "none"} value={u}>{u || "—"}</option>)}
+            </select>
+          </div>
+          <div className="w-36">
+            <label htmlFor="sl-cat" className="mb-1 block text-xs font-medium text-zinc-600">{t.category}</label>
+            <select id="sl-cat" value={category} onChange={(e) => setCategory(e.target.value as ShoppingCategory)}
+              className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-2 text-sm text-zinc-900 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200 sm:h-9">
+              {SHOPPING_CATEGORIES.map((c) => <option key={c} value={c}>{catLabel(c)}</option>)}
+            </select>
+          </div>
+          <button type="submit"
+            className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:w-auto lg:min-h-0">
             {dict.common.add}
           </button>
         </div>
       </form>
 
-      {/* List */}
-      <div className="rounded-xl border border-zinc-200 bg-white shadow-sm">
-        <div className="border-b border-zinc-100 px-6 py-4">
-          <p className="text-sm font-semibold text-zinc-700">{t.items}</p>
+      {/* Empty state */}
+      {rows.length === 0 ? (
+        <div className="flex h-32 items-center justify-center rounded-xl border border-zinc-200 bg-white shadow-sm">
+          <p className="px-6 text-center text-sm text-zinc-400">{t.empty}</p>
         </div>
-
-        {items.length === 0 ? (
-          <div className="flex h-32 items-center justify-center">
-            <p className="text-sm text-zinc-400">
-              {t.empty}
-            </p>
-          </div>
-        ) : (
-          <ul className="divide-y divide-zinc-100">
-            {items.map((item) => (
-              <li
-                key={item.id}
-                className="flex items-center justify-between px-6 py-4"
-              >
-                <div className="flex items-center gap-4">
-                  <button
-                    type="button"
-                    onClick={() => handleToggle(item.id)}
-                    aria-label={item.checked ? `Uncheck ${item.name}` : `Check ${item.name}`}
-                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${
-                      item.checked ? "border-border-brand bg-success" : "border-zinc-300 hover:border-zinc-400"
-                    }`}
-                  >
-                    {item.checked && (
-                      <svg viewBox="0 0 20 20" fill="currentColor" className="h-3 w-3 text-white" aria-hidden="true">
-                        <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" />
-                      </svg>
-                    )}
-                  </button>
-                  <div>
-                    <p className={`text-sm font-medium ${item.checked ? "text-zinc-400 line-through" : "text-zinc-900"}`}>
-                      {item.name}
-                    </p>
-                    <p className="text-xs text-zinc-400">{item.quantity}</p>
+      ) : (
+        <>
+          {/* Pending — grouped by category */}
+          {pendingCount === 0 ? (
+            <div className="rounded-xl border border-zinc-200 bg-white px-6 py-8 text-center text-sm text-zinc-400 shadow-sm">
+              {t.allBought}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {SHOPPING_CATEGORIES.filter((c) => pendingByCat[c]?.length).map((c) => (
+                <div key={c} className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
+                  <div className="flex items-center justify-between border-b border-zinc-100 bg-zinc-50 px-4 py-2.5">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500">{catLabel(c)}</p>
+                    <span className="text-xs font-medium text-zinc-400">{pendingByCat[c].length}</span>
                   </div>
+                  <ul className="divide-y divide-zinc-100">
+                    {pendingByCat[c].map((item) => (
+                      <li key={item.id} className="px-4 py-3">
+                        {editingId === item.id ? (
+                          // ── Inline editor ──
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                            <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)}
+                              aria-label={t.ingredient}
+                              className="h-10 min-w-0 flex-1 rounded-lg border border-zinc-200 px-3 text-sm text-zinc-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 sm:h-9" />
+                            <input type="number" min={0} step="0.01" value={editQty} onChange={(e) => setEditQty(e.target.value)}
+                              aria-label={t.quantity} placeholder="0"
+                              className="h-10 w-20 rounded-lg border border-zinc-200 px-3 text-sm text-zinc-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 sm:h-9" />
+                            <select value={editUnit} onChange={(e) => setEditUnit(e.target.value)} aria-label={t.unit}
+                              className="h-10 w-24 rounded-lg border border-zinc-200 px-2 text-sm text-zinc-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 sm:h-9">
+                              {UNIT_OPTIONS.map((u) => <option key={u || "none"} value={u}>{u || "—"}</option>)}
+                            </select>
+                            <div className="flex gap-2">
+                              <button type="button" onClick={() => saveEdit(item.id)}
+                                className="inline-flex min-h-[40px] items-center rounded-lg bg-primary px-3 text-xs font-semibold text-white hover:bg-primary-hover sm:min-h-0 sm:py-2">
+                                {dict.common.save}
+                              </button>
+                              <button type="button" onClick={cancelEdit}
+                                className="inline-flex min-h-[40px] items-center rounded-lg border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-600 hover:bg-zinc-50 sm:min-h-0 sm:py-2">
+                                {dict.common.cancel}
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          // ── Display row ──
+                          <div className="flex items-center gap-3">
+                            <button type="button" onClick={() => handleToggle(item.id)}
+                              aria-label={`${dict.common.add} ${item.name}`}
+                              className="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-zinc-300 transition-colors hover:border-primary">
+                              <span className="sr-only">toggle</span>
+                            </button>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium text-zinc-900">{item.name}</p>
+                              <p className="text-xs text-zinc-400">{formatQty(item.qty, item.unit)}</p>
+                            </div>
+                            {/* Category quick-change */}
+                            <select value={item.category} onChange={(e) => handleChangeCategory(item.id, e.target.value as ShoppingCategory)}
+                              aria-label={t.category}
+                              className="h-8 rounded-lg border border-zinc-200 bg-white px-1.5 text-xs text-zinc-500 focus:border-zinc-400 focus:outline-none">
+                              {SHOPPING_CATEGORIES.map((cc) => <option key={cc} value={cc}>{catLabel(cc)}</option>)}
+                            </select>
+                            <button type="button" onClick={() => startEdit(item)} aria-label={dict.common.edit}
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700">
+                              <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true"><path d="M2.695 14.762l-1.262 3.155a.5.5 0 0 0 .65.65l3.155-1.262a4 4 0 0 0 1.343-.885L17.5 5.5a2.121 2.121 0 0 0-3-3L3.58 13.42a4 4 0 0 0-.885 1.343Z" /></svg>
+                            </button>
+                            <button type="button" onClick={() => handleRemove(item.id)} aria-label={`${dict.common.delete} ${item.name}`}
+                              className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-600">
+                              <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true"><path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.519.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4Z" clipRule="evenodd" /></svg>
+                            </button>
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => handleRemove(item.id)}
-                  aria-label={`Remove ${item.name}`}
-                  className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-600 lg:min-h-0 lg:min-w-0"
-                >
-                  <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
-                    <path
-                      fillRule="evenodd"
-                      d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.519.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+
+          {/* Bought — collapsible, collapsed by default, with counter */}
+          {bought.length > 0 && (
+            <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
+              <button type="button" onClick={() => setBoughtOpen((o) => !o)} aria-expanded={boughtOpen}
+                className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-zinc-50">
+                <span className="text-sm font-semibold text-zinc-700">
+                  {t.bought} <span className="text-zinc-400">({bought.length})</span>
+                </span>
+                <svg viewBox="0 0 20 20" fill="currentColor" className={`h-4 w-4 text-zinc-400 transition-transform ${boughtOpen ? "rotate-180" : ""}`} aria-hidden="true"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clipRule="evenodd" /></svg>
+              </button>
+              {boughtOpen && (
+                <ul className="divide-y divide-zinc-100 border-t border-zinc-100">
+                  {bought.map((item) => (
+                    <li key={item.id} className="flex items-center gap-3 px-4 py-3">
+                      <button type="button" onClick={() => handleToggle(item.id)}
+                        aria-label={`${dict.common.add} ${item.name}`}
+                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-border-brand bg-success">
+                        <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5 text-white" aria-hidden="true"><path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" /></svg>
+                      </button>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-zinc-400 line-through">{item.name}</p>
+                        <p className="text-xs text-zinc-300">{formatQty(item.qty, item.unit)}</p>
+                      </div>
+                      <button type="button" onClick={() => handleRemove(item.id)} aria-label={`${dict.common.delete} ${item.name}`}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-600">
+                        <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true"><path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.519.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5Z" clipRule="evenodd" /></svg>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

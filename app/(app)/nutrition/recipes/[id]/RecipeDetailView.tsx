@@ -130,7 +130,7 @@ export default function RecipeDetailView({ recipe }: { recipe: Recipe }) {
   async function handleAddToShopping() {
     if (busy) return;
     setBusy("shop");
-    const res = await addRecipeIngredientsToShoppingList(recipe.ingredients, { multiplier: servings });
+    const res = await addRecipeIngredientsToShoppingList(recipe.ingredients, { multiplier: servings, sourceRecipeId: recipe.id });
     setBusy(null);
     if (res.ok) success(nt.recipes.toastAddedIngredients.replace("{n}", String(res.addedCount)));
     else toastError(res.error || nt.recipes.toastAddError);
