@@ -115,16 +115,14 @@ export default function CalendarPage() {
 
     const { start, end } = getMonthRange(year, month);
 
-    // Load calendar events (all — not range-limited for upcoming section)
-    const { data: eventData } = await supabase
-      .from("calendar_events")
-      .select("id, title, description, event_type, start_date, end_date, all_day, color")
-      .order("start_date", { ascending: true });
-
-    if (eventData) setEvents(eventData as CalendarEvent[]);
-
-    // Load activities for visible month only
-    const [sessionsRes, mealsRes, weightRes, photosRes, waterRes, suppRes, plansRes] = await Promise.all([
+    // Calendar events + all month activities are independent → fetch in one
+    // parallel batch (the events query previously ran before this batch).
+    const [eventsRes, sessionsRes, mealsRes, weightRes, photosRes, waterRes, suppRes, plansRes] = await Promise.all([
+      // Calendar events (all — not range-limited, for the upcoming section)
+      supabase
+        .from("calendar_events")
+        .select("id, title, description, event_type, start_date, end_date, all_day, color")
+        .order("start_date", { ascending: true }),
       supabase
         .from("training_sessions")
         .select("date, workout_name, duration_minutes, status")
@@ -177,6 +175,8 @@ export default function CalendarPage() {
         .lte("week_start_date", end)
         .gte("week_end_date", start),
     ]);
+
+    if (eventsRes.data) setEvents(eventsRes.data as CalendarEvent[]);
 
     // Build activity map
     const map: ActivityMap = {};

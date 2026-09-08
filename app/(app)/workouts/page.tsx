@@ -203,35 +203,49 @@ export default function WorkoutsPage() {
 
     if (!newWorkout) return;
 
-    // Copy days and exercises
-    for (const day of (tpl.workout_days || [])) {
-      const { data: newDay } = await supabase
+    // Copy days + exercises without an N+1 loop:
+    //  1) batch-insert ALL days in one call (returning their new ids, ordered),
+    //  2) batch-insert ALL exercises in one call, mapping each day's exercises
+    //     to the new day id by matching sort_order.
+    const templateDays = tpl.workout_days || [];
+    if (templateDays.length > 0) {
+      const { data: newDays } = await supabase
         .from("workout_days")
-        .insert({
-          workout_id: newWorkout.id,
-          user_id: user.id,
-          day_name: day.day_name,
-          sort_order: day.sort_order,
-        })
-        .select("id")
-        .single();
+        .insert(
+          templateDays.map((day) => ({
+            workout_id: newWorkout.id,
+            user_id: user.id,
+            day_name: day.day_name,
+            sort_order: day.sort_order,
+          }))
+        )
+        .select("id, sort_order");
 
-      if (!newDay) continue;
+      if (newDays) {
+        // Map original template day (by sort_order) → its new inserted id.
+        const newDayIdBySort = new Map<number, string>(
+          newDays.map((d) => [d.sort_order as number, d.id as string])
+        );
 
-      const exercises = (day.workout_exercises || []).map((ex) => ({
-        workout_day_id: newDay.id,
-        user_id: user.id,
-        exercise_id: ex.exercise_id,
-        exercise_name: ex.exercise_name,
-        sets: ex.sets,
-        reps: ex.reps,
-        rest_seconds: ex.rest_seconds,
-        notes: ex.notes,
-        sort_order: ex.sort_order,
-      }));
+        const allExercises = templateDays.flatMap((day) => {
+          const newDayId = newDayIdBySort.get(day.sort_order);
+          if (!newDayId) return [];
+          return (day.workout_exercises || []).map((ex) => ({
+            workout_day_id: newDayId,
+            user_id: user.id,
+            exercise_id: ex.exercise_id,
+            exercise_name: ex.exercise_name,
+            sets: ex.sets,
+            reps: ex.reps,
+            rest_seconds: ex.rest_seconds,
+            notes: ex.notes,
+            sort_order: ex.sort_order,
+          }));
+        });
 
-      if (exercises.length > 0) {
-        await supabase.from("workout_exercises").insert(exercises);
+        if (allExercises.length > 0) {
+          await supabase.from("workout_exercises").insert(allExercises);
+        }
       }
     }
 
