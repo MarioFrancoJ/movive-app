@@ -12,6 +12,7 @@ import {
   type MealSlot,
 } from "@/lib/nutrition";
 import MealPlanModal, { type MealPlanModalRecipe } from "@/components/nutrition/MealPlanModal";
+import QuantityStepper from "@/components/ui/QuantityStepper";
 import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -315,16 +316,15 @@ export default function RecipeDetailView({ recipe }: { recipe: Recipe }) {
                   })}
                 </div>
               </div>
-              <div className="w-20">
-                <label htmlFor="servings" className="mb-1 block text-golden-xs font-medium text-zinc-600">{t.servingsLabel}</label>
-                <input
-                  id="servings"
-                  type="number"
-                  min={1}
-                  step={1}
+              <div>
+                <span className="mb-1 block text-golden-xs font-medium text-zinc-600">{t.servingsLabel}</span>
+                <QuantityStepper
                   value={servings}
-                  onChange={(e) => setServings(Math.max(1, Math.round(Number(e.target.value) || 1)))}
-                  className="h-9 w-full rounded-lg border border-zinc-200 bg-white px-3 text-golden-sm text-zinc-700 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  onChange={setServings}
+                  min={1}
+                  ariaLabel={t.servingsLabel}
+                  decrementLabel={t.decreaseServings}
+                  incrementLabel={t.increaseServings}
                 />
               </div>
             </div>

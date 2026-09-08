@@ -20,6 +20,7 @@ import {
   type PlanDay,
   type MealPlanAssignment,
 } from "@/lib/nutrition";
+import QuantityStepper from "@/components/ui/QuantityStepper";
 import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 
 // ── Display helpers (UI only — internal values stay PlanDay / MealSlot) ───────
@@ -316,29 +317,17 @@ export default function MealPlanModal({
                   })}
                 </div>
 
-                {/* Servings — stepper [-] n [+] */}
+                {/* Servings — shared QuantityStepper [-] n [+] */}
                 <div className="mt-golden-2 flex items-center gap-golden-2">
                   <span className="text-golden-xs font-medium text-zinc-500">{t.servings}</span>
-                  <div className="inline-flex items-center rounded-golden-md ring-1 ring-inset ring-zinc-200">
-                    <button
-                      type="button"
-                      onClick={() => updateRow(row.id, { servings: Math.max(1, row.servings - 1) })}
-                      disabled={row.servings <= 1}
-                      aria-label={t.decreaseServings}
-                      className="flex h-11 w-11 items-center justify-center rounded-l-golden-md text-golden-base font-bold text-zinc-600 transition-colors hover:bg-zinc-100 disabled:opacity-30 sm:h-9 sm:w-9"
-                    >
-                      −
-                    </button>
-                    <span aria-live="polite" className="w-10 text-center text-golden-sm font-semibold text-zinc-900 sm:w-8">{row.servings}</span>
-                    <button
-                      type="button"
-                      onClick={() => updateRow(row.id, { servings: row.servings + 1 })}
-                      aria-label={t.increaseServings}
-                      className="flex h-11 w-11 items-center justify-center rounded-r-golden-md text-golden-base font-bold text-zinc-600 transition-colors hover:bg-zinc-100 sm:h-9 sm:w-9"
-                    >
-                      +
-                    </button>
-                  </div>
+                  <QuantityStepper
+                    value={row.servings}
+                    onChange={(next) => updateRow(row.id, { servings: next })}
+                    min={1}
+                    ariaLabel={t.servings}
+                    decrementLabel={t.decreaseServings}
+                    incrementLabel={t.increaseServings}
+                  />
                 </div>
 
                 {/* Repeat Days — optional advanced section. Extra top spacing +

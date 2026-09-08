@@ -522,6 +522,8 @@
       "useThisRecipe": "Usar esta receta",
       "mealLabel": "Comida",
       "servingsLabel": "Porciones",
+      "decreaseServings": "Menos porciones",
+      "increaseServings": "Más porciones",
       "addToMealPlan": "Añadir al plan",
       "logging": "Registrando…",
       "logAsMealToday": "Registrar comida",
