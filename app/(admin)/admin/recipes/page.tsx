@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect, useRef, type FormEvent } from "react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { createClient } from "@/lib/supabase/client";
@@ -13,6 +13,10 @@ type RecipeGoal = "Fat Loss" | "Muscle Gain" | "Maintenance";
 
 interface RecipeIngredient {
   id?: string;
+  // Catalog FK when known. Auto-calculate matches on this first (robust),
+  // falling back to name only when it's absent — name matching alone is
+  // fragile (casing / naming variants vs. the catalog).
+  ingredientId?: string;
   name: string;
   quantity: number;
   unit: string;
@@ -77,6 +81,8 @@ export default function AdminRecipesPage() {
   // an explicit warning (Parte 3 requirement).
   const [nutritionWarningAck, setNutritionWarningAck] = useState(false);
   const [formError, setFormError] = useState("");
+  // Ref to the edit/create form so opening it can scroll into view.
+  const formRef = useRef<HTMLFormElement>(null);
   const [addIngId, setAddIngId] = useState("");
   const [addIngQty, setAddIngQty] = useState("");
 
@@ -87,7 +93,7 @@ export default function AdminRecipesPage() {
       // Load recipes with ingredients
       const { data: recipesData } = await supabase
         .from("recipes")
-        .select("id, name, description, goal, servings, prep_time, calories, protein, carbs, fat, recipe_ingredients(id, name, quantity, unit)")
+        .select("id, name, description, goal, servings, prep_time, calories, protein, carbs, fat, recipe_ingredients(id, ingredient_id, name, quantity, unit)")
         .order("name");
 
       if (recipesData) {
@@ -95,7 +101,7 @@ export default function AdminRecipesPage() {
           id: r.id, name: r.name, description: r.description || "", goal: r.goal || "Maintenance",
           servings: r.servings, prep_time: r.prep_time || 0, calories: r.calories || 0,
           protein: r.protein || 0, carbs: r.carbs || 0, fat: r.fat || 0,
-          ingredients: (r.recipe_ingredients || []).map((i: any) => ({ id: i.id, name: i.name, quantity: i.quantity, unit: i.unit })),
+          ingredients: (r.recipe_ingredients || []).map((i: any) => ({ id: i.id, ingredientId: i.ingredient_id || undefined, name: i.name, quantity: i.quantity, unit: i.unit })),
         })));
       }
 
@@ -110,6 +116,17 @@ export default function AdminRecipesPage() {
     }
     loadData();
   }, []);
+
+  // When the form opens (Edit or New), smooth-scroll it into view so the user
+  // doesn't have to scroll up manually. Runs after the form has mounted.
+  useEffect(() => {
+    if (!showForm) return;
+    // rAF ensures layout is committed before scrolling.
+    const id = requestAnimationFrame(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [showForm, editId]);
 
   const filtered = recipes.filter((r) => {
     const matchesSearch = r.name.toLowerCase().includes(search.toLowerCase());
@@ -151,7 +168,7 @@ export default function AdminRecipesPage() {
     const ing = ingredientOptions.find((i) => i.id === addIngId);
     if (!ing) return;
     if (recipeIngredients.some((ri) => ri.name === ing.name)) return;
-    setRecipeIngredients([...recipeIngredients, { name: ing.name, quantity: parseFloat(addIngQty) || 0, unit: ing.unit || "g" }]);
+    setRecipeIngredients([...recipeIngredients, { ingredientId: ing.id, name: ing.name, quantity: parseFloat(addIngQty) || 0, unit: ing.unit || "g" }]);
     setAddIngId(""); setAddIngQty("");
   }
 
@@ -159,10 +176,26 @@ export default function AdminRecipesPage() {
     setRecipeIngredients(recipeIngredients.filter((ri) => ri.name !== ingredientName));
   }
 
+  // Resolve a recipe ingredient against the catalog. Order matters: the
+  // ingredient_id FK is authoritative, so try it first; only fall back to name
+  // (exact, then case/space-insensitive) when there's no usable id. Matching by
+  // name alone missed most ingredients because recipes store naming variants
+  // ("Huevos" vs "Huevo Entero", casing differences, etc.).
+  function resolveIngredient(ri: RecipeIngredient): IngredientOption | undefined {
+    if (ri.ingredientId) {
+      const byId = ingredientOptions.find((i) => i.id === ri.ingredientId);
+      if (byId) return byId;
+    }
+    const exact = ingredientOptions.find((i) => i.name === ri.name);
+    if (exact) return exact;
+    const key = ri.name.trim().toLowerCase();
+    return ingredientOptions.find((i) => i.name.trim().toLowerCase() === key);
+  }
+
   function calculateNutrition(ings: RecipeIngredient[]): { calories: number; protein: number; carbs: number; fat: number } {
     let cal = 0, pro = 0, car = 0, fa = 0;
     for (const ri of ings) {
-      const ing = ingredientOptions.find((i) => i.name === ri.name);
+      const ing = resolveIngredient(ri);
       if (!ing) continue;
       const factor = ri.quantity / 100;
       cal += ing.calories_per_100g * factor;
@@ -179,14 +212,22 @@ export default function AdminRecipesPage() {
   // recompute yields all-zero because ingredient names don't match the catalog,
   // we warn instead of clobbering.
   function handleAutoFillNutrition() {
+    const unresolved = recipeIngredients.filter((ri) => !resolveIngredient(ri)).map((ri) => ri.name);
     const n = calculateNutrition(recipeIngredients);
     if (n.calories === 0 && n.protein === 0 && n.carbs === 0 && n.fat === 0) {
-      setFormError("Cannot auto-calculate: none of the ingredients match the catalog. Enter macros manually.");
+      setFormError("Cannot auto-calculate: no ingredients could be matched to the catalog. Re-add them from the ingredient list or enter macros manually.");
       return;
     }
+    // Compute anyway, but flag which ingredients were skipped so the total isn't
+    // silently understated.
     setCalories(String(n.calories)); setProtein(String(n.protein));
     setCarbs(String(n.carbs)); setFat(String(n.fat));
-    setFormError("");
+    setNutritionWarningAck(false);
+    setFormError(
+      unresolved.length > 0
+        ? `Calculated, but ${unresolved.length} ingredient(s) were not in the catalog and excluded: ${unresolved.join(", ")}. Adjust manually if needed.`
+        : ""
+    );
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -288,7 +329,7 @@ export default function AdminRecipesPage() {
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+        <form ref={formRef} onSubmit={handleSubmit} className="scroll-mt-6 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
           <p className="mb-4 text-sm font-semibold text-zinc-700">{editId ? "Edit Recipe" : "New Recipe"}</p>
           {formError && <p className="mb-3 text-xs text-red-500" role="alert">{formError}</p>}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
