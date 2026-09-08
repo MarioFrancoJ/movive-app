@@ -243,7 +243,10 @@ export default function MealPlanModal({
         <div className="flex-1 overflow-y-auto p-golden-4">
           <div className="mb-golden-2 flex items-center justify-between">
             <p className="text-golden-xs font-bold uppercase tracking-widest text-zinc-400">{t.assignments}</p>
-            <span className="text-golden-xs text-zinc-400">{t.rowsCount.replace("{n}", String(rows.length)).replace("{plural}", rows.length === 1 ? "" : "s")}</span>
+            {/* Counter only adds value with 2+ rows; hidden for a single one. */}
+            {rows.length >= 2 && (
+              <span className="text-golden-xs text-zinc-400">{t.assignmentsCount.replace("{n}", String(rows.length))}</span>
+            )}
           </div>
 
           <div className="flex flex-col gap-golden-2">
@@ -338,8 +341,9 @@ export default function MealPlanModal({
                   </div>
                 </div>
 
-                {/* Repeat Days toggle */}
-                <div className="mt-golden-1">
+                {/* Repeat Days — optional advanced section. Extra top spacing +
+                    a hairline divider separate it from the servings stepper. */}
+                <div className="mt-golden-2 border-t border-zinc-100 pt-golden-2">
                   <button
                     type="button"
                     onClick={() => setRepeatFor(repeatFor === row.id ? null : row.id)}
@@ -360,7 +364,7 @@ export default function MealPlanModal({
           <button
             type="button"
             onClick={addRow}
-            className="mt-golden-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-golden-md border border-dashed border-zinc-300 py-golden-2 text-golden-sm font-semibold text-zinc-600 transition-colors hover:border-zinc-400 hover:bg-zinc-50 lg:min-h-0"
+            className="mt-golden-4 inline-flex min-h-[44px] w-full items-center justify-center rounded-golden-md border border-dashed border-zinc-300 py-golden-2 text-golden-sm font-semibold text-zinc-600 transition-colors hover:border-zinc-400 hover:bg-zinc-50 lg:min-h-0"
           >
             {t.addAssignment}
           </button>
@@ -387,7 +391,7 @@ export default function MealPlanModal({
             disabled={saving || rows.length === 0}
             className="inline-flex min-h-[44px] items-center justify-center rounded-golden-md bg-primary px-golden-4 py-golden-2 text-golden-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50 lg:min-h-0"
           >
-            {saving ? t.saving : t.save.replace("{n}", String(rows.length)).replace("{plural}", rows.length === 1 ? "" : "s")}
+            {saving ? t.saving : rows.length === 1 ? t.saveOne : t.saveMany.replace("{n}", String(rows.length))}
           </button>
         </div>
       </div>
@@ -449,11 +453,13 @@ function RepeatDays({
           );
         })}
       </div>
+      {/* Secondary action (outline) — must not compete with the primary Save
+          CTA in the footer. Copy states clearly that N assignments are created. */}
       <button
         type="button"
         onClick={() => onApply(Array.from(selected))}
         disabled={selected.size === 0}
-        className="mt-golden-2 w-full rounded-golden-md bg-primary py-golden-1 text-golden-xs font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
+        className="mt-golden-2 w-full rounded-golden-md border border-zinc-300 bg-white py-golden-1 text-golden-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
       >
         {t.repeatApply.replace("{n}", String(selected.size)).replace("{plural}", selected.size === 1 ? "" : "s")}
       </button>
