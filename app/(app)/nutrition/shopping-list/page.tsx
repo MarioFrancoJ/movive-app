@@ -17,6 +17,7 @@ import {
   loadShoppingListItems,
 } from "@/lib/nutrition";
 import { useDictionary } from "@/lib/i18n/DictionaryProvider";
+import NavIcon from "@/components/ui/NavIcon";
 
 const UNIT_OPTIONS = ["g", "kg", "ml", "l", "unit", "slice", "scoop", "cup", "tbsp", "tsp", ""] as const;
 
