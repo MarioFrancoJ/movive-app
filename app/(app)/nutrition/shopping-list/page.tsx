@@ -5,13 +5,12 @@ import { createClient } from "@/lib/supabase/client";
 import PageLoader from "@/components/ui/PageLoader";
 import { useToast } from "@/components/ui/Toast";
 import {
-  readSlot,
-  type PlanSlotValue,
+  getWeekBounds,
+  generateShoppingListFromWeek,
   SHOPPING_CATEGORIES,
   type ShoppingCategory,
   type ShoppingListItemRow,
   type MergeIngredientInput,
-  mapIngredientCategory,
   mergeRows,
   mergeTwoRows,
   loadShoppingListItems,
@@ -225,74 +224,17 @@ export default function ShoppingListPage() {
   async function handleGenerate() {
     if (!userId) return;
     setError("");
-    const now = new Date();
-    const dayOfWeek = now.getDay();
-    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-    const monday = new Date(now);
-    monday.setDate(now.getDate() + mondayOffset);
-    const weekStart = monday.toISOString().slice(0, 10);
-
-    const { data: planData } = await supabase
-      .from("meal_plans")
-      .select("plan_data")
-      .eq("user_id", userId)
-      .eq("week_start_date", weekStart)
-      .maybeSingle();
-
-    if (!planData || !planData.plan_data) { setError(t.errorNoPlan); return; }
-
-    const plan = planData.plan_data as Record<string, Record<string, PlanSlotValue>>;
-    const recipeIds = new Set<string>();
-    const recipeCounts: Record<string, number> = {};
-    for (const day of Object.values(plan)) {
-      for (const rawSlot of Object.values(day)) {
-        const entry = readSlot(rawSlot);
-        if (entry) {
-          recipeIds.add(entry.recipeId);
-          recipeCounts[entry.recipeId] = (recipeCounts[entry.recipeId] || 0) + entry.servings;
-        }
-      }
-    }
-    if (recipeIds.size === 0) { setError(t.errorPlanEmpty); return; }
-
-    const { data: recipesData } = await supabase
-      .from("recipes")
-      .select("id, recipe_ingredients ( name, quantity, unit, ingredient_id )")
-      .in("id", Array.from(recipeIds));
-    if (!recipesData || recipesData.length === 0) { setError(t.errorLoadIngredients); return; }
-
-    // Resolve categories from the catalog by name.
-    const allNames = new Set<string>();
-    for (const r of recipesData) for (const ing of (r.recipe_ingredients || [])) allNames.add(ing.name);
-    const { data: catRows } = await supabase
-      .from("ingredients").select("name, category").in("name", Array.from(allNames));
-    const catByName = new Map<string, string>();
-    for (const c of (catRows as { name: string; category: string }[] | null) ?? []) {
-      catByName.set(c.name.trim().toLowerCase(), c.category);
-    }
-
-    // Build merge inputs with per-recipe servings multiplier.
-    const incoming: MergeIngredientInput[] = [];
-    for (const recipe of recipesData) {
-      const count = recipeCounts[recipe.id] || 1;
-      for (const ing of (recipe.recipe_ingredients || [])) {
-        incoming.push({
-          name: ing.name,
-          quantity: (ing.quantity || 0) * count,
-          unit: ing.unit || "",
-          category: mapIngredientCategory(catByName.get(ing.name.trim().toLowerCase())),
-          sourceRecipeId: recipe.id,
-        });
-      }
-    }
-
-    // Single engine — idempotent: regenerating merges instead of duplicating.
-    const merged = mergeRows(rows, incoming);
-    const { persistMergedRows } = await import("@/lib/nutrition");
+    const weekStart = getWeekBounds(new Date()).start;
     setSaving(true);
-    const res = await persistMergedRows(userId, rows, merged);
+    // Shared generator — same single merge engine used by the Meal Planner.
+    const res = await generateShoppingListFromWeek(weekStart);
     setSaving(false);
-    if (!res.ok) { setError(res.error || t.errorLoadIngredients); return; }
+    if (!res.ok) {
+      if (res.error === "NO_PLAN") setError(t.errorNoPlan);
+      else if (res.error === "PLAN_EMPTY") setError(t.errorPlanEmpty);
+      else setError(t.errorLoadIngredients);
+      return;
+    }
     setRows(await loadShoppingListItems());
     success(t.generatedSuccess);
   }

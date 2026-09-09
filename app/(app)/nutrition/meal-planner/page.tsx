@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import PageLoader from "@/components/ui/PageLoader";
 import Chip from "@/components/ui/Chip";
 import { useToast } from "@/components/ui/Toast";
-import { readSlot, getWeekBounds, type PlanSlotValue } from "@/lib/nutrition";
+import { readSlot, getWeekBounds, generateShoppingListFromWeek, type PlanSlotValue } from "@/lib/nutrition";
 import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 
 // Dictionary slices for the meal-planner view.
@@ -193,12 +193,12 @@ function MealThumb({ imageUrl, name, className = "" }: { imageUrl: string | null
 function getSlot(
   value: PlanSlotValue,
   recipes: RecipeSummary[]
-): { recipe: RecipeSummary; servings: number } | undefined {
+): { recipe: RecipeSummary; servings: number; consumed: boolean } | undefined {
   const entry = readSlot(value);
   if (!entry) return undefined;
   const recipe = recipes.find((r) => r.id === entry.recipeId);
   if (!recipe) return undefined;
-  return { recipe, servings: entry.servings };
+  return { recipe, servings: entry.servings, consumed: entry.consumed === true };
 }
 
 function dayTotals(plan: MealPlan, day: Day, recipes: RecipeSummary[]) {
@@ -222,7 +222,8 @@ export default function MealPlannerPage() {
   const nt = dict.nutrition;
   const t = dict.nutrition.mealPlanner;
   const cal = dict.calendar;
-  const { success: showToast } = useToast();
+  const { success: showToast, error: showError } = useToast();
+  const [generatingShopping, setGeneratingShopping] = useState(false);
   const templates = useMemo(() => buildTemplates(nt), [nt]);
   const [plan, setPlan] = useState<MealPlan>(emptyPlan());
   const [planId, setPlanId] = useState<string | null>(null);
@@ -377,6 +378,48 @@ export default function MealPlannerPage() {
     await savePlan(cleared);
     showToast(t.toastCleared);
   }
+
+  // Consolidate this week's planned recipes into the shopping list (single
+  // merge engine — combines duplicates, never duplicates rows).
+  async function handleGenerateShopping() {
+    if (generatingShopping) return;
+    setGeneratingShopping(true);
+    // Persist the current plan first so the generator reads the latest state.
+    await savePlan(plan, isSaved);
+    const res = await generateShoppingListFromWeek(weekStart);
+    setGeneratingShopping(false);
+    if (res.ok) {
+      showToast(t.toastShoppingGenerated.replace("{n}", String(res.recipeCount ?? 0)));
+    } else if (res.error === "PLAN_EMPTY" || res.error === "NO_PLAN") {
+      showError(t.toastShoppingEmpty);
+    } else {
+      showError(t.toastShoppingError);
+    }
+  }
+
+  // Adherence: toggle a planned slot between pending / consumed (JSONB only).
+  function toggleConsumed(day: Day, meal: Meal) {
+    const entry = readSlot(plan[day][meal]);
+    if (!entry) return;
+    const updated: MealPlan = {
+      ...plan,
+      [day]: { ...plan[day], [meal]: { recipeId: entry.recipeId, servings: entry.servings, consumed: !entry.consumed } },
+    };
+    setPlan(updated);
+    savePlan(updated, isSaved);
+  }
+
+  // Week adherence: consumed vs planned across all occupied slots.
+  const adherence = useMemo(() => {
+    let planned = 0, consumed = 0;
+    for (const day of DAYS) {
+      for (const meal of MEALS) {
+        const entry = readSlot(plan[day][meal]);
+        if (entry) { planned++; if (entry.consumed) consumed++; }
+      }
+    }
+    return { planned, consumed, pct: planned > 0 ? Math.round((consumed / planned) * 100) : 0 };
+  }, [plan]);
 
   // ── Day tools (Copy / Paste / Clear the selected day) ────────────────────────
 
@@ -621,6 +664,14 @@ export default function MealPlannerPage() {
               {weekLoading && <span className="ml-2 text-xs text-zinc-400">{t.loadingWeek}</span>}
               {saving && <span className="ml-2 text-xs text-zinc-400">({dict.common.saving})</span>}
             </p>
+            {adherence.planned > 0 && (
+              <div className="mt-2 inline-flex items-center gap-2 rounded-lg bg-primary-light px-3 py-1.5 text-xs font-semibold text-primary-fg">
+                <span>{t.adherence}: {adherence.pct}%</span>
+                <span className="text-primary-fg/70">
+                  {t.adherenceDetail.replace("{c}", String(adherence.consumed)).replace("{p}", String(adherence.planned))}
+                </span>
+              </div>
+            )}
           </div>
           <div className="flex flex-wrap gap-2">
             <button
@@ -643,6 +694,15 @@ export default function MealPlannerPage() {
               className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
             >
               {t.duplicateWeek}
+            </button>
+            <button
+              type="button"
+              onClick={handleGenerateShopping}
+              disabled={generatingShopping}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
+            >
+              <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true"><path d="M1 1.75A.75.75 0 0 1 1.75 1h1.628a1.75 1.75 0 0 1 1.734 1.51L5.18 3a65.25 65.25 0 0 1 13.36 1.412.75.75 0 0 1 .58.875 48.6 48.6 0 0 1-1.618 6.2.75.75 0 0 1-.712.513H6.75a.75.75 0 0 0 0 1.5h9.5a.75.75 0 0 1 0 1.5H6.75a2.25 2.25 0 0 1-2.15-2.906l.44-1.435-1.35-8.11a.25.25 0 0 0-.247-.21H1.75A.75.75 0 0 1 1 1.75Z" /></svg>
+              {generatingShopping ? dict.common.saving : t.generateShopping}
             </button>
             <button
               type="button"
@@ -834,6 +894,24 @@ export default function MealPlannerPage() {
                         <p className="mt-0.5 text-xs text-zinc-400">
                           {selected.protein * selectedServings}g Prot. · {selected.carbs * selectedServings}g Carb. · {selected.fat * selectedServings}g Fat
                         </p>
+                        {/* Adherence toggle: pending / consumed (no separate food log) */}
+                        <button
+                          type="button"
+                          onClick={() => toggleConsumed(selectedDay, meal)}
+                          aria-pressed={slotData?.consumed === true}
+                          className={`mt-2 inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold transition-colors ${
+                            slotData?.consumed
+                              ? "bg-success-light text-success"
+                              : "border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-100"
+                          }`}
+                        >
+                          <span className={`flex h-4 w-4 items-center justify-center rounded border ${slotData?.consumed ? "border-success bg-success" : "border-zinc-300"}`}>
+                            {slotData?.consumed && (
+                              <svg viewBox="0 0 20 20" fill="currentColor" className="h-3 w-3 text-white" aria-hidden="true"><path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" /></svg>
+                            )}
+                          </span>
+                          {slotData?.consumed ? t.consumed : t.pending}
+                        </button>
                       </div>
                     </div>
                   ) : (

@@ -50,16 +50,20 @@ export type PlanDay = (typeof PLAN_DAYS)[number];
 export interface PlanSlotEntry {
   recipeId: string;
   servings: number;
+  // Adherence: whether the user actually ate this planned meal. Optional so
+  // legacy/plain entries default to "pending" (false). Stored in the schemaless
+  // plan_data JSONB — no migration needed.
+  consumed?: boolean;
 }
 export type PlanSlotValue = string | PlanSlotEntry | null;
 type PlanData = Record<string, Record<string, PlanSlotValue>>;
 
-/** Normalize any slot value into { recipeId, servings } | null. */
+/** Normalize any slot value into { recipeId, servings, consumed } | null. */
 export function readSlot(value: PlanSlotValue | undefined): PlanSlotEntry | null {
   if (!value) return null;
-  if (typeof value === "string") return { recipeId: value, servings: 1 };
+  if (typeof value === "string") return { recipeId: value, servings: 1, consumed: false };
   if (typeof value === "object" && typeof value.recipeId === "string") {
-    return { recipeId: value.recipeId, servings: value.servings > 0 ? value.servings : 1 };
+    return { recipeId: value.recipeId, servings: value.servings > 0 ? value.servings : 1, consumed: value.consumed === true };
   }
   return null;
 }
@@ -653,4 +657,81 @@ export async function persistMergedRows(
     if (error) return { ok: false, error: error.message };
   }
   return { ok: true };
+}
+
+
+/**
+ * Generate/update the shopping list from a week's meal plan. Consolidates the
+ * ingredients of every planned recipe (servings-weighted) through the SINGLE
+ * merge engine (mergeRows), so it never duplicates and combines quantities
+ * (e.g. Pollo 200g + Pollo 300g = Pollo 500g). Idempotent: re-running merges
+ * instead of duplicating. Reused by both the Meal Planner and the Shopping List
+ * page — one source of truth.
+ */
+export async function generateShoppingListFromWeek(
+  weekStart: string
+): Promise<MutationResult & { recipeCount?: number }> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "You must be signed in." };
+
+  const { data: planData } = await supabase
+    .from("meal_plans")
+    .select("plan_data")
+    .eq("user_id", user.id)
+    .eq("week_start_date", weekStart)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!planData || !planData.plan_data) return { ok: false, error: "NO_PLAN" };
+
+  const plan = planData.plan_data as PlanData;
+  const recipeIds = new Set<string>();
+  const recipeServings: Record<string, number> = {};
+  for (const day of Object.values(plan)) {
+    for (const rawSlot of Object.values(day)) {
+      const entry = readSlot(rawSlot);
+      if (entry) {
+        recipeIds.add(entry.recipeId);
+        recipeServings[entry.recipeId] = (recipeServings[entry.recipeId] || 0) + entry.servings;
+      }
+    }
+  }
+  if (recipeIds.size === 0) return { ok: false, error: "PLAN_EMPTY" };
+
+  const { data: recipesData } = await supabase
+    .from("recipes")
+    .select("id, recipe_ingredients ( name, quantity, unit )")
+    .in("id", Array.from(recipeIds));
+  if (!recipesData || recipesData.length === 0) return { ok: false, error: "LOAD_INGREDIENTS" };
+
+  // Resolve categories from the catalog by name (fallback Other; never blocks).
+  const allNames = new Set<string>();
+  for (const r of recipesData) for (const ing of ((r.recipe_ingredients as { name: string }[]) || [])) allNames.add(ing.name);
+  const { data: catRows } = await supabase.from("ingredients").select("name, category").in("name", Array.from(allNames));
+  const catByName = new Map<string, string>();
+  for (const c of (catRows as { name: string; category: string }[] | null) ?? []) {
+    catByName.set(normalizeName(c.name), c.category);
+  }
+
+  const incoming: MergeIngredientInput[] = [];
+  for (const recipe of recipesData) {
+    const mult = recipeServings[recipe.id] || 1;
+    for (const ing of ((recipe.recipe_ingredients as { name: string; quantity: number | null; unit: string | null }[]) || [])) {
+      incoming.push({
+        name: ing.name,
+        quantity: (ing.quantity || 0) * mult,
+        unit: ing.unit || "",
+        category: mapIngredientCategory(catByName.get(normalizeName(ing.name))),
+        sourceRecipeId: recipe.id,
+      });
+    }
+  }
+
+  const existing = await loadShoppingListItems();
+  const merged = mergeRows(existing, incoming);
+  const res = await persistMergedRows(user.id, existing, merged);
+  if (!res.ok) return res;
+  return { ok: true, recipeCount: recipeIds.size };
 }
