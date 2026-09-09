@@ -129,13 +129,22 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   }, [pathname]);
 
   const [expandedId, setExpandedId] = useState<string | null>(activeSectionId);
-  const prevPathRef = useRef(pathname);
-  useEffect(() => {
-    if (pathname !== prevPathRef.current) {
-      prevPathRef.current = pathname;
-      if (activeSectionId) setExpandedId(activeSectionId);
-    }
-  }, [pathname, activeSectionId]);
+const prevPathRef = useRef(pathname);
+
+// Efecto 1: Actualizar cuando cambia la ruta
+useEffect(() => {
+  if (pathname !== prevPathRef.current) {
+    prevPathRef.current = pathname;
+    if (activeSectionId) setExpandedId(activeSectionId);
+  }
+}, [pathname, activeSectionId]);
+
+// Efecto 2: Cuando el sidebar se abre en móvil, expandir la sección activa
+useEffect(() => {
+  if (open && activeSectionId) {
+    setExpandedId(activeSectionId);
+  }
+}, [open, activeSectionId]);
 
   const allHrefs = useMemo(() => NAV_SECTIONS.flatMap((s) => s.items.map((i) => i.href)), []);
   function isItemActive(href: string): boolean {
