@@ -389,7 +389,17 @@ export default function MealPlannerPage() {
     const res = await generateShoppingListFromWeek(weekStart);
     setGeneratingShopping(false);
     if (res.ok) {
-      showToast(t.toastShoppingGenerated.replace("{n}", String(res.recipeCount ?? 0)));
+      const added = res.added ?? 0;
+      const consolidated = res.consolidated ?? 0;
+      if (added === 0 && consolidated === 0) {
+        showToast(t.toastShoppingNoChange);
+      } else {
+        showToast(
+          t.toastShoppingGenerated
+            .replace("{added}", String(added))
+            .replace("{consolidated}", String(consolidated))
+        );
+      }
     } else if (res.error === "PLAN_EMPTY" || res.error === "NO_PLAN") {
       showError(t.toastShoppingEmpty);
     } else {

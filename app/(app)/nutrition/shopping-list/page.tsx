@@ -236,7 +236,13 @@ export default function ShoppingListPage() {
       return;
     }
     setRows(await loadShoppingListItems());
-    success(t.generatedSuccess);
+    const added = res.added ?? 0;
+    const consolidated = res.consolidated ?? 0;
+    success(
+      added === 0 && consolidated === 0
+        ? t.generatedNoChange
+        : t.generatedDetail.replace("{added}", String(added)).replace("{consolidated}", String(consolidated))
+    );
   }
 
   // ── Render ──────────────────────────────────────────────────────────────────

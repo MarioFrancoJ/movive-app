@@ -626,7 +626,7 @@ export async function persistMergedRows(
   userId: string,
   before: ShoppingListItemRow[],
   after: ShoppingListItemRow[]
-): Promise<MutationResult> {
+): Promise<MutationResult & { inserted?: number; updated?: number }> {
   const supabase = createClient();
   const beforeById = new Map(before.map((r) => [r.id, r]));
 
@@ -656,7 +656,7 @@ export async function persistMergedRows(
       .eq("id", r.id);
     if (error) return { ok: false, error: error.message };
   }
-  return { ok: true };
+  return { ok: true, inserted: toInsert.length, updated: toUpdate.length };
 }
 
 
@@ -670,7 +670,7 @@ export async function persistMergedRows(
  */
 export async function generateShoppingListFromWeek(
   weekStart: string
-): Promise<MutationResult & { recipeCount?: number }> {
+): Promise<MutationResult & { recipeCount?: number; added?: number; consolidated?: number }> {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "You must be signed in." };
@@ -733,5 +733,11 @@ export async function generateShoppingListFromWeek(
   const merged = mergeRows(existing, incoming);
   const res = await persistMergedRows(user.id, existing, merged);
   if (!res.ok) return res;
-  return { ok: true, recipeCount: recipeIds.size };
+  // added = brand-new rows; consolidated = existing rows whose qty was combined.
+  return {
+    ok: true,
+    recipeCount: recipeIds.size,
+    added: res.inserted ?? 0,
+    consolidated: res.updated ?? 0,
+  };
 }
