@@ -184,7 +184,7 @@ function RecipeCard({ recipe, onAddToPlan, t, nt }: { recipe: Recipe; onAddToPla
             onClick={handleAddToPlan}
             className="inline-flex min-h-[44px] basis-[65%] items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2.5 text-golden-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
-            <span aria-hidden="true">+</span> {t.addMealPlan}
+            {t.addMealPlan}
           </button>
           <button
             type="button"
