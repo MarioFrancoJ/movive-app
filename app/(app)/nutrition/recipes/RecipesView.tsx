@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/Toast";
 import { addRecipeIngredientsToShoppingList } from "@/lib/nutrition";
 import MealPlanModal, { type MealPlanModalRecipe } from "@/components/nutrition/MealPlanModal";
 import { useDictionary } from "@/lib/i18n/DictionaryProvider";
+import NavIcon from "@/components/ui/NavIcon";
 
 // Dictionary slices used across this view's components.
 type RecipesDict = ReturnType<typeof useDictionary>["dict"]["nutrition"]["recipes"];
@@ -193,28 +194,20 @@ function RecipeCard({ recipe, onAddToPlan, t, nt }: { recipe: Recipe; onAddToPla
             {t.addMealPlan}
           </button>
           <button
-            type="button"
-            onClick={handleQuickShop}
-            disabled={busy !== null || recipe.ingredients.length === 0}
-            title={`Add ${recipe.name} ingredients to shopping list`}
-            aria-label={`Add ${recipe.name} ingredients to shopping list`}
-            className="relative inline-flex min-h-[44px] w-11 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 transition-colors hover:border-zinc-300 hover:bg-zinc-50 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
-          >
-            {busy === "shop" ? (
-              <span className="text-golden-sm">…</span>
-            ) : (
-              <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
-                <path d="M1 1.75A.75.75 0 0 1 1.75 1h1.628a1.75 1.75 0 0 1 1.734 1.51L5.18 3a65.25 65.25 0 0 1 13.36 1.412.75.75 0 0 1 .58.875 48.6 48.6 0 0 1-1.618 6.2.75.75 0 0 1-.712.513H6.75a.75.75 0 0 0 0 1.5h9.5a.75.75 0 0 1 0 1.5H6.75a2.25 2.25 0 0 1-2.15-2.906l.44-1.435-1.35-8.11a.25.25 0 0 0-.247-.21H1.75A.75.75 0 0 1 1 1.75ZM6 17.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm9 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Z" />
-              </svg>
-            )}
-            {/* Brief ✓ confirmation badge over the cart icon after adding. */}
-            {justAdded && (
-              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-success text-white shadow-sm" aria-hidden="true">
-                <svg viewBox="0 0 20 20" fill="currentColor" className="h-2.5 w-2.5"><path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" /></svg>
-              </span>
-            )}
-          </button>
-        </div>
+  type="button"
+  onClick={handleQuickShop}
+  disabled={busy !== null || recipe.ingredients.length === 0}
+  title={`Add ${recipe.name} ingredients to shopping list`}
+  aria-label={`Add ${recipe.name} ingredients to shopping list`}
+  className="relative inline-flex min-h-[44px] w-11 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 transition-colors hover:border-zinc-300 hover:bg-zinc-50 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
+>
+  {busy === "shop" ? (
+    <span className="text-golden-sm">…</span>
+  ) : (
+    <NavIcon name="shopping-list.svg" className="h-4 w-4" aria-hidden="true" />
+  )}
+  ...
+</button>        </div>
       </div>
     </div>
   );
