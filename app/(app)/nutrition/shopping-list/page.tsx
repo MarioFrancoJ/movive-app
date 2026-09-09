@@ -288,7 +288,7 @@ export default function ShoppingListPage() {
         disabled={saving}
         className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:w-auto sm:self-start"
       >
-        <span aria-hidden="true">🛒</span> {saving ? dict.common.saving : t.generate}
+        <NavIcon name="shopping-list.svg" className="h-4 w-4" aria-hidden="true" /> {saving ? dict.common.saving : t.generate}
       </button>
 
       {error && <p className="text-sm text-red-500" role="alert">{error}</p>}
