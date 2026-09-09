@@ -186,11 +186,9 @@ export default function Topbar({ locale, onMenuToggle }: TopbarProps) {
       </div>
 
      {/* Right actions */}
-<div className="flex flex-wrap items-center justify-end gap-2 md:gap-3">
-  {/* Language switcher - hidden on mobile, shows on tablet+ */}
-  <div className="hidden md:block">
-    <LanguageMenu currentLocale={locale} />
-  </div>
+<div className="flex flex-wrap items-center justify-end gap-1 sm:gap-2 md:gap-3">
+  {/* Language switcher - visible on all sizes */}
+  <LanguageMenu currentLocale={locale} />
 
   {/* Notifications */}
   <div className="relative">
@@ -244,6 +242,7 @@ export default function Topbar({ locale, onMenuToggle }: TopbarProps) {
   >
     {t.signOut}
   </button>
-</div>    </header>
+</div>
+    </header>
   );
 }
