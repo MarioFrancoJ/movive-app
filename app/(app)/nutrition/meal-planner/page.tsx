@@ -892,7 +892,7 @@ export default function MealPlannerPage() {
                   </div>
 
                   {selected ? (
-                    <div className="flex gap-3 rounded-lg bg-zinc-50 p-2">
+                    <div className={`flex gap-3 rounded-lg border p-2 transition-colors ${slotData?.consumed ? "border-success/40 bg-success-light/40" : "border-transparent bg-zinc-50"}`}>
                       <MealThumb imageUrl={selected.imageUrl} name={selected.name} className="h-16 w-16 shrink-0 rounded-lg" />
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-zinc-900">

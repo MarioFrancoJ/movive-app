@@ -27,7 +27,7 @@ interface DayActivity {
   waterMl: number | null;
   waterGoalMl: number | null;
   supplements: string[];
-  plannedMeals: { recipeId: string; slot: string; name: string; servings: number }[];
+  plannedMeals: { recipeId: string; slot: string; name: string; servings: number; consumed: boolean }[];
 }
 
 type ActivityMap = Record<string, DayActivity>;
@@ -253,7 +253,7 @@ export default function CalendarPage() {
     // Planned meals: resolve each plan's day/slot -> recipe id -> date + name.
     if (plansRes.data && plansRes.data.length > 0) {
       // Collect every recipe id referenced across the plans in view.
-      const entries: { date: string; slot: string; recipeId: string; servings: number }[] = [];
+      const entries: { date: string; slot: string; recipeId: string; servings: number; consumed: boolean }[] = [];
       for (const p of plansRes.data) {
         const weekStart = p.week_start_date as string;
         const planData = (p.plan_data as Record<string, Record<string, PlanSlotValue>>) || {};
@@ -262,7 +262,7 @@ export default function CalendarPage() {
           if (!date || date < start || date > end) continue;
           for (const [slot, rawValue] of Object.entries(slots || {})) {
             const entry = readSlot(rawValue);
-            if (entry) entries.push({ date, slot, recipeId: entry.recipeId, servings: entry.servings });
+            if (entry) entries.push({ date, slot, recipeId: entry.recipeId, servings: entry.servings, consumed: entry.consumed === true });
           }
         }
       }
@@ -281,7 +281,7 @@ export default function CalendarPage() {
           const name = nameById.get(e.recipeId);
           if (!name) continue; // recipe removed — skip stale reference
           const day = ensureDay(e.date);
-          day.plannedMeals.push({ recipeId: e.recipeId, slot: e.slot, name, servings: e.servings });
+          day.plannedMeals.push({ recipeId: e.recipeId, slot: e.slot, name, servings: e.servings, consumed: e.consumed });
         }
       }
     }
@@ -755,16 +755,22 @@ export default function CalendarPage() {
                     <Link
                       key={i}
                       href={`/nutrition/recipes/${pm.recipeId}`}
-                      className="flex items-center gap-2 rounded-lg bg-rose-50 px-3 py-2 transition-colors hover:bg-rose-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
+                      className={`flex items-center gap-2 rounded-lg px-3 py-2 transition-colors focus-visible:outline-none focus-visible:ring-2 ${
+                        pm.consumed
+                          ? "bg-success-light hover:bg-success-light/70 focus-visible:ring-success/40"
+                          : "bg-rose-50 hover:bg-rose-100 focus-visible:ring-rose-300"
+                      }`}
                     >
-                      <span className="text-sm">🗓️</span>
+                      <span className="text-sm">{pm.consumed ? "✅" : "🗓️"}</span>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-xs font-medium text-rose-900">
+                        <p className={`truncate text-xs font-medium ${pm.consumed ? "text-success" : "text-rose-900"}`}>
                           {pm.name}{pm.servings > 1 ? ` ×${pm.servings}` : ""}
                         </p>
-                        <p className="text-xs text-rose-500">{t.slotPlanned.replace("{slot}", pm.slot)}</p>
+                        <p className={`text-xs ${pm.consumed ? "text-success/80" : "text-rose-500"}`}>
+                          {(pm.consumed ? t.slotConsumed : t.slotPlanned).replace("{slot}", pm.slot)}
+                        </p>
                       </div>
-                      <span className="shrink-0 text-rose-400" aria-hidden="true">›</span>
+                      <span className={`shrink-0 ${pm.consumed ? "text-success/60" : "text-rose-400"}`} aria-hidden="true">›</span>
                     </Link>
                   ))}
                 </div>

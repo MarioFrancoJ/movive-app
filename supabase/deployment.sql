@@ -449,6 +449,7 @@ CREATE TABLE shopping_list_items (
   category         shopping_item_category NOT NULL DEFAULT 'Other',
   checked          BOOLEAN NOT NULL DEFAULT FALSE,
   source_recipe_id UUID REFERENCES recipes(id) ON DELETE SET NULL,
+  source_recipe_ids UUID[],
   sort_order       INT NOT NULL DEFAULT 0,
   created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()

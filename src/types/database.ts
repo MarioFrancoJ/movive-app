@@ -1064,6 +1064,7 @@ export type Database = {
           category: Database["public"]["Enums"]["shopping_item_category"]
           checked: boolean
           source_recipe_id: string | null
+          source_recipe_ids: string[] | null
           sort_order: number
           created_at: string
           updated_at: string
@@ -1077,6 +1078,7 @@ export type Database = {
           category?: Database["public"]["Enums"]["shopping_item_category"]
           checked?: boolean
           source_recipe_id?: string | null
+          source_recipe_ids?: string[] | null
           sort_order?: number
           created_at?: string
           updated_at?: string
@@ -1090,6 +1092,7 @@ export type Database = {
           category?: Database["public"]["Enums"]["shopping_item_category"]
           checked?: boolean
           source_recipe_id?: string | null
+          source_recipe_ids?: string[] | null
           sort_order?: number
           created_at?: string
           updated_at?: string

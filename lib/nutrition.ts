@@ -480,6 +480,8 @@ export interface ShoppingListItemRow {
   category: ShoppingCategory;
   checked: boolean;
   source_recipe_id?: string | null;
+  // All recipes that contributed to this item (provenance / "from N recipes").
+  source_recipe_ids?: string[] | null;
   sort_order?: number;
 }
 
@@ -525,6 +527,7 @@ export function mergeRows(
         category: ing.category ?? "Other",
         checked: false,
         source_recipe_id: ing.sourceRecipeId ?? null,
+        source_recipe_ids: ing.sourceRecipeId ? [ing.sourceRecipeId] : [],
         sort_order: out.length,
       });
       indexByKey.set(key, out.length - 1);
@@ -532,11 +535,15 @@ export function mergeRows(
     }
 
     const cur = out[idx];
+    // Accumulate provenance recipe ids (unique).
+    const ids = new Set(cur.source_recipe_ids ?? (cur.source_recipe_id ? [cur.source_recipe_id] : []));
+    if (ing.sourceRecipeId) ids.add(ing.sourceRecipeId);
     out[idx] = {
       ...cur,
       qty: cur.qty == null ? Math.round(addQty * 100) / 100 : Math.round((cur.qty + addQty) * 100) / 100,
       // If either side is pending, the merged item is pending (still needed).
       checked: cur.checked && false,
+      source_recipe_ids: Array.from(ids),
     };
   }
   return out;
@@ -565,7 +572,7 @@ export async function loadShoppingListItems(): Promise<ShoppingListItemRow[]> {
   if (!user) return [];
   const { data } = await supabase
     .from("shopping_list_items")
-    .select("id, name, qty, unit, category, checked, source_recipe_id, sort_order")
+    .select("id, name, qty, unit, category, checked, source_recipe_id, source_recipe_ids, sort_order")
     .eq("user_id", user.id)
     .order("sort_order", { ascending: true });
   return (data as ShoppingListItemRow[] | null) ?? [];
@@ -635,7 +642,8 @@ export async function persistMergedRows(
   for (const r of after) {
     const prev = beforeById.get(r.id);
     if (!prev) { toInsert.push(r); continue; }
-    if (prev.qty !== r.qty || prev.checked !== r.checked || prev.category !== r.category || prev.name !== r.name || prev.unit !== r.unit) {
+    const idsChanged = (prev.source_recipe_ids ?? []).length !== (r.source_recipe_ids ?? []).length;
+    if (prev.qty !== r.qty || prev.checked !== r.checked || prev.category !== r.category || prev.name !== r.name || prev.unit !== r.unit || idsChanged) {
       toUpdate.push(r);
     }
   }
@@ -645,14 +653,17 @@ export async function persistMergedRows(
       toInsert.map((r) => ({
         user_id: userId, name: r.name, qty: r.qty, unit: r.unit,
         category: r.category, checked: r.checked,
-        source_recipe_id: r.source_recipe_id ?? null, sort_order: r.sort_order ?? 0,
+        source_recipe_id: r.source_recipe_id ?? null,
+        source_recipe_ids: r.source_recipe_ids && r.source_recipe_ids.length ? r.source_recipe_ids : null,
+        sort_order: r.sort_order ?? 0,
       })) as never
     );
     if (error) return { ok: false, error: error.message };
   }
   for (const r of toUpdate) {
     const { error } = await supabase.from("shopping_list_items")
-      .update({ name: r.name, qty: r.qty, unit: r.unit, category: r.category, checked: r.checked } as never)
+      .update({ name: r.name, qty: r.qty, unit: r.unit, category: r.category, checked: r.checked,
+        source_recipe_ids: r.source_recipe_ids && r.source_recipe_ids.length ? r.source_recipe_ids : null } as never)
       .eq("id", r.id);
     if (error) return { ok: false, error: error.message };
   }
@@ -740,4 +751,15 @@ export async function generateShoppingListFromWeek(
     added: res.inserted ?? 0,
     consolidated: res.updated ?? 0,
   };
+}
+
+/** Resolve recipe ids → names for provenance display. Returns a name map. */
+export async function getRecipeNames(ids: string[]): Promise<Record<string, string>> {
+  const unique = Array.from(new Set(ids.filter(Boolean)));
+  if (unique.length === 0) return {};
+  const supabase = createClient();
+  const { data } = await supabase.from("recipes").select("id, name").in("id", unique);
+  const map: Record<string, string> = {};
+  for (const r of (data as { id: string; name: string }[] | null) ?? []) map[r.id] = r.name;
+  return map;
 }
