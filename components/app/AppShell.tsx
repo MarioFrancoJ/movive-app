@@ -36,8 +36,8 @@ export default function AppShell({ locale, dict, children }: AppShellProps) {
             <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
               <SandboxBanner />
               <Topbar locale={locale} onMenuToggle={handleMenuToggle} />
-              {/* main: sin padding global — cada página maneja su propio padding */}
-              <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+              {/* main: padding global + overscroll-contain para evitar doble scroll */}
+              <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 md:p-6">
                 {children}
               </main>
             </div>
