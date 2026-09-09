@@ -205,7 +205,7 @@ useEffect(() => {
           "md:static md:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full",
           collapsed ? "md:w-[68px]" : "md:w-60",
-          "w-[260px]", // Mobile: 260px — balance entre espacio y legibilidad
+          "w-[250px]", // Mobile: 260px — balance entre espacio y legibilidad // 250px — Más Compato
         ].join(" ")}
       >
         {/* Logo */}
