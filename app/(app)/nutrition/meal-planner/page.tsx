@@ -711,7 +711,7 @@ export default function MealPlannerPage() {
               disabled={generatingShopping}
               className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
             >
-              <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true"><path d="M1 1.75A.75.75 0 0 1 1.75 1h1.628a1.75 1.75 0 0 1 1.734 1.51L5.18 3a65.25 65.25 0 0 1 13.36 1.412.75.75 0 0 1 .58.875 48.6 48.6 0 0 1-1.618 6.2.75.75 0 0 1-.712.513H6.75a.75.75 0 0 0 0 1.5h9.5a.75.75 0 0 1 0 1.5H6.75a2.25 2.25 0 0 1-2.15-2.906l.44-1.435-1.35-8.11a.25.25 0 0 0-.247-.21H1.75A.75.75 0 0 1 1 1.75Z" /></svg>
+              <NavIcon name="shopping-list.svg" className="h-4 w-4" />
               {generatingShopping ? dict.common.saving : t.generateShopping}
             </button>
             <button
