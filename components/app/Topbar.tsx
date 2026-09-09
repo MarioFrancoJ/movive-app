@@ -185,10 +185,10 @@ export default function Topbar({ locale, onMenuToggle }: TopbarProps) {
         </div>
       </div>
 
-      {/* Right actions */}
+     {/* Right actions */}
 <div className="flex flex-wrap items-center justify-end gap-1 sm:gap-2 md:gap-3">
-  {/* Language switcher - hidden on small mobile */}
-  <div className="hidden sm:block">
+  {/* Language switcher - hidden on mobile, shows on tablet+ */}
+  <div className="hidden md:block">
     <LanguageMenu currentLocale={locale} />
   </div>
 
@@ -217,11 +217,10 @@ export default function Topbar({ locale, onMenuToggle }: TopbarProps) {
 
   {/* SuperAdmin badge + Sandbox toggle */}
   {isSuperAdmin && (
-    <div className="flex items-center gap-1 sm:gap-2">
-      {/* Badge: icon only on small screens, full text on larger */}
-      <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-1.5 py-0.5 text-xs font-bold text-purple-700 sm:px-2">
+    <div className="flex items-center gap-1 md:gap-2">
+      <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-1.5 py-0.5 text-xs font-bold text-purple-700">
         <span>⚡</span>
-        <span className="hidden sm:inline">{t.superAdmin}</span>
+        <span className="hidden md:inline">{t.superAdmin}</span>
       </span>
       <SandboxToggle />
     </div>
@@ -237,12 +236,12 @@ export default function Topbar({ locale, onMenuToggle }: TopbarProps) {
     {userInitial}
   </Link>
 
-  {/* Logout - hidden on mobile, shows on desktop */}
+  {/* Logout - hidden on mobile/tablet, shows on desktop */}
   <button
     type="button"
     onClick={handleLogout}
     aria-label={t.signOut}
-    className="hidden rounded-lg px-2 py-1 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 md:block"
+    className="hidden rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 md:block"
   >
     {t.signOut}
   </button>
