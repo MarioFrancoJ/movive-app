@@ -353,7 +353,7 @@ export default function DashboardContent() {
       {/* ═══════════════════════════════════════════════════════════════════════
           SECTION 2 — DAILY SUMMARY (compact metric strip)
       ═══════════════════════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-2 gap-golden-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-golden-3 md:grid-cols-3 lg:grid-cols-4">
         <KpiCard
           icon="⚖️"
           label={t.kpiWeight}
