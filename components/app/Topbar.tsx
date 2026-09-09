@@ -186,60 +186,67 @@ export default function Topbar({ locale, onMenuToggle }: TopbarProps) {
       </div>
 
       {/* Right actions */}
-      <div className="flex items-center gap-2 md:gap-3">
-        {/* Language switcher - hidden on small mobile */}
-        <div className="hidden sm:block">
-          <LanguageMenu currentLocale={locale} />
-        </div>
+<div className="flex flex-wrap items-center justify-end gap-1 sm:gap-2 md:gap-3">
+  {/* Language switcher - hidden on small mobile */}
+  <div className="hidden sm:block">
+    <LanguageMenu currentLocale={locale} />
+  </div>
 
-        {/* Notifications */}
-        <div className="relative">
-          <button
-            type="button"
-            onClick={toggleNotifications}
-            aria-label={t.notifications}
-            aria-expanded={notificationsOpen}
-            className={[
-              "relative rounded-lg p-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300",
-              notificationsOpen ? "bg-zinc-100 text-zinc-900" : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900",
-            ].join(" ")}
-          >
-            <IconBell />
-            {unread > 0 && (
-              <span aria-label={`${unread} unread`} className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
-                {unread > 9 ? "9+" : unread}
-              </span>
-            )}
-          </button>
+  {/* Notifications */}
+  <div className="relative">
+    <button
+      type="button"
+      onClick={toggleNotifications}
+      aria-label={t.notifications}
+      aria-expanded={notificationsOpen}
+      className={[
+        "relative rounded-lg p-1.5 sm:p-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300",
+        notificationsOpen ? "bg-zinc-100 text-zinc-900" : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900",
+      ].join(" ")}
+    >
+      <IconBell />
+      {unread > 0 && (
+        <span aria-label={`${unread} unread`} className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+          {unread > 9 ? "9+" : unread}
+        </span>
+      )}
+    </button>
 
-          <NotificationPanel isOpen={notificationsOpen} onClose={closeNotifications} onUnreadCountChange={handleUnreadCountChange} />
-        </div>
+    <NotificationPanel isOpen={notificationsOpen} onClose={closeNotifications} onUnreadCountChange={handleUnreadCountChange} />
+  </div>
 
-        {/* SuperAdmin badge + Sandbox toggle */}
-        {isSuperAdmin && (
-          <div className="hidden items-center gap-2 sm:inline-flex">
-            <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2 py-0.5 text-xs font-bold text-purple-700">
-              ⚡ {t.superAdmin}
-            </span>
-            <SandboxToggle />
-          </div>
-        )}
+  {/* SuperAdmin badge + Sandbox toggle */}
+  {isSuperAdmin && (
+    <div className="flex items-center gap-1 sm:gap-2">
+      {/* Badge: icon only on small screens, full text on larger */}
+      <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-1.5 py-0.5 text-xs font-bold text-purple-700 sm:px-2">
+        <span>⚡</span>
+        <span className="hidden sm:inline">{t.superAdmin}</span>
+      </span>
+      <SandboxToggle />
+    </div>
+  )}
 
-        {/* User avatar → Profile link */}
-        <Link
-          href="/profile"
-          aria-label={t.openProfile}
-          title={t.profile}
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-white transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-        >
-          {userInitial}
-        </Link>
+  {/* User avatar */}
+  <Link
+    href="/profile"
+    aria-label={t.openProfile}
+    title={t.profile}
+    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-white transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+  >
+    {userInitial}
+  </Link>
 
-        {/* Logout - hidden on mobile */}
-        <button type="button" onClick={handleLogout} aria-label={t.signOut} className="hidden rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 sm:block">
-          {t.signOut}
-        </button>
-      </div>
+  {/* Logout - hidden on mobile, shows on desktop */}
+  <button
+    type="button"
+    onClick={handleLogout}
+    aria-label={t.signOut}
+    className="hidden rounded-lg px-2 py-1 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 md:block"
+  >
+    {t.signOut}
+  </button>
+</div>
     </header>
   );
 }
