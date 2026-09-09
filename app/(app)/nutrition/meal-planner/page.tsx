@@ -7,6 +7,7 @@ import Chip from "@/components/ui/Chip";
 import { useToast } from "@/components/ui/Toast";
 import { readSlot, getWeekBounds, generateShoppingListFromWeek, type PlanSlotValue } from "@/lib/nutrition";
 import { useDictionary } from "@/lib/i18n/DictionaryProvider";
+import NavIcon from "@/components/ui/NavIcon";
 
 // Dictionary slices for the meal-planner view.
 type NutritionDict = ReturnType<typeof useDictionary>["dict"]["nutrition"];
