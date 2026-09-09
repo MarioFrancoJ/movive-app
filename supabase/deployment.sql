@@ -67,6 +67,9 @@ CREATE TYPE training_session_status AS ENUM ('In Progress', 'Completed', 'Cancel
 CREATE TYPE meal_type AS ENUM ('Breakfast', 'Lunch', 'Dinner', 'Snack');
 CREATE TYPE recipe_goal AS ENUM ('Fat Loss', 'Muscle Gain', 'Maintenance');
 CREATE TYPE ingredient_category AS ENUM ('Protein', 'Carbohydrate', 'Fat', 'Vegetable', 'Fruit', 'Dairy', 'Beverage', 'Other');
+-- Recommended meal type for recipes (5 planner slots). Distinct from meal_type
+-- (4-value, shared with meal_logs). See migration 00015.
+CREATE TYPE recommended_meal_type AS ENUM ('Breakfast', 'Snack AM', 'Lunch', 'Snack PM', 'Dinner');
 
 -- ── Notifications ─────────────────────────────────────────────────────────────
 
@@ -227,10 +230,13 @@ CREATE TABLE recipes (
   protein     INT,
   carbs       INT,
   fat         INT,
+  recommended_meal_type recommended_meal_type,
   created_by  UUID REFERENCES users(id) ON DELETE SET NULL,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE INDEX idx_recipes_recommended_meal_type ON recipes(recommended_meal_type);
 
 CREATE TRIGGER recipes_updated_at
   BEFORE UPDATE ON recipes

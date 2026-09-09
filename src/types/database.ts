@@ -769,6 +769,7 @@ export type Database = {
           carbs: number | null
           fat: number | null
           meal_type: Database["public"]["Enums"]["meal_type"] | null
+          recommended_meal_type: Database["public"]["Enums"]["recommended_meal_type"] | null
           created_by: string | null
           created_at: string
           updated_at: string
@@ -786,6 +787,7 @@ export type Database = {
           carbs?: number | null
           fat?: number | null
           meal_type?: Database["public"]["Enums"]["meal_type"] | null
+          recommended_meal_type?: Database["public"]["Enums"]["recommended_meal_type"] | null
           created_by?: string | null
           created_at?: string
           updated_at?: string
@@ -803,6 +805,7 @@ export type Database = {
           carbs?: number | null
           fat?: number | null
           meal_type?: Database["public"]["Enums"]["meal_type"] | null
+          recommended_meal_type?: Database["public"]["Enums"]["recommended_meal_type"] | null
           created_by?: string | null
           created_at?: string
           updated_at?: string
@@ -1640,6 +1643,7 @@ export type Database = {
       photo_type: "Front" | "Side" | "Back"
       plan_type: "FREE" | "PREMIUM_MONTHLY" | "PREMIUM_YEARLY"
       recipe_goal: "Fat Loss" | "Muscle Gain" | "Maintenance"
+      recommended_meal_type: "Breakfast" | "Snack AM" | "Lunch" | "Snack PM" | "Dinner"
       shopping_item_category: "Produce" | "Protein" | "Dairy" | "Grains" | "Pantry" | "Beverages" | "Other"
       recommendation_category: "Nutrition" | "Training" | "Recovery" | "Weight Management" | "Consistency" | "Motivation" | "Goal Achievement"
       recommendation_priority: "Low" | "Medium" | "High" | "Critical"
