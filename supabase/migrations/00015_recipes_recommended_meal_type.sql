@@ -37,7 +37,14 @@ CREATE INDEX IF NOT EXISTS idx_recipes_recommended_meal_type
   ON recipes(recommended_meal_type);
 
 COMMENT ON COLUMN recipes.recommended_meal_type IS
-  'Recommended time of day (Breakfast/Snack AM/Lunch/Snack PM/Dinner). Suggestion used to preselect the meal-plan slot; user can override. Distinct from meal_type (4-value, shared with meal_logs).';
+  'Business field (Opcion C): the recipe creator''s recommended time of day (Breakfast/Snack AM/Lunch/Snack PM/Dinner). A suggestion only — it preselects the meal-plan slot and feeds future automation; the user can assign the recipe to any slot. Distinct from meal_type (4-value, shared with meal_logs).';
+
+-- meal_type on recipes is DEPRECATED as of 00015 (superseded by
+-- recommended_meal_type). It is kept temporarily only because the catalog
+-- filter still reads it; it is no longer written from the app and will be
+-- dropped in a later migration (00016+) once that filter migrates.
+COMMENT ON COLUMN recipes.meal_type IS
+  'DEPRECATED (00015): superseded by recipes.recommended_meal_type, which is the live business field. Kept temporarily, read-only, for the catalog filter; scheduled for removal in 00016+. Do NOT write this from the app.';
 
 -- NOTE: the backfill for existing recipes runs as a Node script (reuses
 -- suggestSlotForRecipe). A pure-SQL fallback is provided below and is safe to
