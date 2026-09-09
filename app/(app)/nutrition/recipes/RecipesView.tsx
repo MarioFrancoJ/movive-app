@@ -32,6 +32,7 @@ export interface Recipe {
   description: string;
   goal: RecipeGoal;
   mealType: MealType | null;
+  recommendedMealType: string | null;
   imageUrl: string | null;
   ingredients: RecipeIngredient[];
   servings: number;
@@ -244,7 +245,7 @@ export default function RecipesView({ initialRecipes }: { initialRecipes: Recipe
   const [planRecipe, setPlanRecipe] = useState<MealPlanModalRecipe | null>(null);
 
   function openPlanModal(r: Recipe) {
-    setPlanRecipe({ id: r.id, name: r.name, mealType: r.mealType, calories: r.calories, goal: r.goal });
+    setPlanRecipe({ id: r.id, name: r.name, mealType: (r.recommendedMealType ?? r.mealType) as MealType | null, calories: r.calories, goal: r.goal });
   }
 
   const filtered = useMemo(() => {

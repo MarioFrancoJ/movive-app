@@ -4,6 +4,7 @@ import RecipeDetailView, {
   type RecipeGoal,
   type MealType,
 } from "./RecipeDetailView";
+import type { MealSlot } from "@/lib/nutrition";
 import RecipeNotFound from "./RecipeNotFound";
 
 // Server Component: fetch the recipe (with ingredients + instructions) on the
@@ -28,6 +29,7 @@ export default async function RecipeDetailPage({
       description,
       goal,
       meal_type,
+      recommended_meal_type,
       image_url,
       servings,
       prep_time,
@@ -59,6 +61,7 @@ export default async function RecipeDetailPage({
     description: data.description || "",
     goal: (data.goal || "Maintenance") as RecipeGoal,
     mealType: (data.meal_type || null) as MealType | null,
+    recommendedMealType: (data.recommended_meal_type || null) as MealSlot | null,
     imageUrl: data.image_url || null,
     servings: data.servings || 1,
     prepTime: data.prep_time || 0,

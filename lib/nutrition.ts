@@ -193,11 +193,16 @@ const SLOT_KEYWORDS: Record<"Breakfast" | "Lunch" | "Dinner", string[]> = {
  * Uses only data already present on the recipe; adds no fields.
  */
 export function suggestSlotForRecipe(input: {
+  recommendedMealType?: string | null;
   mealType?: string | null;
   name?: string | null;
   ingredients?: { name?: string | null }[] | null;
 }): MealSlot {
-  // 1. Explicit meal_type wins (legacy "Snack" maps to "Snack PM").
+  // 0. The recipe creator's recommendation wins — it's already a 5-slot value.
+  if (input.recommendedMealType && (MEAL_SLOTS as readonly string[]).includes(input.recommendedMealType)) {
+    return input.recommendedMealType as MealSlot;
+  }
+  // 1. Legacy meal_type (4-value) as fallback ("Snack" maps to "Snack PM").
   if (input.mealType === "Snack") return "Snack PM";
   if (input.mealType && (MEAL_SLOTS as readonly string[]).includes(input.mealType)) {
     return input.mealType as MealSlot;

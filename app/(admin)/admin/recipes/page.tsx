@@ -22,6 +22,10 @@ interface RecipeIngredient {
   unit: string;
 }
 
+// The 5 planner slots — the values for "Recommended meal type".
+const RECOMMENDED_MEAL_TYPES = ["Breakfast", "Snack AM", "Lunch", "Snack PM", "Dinner"] as const;
+type RecommendedMealType = (typeof RECOMMENDED_MEAL_TYPES)[number];
+
 interface Recipe {
   id: string;
   name: string;
@@ -33,6 +37,7 @@ interface Recipe {
   protein: number;
   carbs: number;
   fat: number;
+  recommendedMealType: RecommendedMealType | null;
   ingredients: RecipeIngredient[];
 }
 
@@ -136,7 +141,7 @@ export default function AdminRecipesPage() {
       // Load recipes with ingredients
       const { data: recipesData } = await supabase
         .from("recipes")
-        .select("id, name, description, goal, servings, prep_time, calories, protein, carbs, fat, recipe_ingredients(id, ingredient_id, name, quantity, unit)")
+        .select("id, name, description, goal, servings, prep_time, calories, protein, carbs, fat, recommended_meal_type, recipe_ingredients(id, ingredient_id, name, quantity, unit)")
         .order("name");
 
       if (recipesData) {
@@ -144,6 +149,7 @@ export default function AdminRecipesPage() {
           id: r.id, name: r.name, description: r.description || "", goal: r.goal || "Maintenance",
           servings: r.servings, prep_time: r.prep_time || 0, calories: r.calories || 0,
           protein: r.protein || 0, carbs: r.carbs || 0, fat: r.fat || 0,
+          recommendedMealType: (r.recommended_meal_type || null) as RecommendedMealType | null,
           ingredients: (r.recipe_ingredients || []).map((i: any) => ({ id: i.id, ingredientId: i.ingredient_id || undefined, name: i.name, quantity: i.quantity, unit: i.unit })),
         })));
       }
@@ -181,6 +187,7 @@ export default function AdminRecipesPage() {
     name: string; description: string; goal: RecipeGoal;
     servings: number; prep_time: number;
     calories: number; protein: number; carbs: number; fat: number;
+    recommendedMealType: RecommendedMealType;
     ingredients: RecipeIngredient[]; instructions: string[];
   }): Promise<boolean> {
     const supabase = createClient();
@@ -191,6 +198,7 @@ export default function AdminRecipesPage() {
         await supabase.from("recipes").update({
           name: payload.name, description: payload.description || null, goal: payload.goal,
           servings: payload.servings, prep_time: payload.prep_time, ...nutrition,
+          recommended_meal_type: payload.recommendedMealType,
         }).eq("id", editId);
 
         await supabase.from("recipe_ingredients").delete().eq("recipe_id", editId);
@@ -209,12 +217,14 @@ export default function AdminRecipesPage() {
 
         setRecipes((prev) => prev.map((r) => r.id === editId ? {
           ...r, name: payload.name, description: payload.description, goal: payload.goal,
-          servings: payload.servings, prep_time: payload.prep_time, ...nutrition, ingredients: payload.ingredients,
+          servings: payload.servings, prep_time: payload.prep_time, ...nutrition,
+          recommendedMealType: payload.recommendedMealType, ingredients: payload.ingredients,
         } : r));
       } else {
         const { data: newRecipe, error } = await supabase.from("recipes").insert({
           name: payload.name, description: payload.description || null, goal: payload.goal,
           servings: payload.servings, prep_time: payload.prep_time, ...nutrition,
+          recommended_meal_type: payload.recommendedMealType,
         }).select("id").single();
         if (error || !newRecipe) return false;
 
@@ -231,7 +241,8 @@ export default function AdminRecipesPage() {
 
         setRecipes((prev) => [{
           id: newRecipe.id, name: payload.name, description: payload.description, goal: payload.goal,
-          servings: payload.servings, prep_time: payload.prep_time, ...nutrition, ingredients: payload.ingredients,
+          servings: payload.servings, prep_time: payload.prep_time, ...nutrition,
+          recommendedMealType: payload.recommendedMealType, ingredients: payload.ingredients,
         }, ...prev]);
       }
       setOpenForm(null);
@@ -347,6 +358,7 @@ function RecipeForm({
     name: string; description: string; goal: RecipeGoal;
     servings: number; prep_time: number;
     calories: number; protein: number; carbs: number; fat: number;
+    recommendedMealType: RecommendedMealType;
     ingredients: RecipeIngredient[]; instructions: string[];
   }) => Promise<boolean>;
   onCancel: () => void;
@@ -355,6 +367,8 @@ function RecipeForm({
   const [name, setName] = useState(recipe?.name ?? "");
   const [description, setDescription] = useState(recipe?.description ?? "");
   const [goal, setGoal] = useState<RecipeGoal>(recipe?.goal ?? "Maintenance");
+  // Recommended meal type (5 slots). Required for new recipes; pre-filled on edit.
+  const [recommendedMealType, setRecommendedMealType] = useState<RecommendedMealType | "">(recipe?.recommendedMealType ?? "");
   const [servings, setServings] = useState(recipe ? String(recipe.servings) : "1");
   const [prepTime, setPrepTime] = useState(recipe ? String(recipe.prep_time) : "");
   const [instructionsText, setInstructionsText] = useState("");
@@ -430,6 +444,7 @@ function RecipeForm({
     setFormNotice("");
     if (!name.trim()) { setFormError("Name is required."); return; }
     if (recipeIngredients.length === 0) { setFormError("Add at least one ingredient."); return; }
+    if (!recommendedMealType) { setFormError("Recommended meal type is required."); return; }
 
     const nutrition = {
       calories: Math.max(0, Math.round(Number(calories) || 0)),
@@ -450,6 +465,7 @@ function RecipeForm({
       name: name.trim(), description: description.trim(), goal,
       servings: parseInt(servings) || 1, prep_time: parseInt(prepTime) || 0,
       ...nutrition,
+      recommendedMealType: recommendedMealType as RecommendedMealType,
       ingredients: recipeIngredients,
       instructions: instructionsText.split("\n").filter((l) => l.trim()),
     });
@@ -469,7 +485,19 @@ function RecipeForm({
         <div className="flex flex-col gap-1.5"><label htmlFor={`rec-goal-${editId ?? "new"}`} className="text-sm font-medium text-zinc-700">Goal</label><select id={`rec-goal-${editId ?? "new"}`} value={goal} onChange={(e) => setGoal(e.target.value as RecipeGoal)} className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200">{RECIPE_GOALS.map((g) => <option key={g} value={g}>{g}</option>)}</select></div>
         <Input id={`rec-servings-${editId ?? "new"}`} type="number" label="Servings" value={servings} onChange={(e) => setServings(e.target.value)} placeholder="1" min={1} />
         <Input id={`rec-prep-${editId ?? "new"}`} type="number" label="Prep Time (min)" value={prepTime} onChange={(e) => setPrepTime(e.target.value)} placeholder="20" min={0} />
-        <div className="sm:col-span-2"><Input id={`rec-desc-${editId ?? "new"}`} type="text" label="Description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Short description" /></div>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor={`rec-rmt-${editId ?? "new"}`} className="text-sm font-medium text-zinc-700">Recommended meal type <span className="text-red-500">*</span></label>
+          <select
+            id={`rec-rmt-${editId ?? "new"}`}
+            value={recommendedMealType}
+            onChange={(e) => { setRecommendedMealType(e.target.value as RecommendedMealType); setFormError(""); }}
+            className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200"
+          >
+            <option value="" disabled>Select…</option>
+            {RECOMMENDED_MEAL_TYPES.map((m) => <option key={m} value={m}>{m}</option>)}
+          </select>
+        </div>
+        <div className="sm:col-span-2 lg:col-span-3"><Input id={`rec-desc-${editId ?? "new"}`} type="text" label="Description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Short description" /></div>
       </div>
 
       {/* Nutrition — always-visible editable fields. */}

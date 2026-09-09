@@ -36,6 +36,7 @@ export interface Recipe {
   description: string;
   goal: RecipeGoal;
   mealType: MealType | null;
+  recommendedMealType: MealSlot | null;
   imageUrl: string | null;
   ingredients: RecipeIngredient[];
   servings: number;
@@ -109,7 +110,7 @@ export default function RecipeDetailView({ recipe }: { recipe: Recipe }) {
 
   // Action controls (for logging + shopping; meal-plan uses the modal).
   const [slot, setSlot] = useState<MealSlot>(() =>
-    suggestSlotForRecipe({ mealType: recipe.mealType, name: recipe.name, ingredients: recipe.ingredients })
+    suggestSlotForRecipe({ recommendedMealType: recipe.recommendedMealType, mealType: recipe.mealType, name: recipe.name, ingredients: recipe.ingredients })
   );
   const [servings, setServings] = useState(1);
   const [busy, setBusy] = useState<null | "shop" | "log">(null);
@@ -121,7 +122,7 @@ export default function RecipeDetailView({ recipe }: { recipe: Recipe }) {
     setPlanModalRecipe({
       id: recipe.id,
       name: recipe.name,
-      mealType: recipe.mealType as MealSlot | null,
+      mealType: (recipe.recommendedMealType ?? recipe.mealType) as MealSlot | null,
       calories: recipe.calories,
       goal: recipe.goal,
     });
@@ -181,9 +182,9 @@ export default function RecipeDetailView({ recipe }: { recipe: Recipe }) {
           <span className="inline-flex items-center rounded-full bg-zinc-100 px-2.5 py-1 text-golden-xs font-medium text-zinc-600">
             {t.servings.replace("{n}", String(recipe.servings))}
           </span>
-          {recipe.mealType && (
-            <span className="inline-flex items-center rounded-full bg-zinc-100 px-2.5 py-1 text-golden-xs font-medium text-zinc-600">
-              {mealTypeLabel(recipe.mealType, nt)}
+          {recipe.recommendedMealType && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary-light px-2.5 py-1 text-golden-xs font-semibold text-primary-fg" title={t.recommendedFor}>
+              {t.recommendedFor}: {mealTypeLabel(recipe.recommendedMealType, nt)}
             </span>
           )}
         </div>

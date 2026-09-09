@@ -20,6 +20,7 @@ export default async function RecipesPage() {
       description,
       goal,
       meal_type,
+      recommended_meal_type,
       image_url,
       servings,
       prep_time,
@@ -43,6 +44,7 @@ export default async function RecipesPage() {
     description: string | null;
     goal: string | null;
     meal_type: string | null;
+    recommended_meal_type: string | null;
     image_url: string | null;
     servings: number | null;
     prep_time: number | null;
@@ -57,6 +59,7 @@ export default async function RecipesPage() {
     description: r.description || "",
     goal: (r.goal || "Maintenance") as RecipeGoal,
     mealType: (r.meal_type || null) as MealType | null,
+    recommendedMealType: r.recommended_meal_type || null,
     imageUrl: r.image_url || null,
     servings: r.servings || 1,
     prepTime: r.prep_time || 0,
