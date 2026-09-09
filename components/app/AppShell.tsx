@@ -36,11 +36,9 @@ export default function AppShell({ locale, dict, children }: AppShellProps) {
             <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
               <SandboxBanner />
               <Topbar locale={locale} onMenuToggle={handleMenuToggle} />
-              {/* main: único scroll, con padding consistente */}
-              <main className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain">
-                <div className="mx-auto w-full max-w-7xl px-4 py-4 md:px-6 md:py-6">
-                  {children}
-                </div>
+              {/* main: sin padding global — cada página maneja su propio padding */}
+              <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                {children}
               </main>
             </div>
           </div>
