@@ -169,20 +169,22 @@ function RecipeCard({ recipe, onAddToPlan, t, nt }: { recipe: Recipe; onAddToPla
           </div>
         </Link>
 
-        {/* Actions */}
-        <div className="mt-golden-3 flex items-center gap-2">
+        {/* Actions — same base size as the design-system CTAs (min-h 44px,
+            py-2.5, text-golden-sm). Hierarchy: "Ver" secondary (35%), "+ Plan de
+            comidas" primary (65%), shopping icon a tertiary fixed-size action. */}
+        <div className="mt-golden-3 flex items-stretch gap-2">
           <Link
             href={`/nutrition/recipes/${recipe.id}`}
-            className="flex-1 rounded-golden-md border border-zinc-200 bg-white px-golden-2 py-golden-1 text-center text-golden-sm font-semibold text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-zinc-50"
+            className="inline-flex min-h-[44px] basis-[35%] items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-center text-golden-sm font-semibold text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
           >
             {t.view}
           </Link>
           <button
             type="button"
             onClick={handleAddToPlan}
-            className="flex-1 rounded-golden-md bg-primary px-golden-2 py-golden-1 text-golden-sm font-semibold text-white transition-colors hover:bg-primary-hover"
+            className="inline-flex min-h-[44px] basis-[65%] items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2.5 text-golden-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
-            {t.addMealPlan}
+            <span aria-hidden="true">+</span> {t.addMealPlan}
           </button>
           <button
             type="button"
@@ -190,7 +192,7 @@ function RecipeCard({ recipe, onAddToPlan, t, nt }: { recipe: Recipe; onAddToPla
             disabled={busy !== null || recipe.ingredients.length === 0}
             title={`Add ${recipe.name} ingredients to shopping list`}
             aria-label={`Add ${recipe.name} ingredients to shopping list`}
-            className="shrink-0 rounded-golden-md border border-zinc-200 bg-white p-golden-1 text-zinc-600 transition-colors hover:border-zinc-300 hover:bg-zinc-50 disabled:opacity-40"
+            className="inline-flex min-h-[44px] w-11 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 transition-colors hover:border-zinc-300 hover:bg-zinc-50 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
           >
             {busy === "shop" ? (
               <span className="text-golden-sm">…</span>
