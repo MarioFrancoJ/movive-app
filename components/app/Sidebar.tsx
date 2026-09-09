@@ -8,9 +8,6 @@ import Logo from "@/components/ui/Logo";
 import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
-// Custom brand icons live in /public/icons. NavIcon masks them so they inherit
-// currentColor (grey inactive → white active/hover), keeping the exact size
-// (h-4 w-4), spacing, and state behavior of the previous inline icons.
 
 function IconGrid() { return <NavIcon name="dashboard.svg" />; }
 function IconDumbbell() { return <NavIcon name="training.svg" />; }
@@ -108,12 +105,9 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [popoverId, setPopoverId] = useState<string | null>(null);
-  // Anchor rect for the collapsed-mode flyout. The popover is rendered with
-  // position:fixed (not absolute) so the nav's overflow-y-auto can't clip it.
   const [popoverAnchor, setPopoverAnchor] = useState<{ top: number; left: number } | null>(null);
   const closeTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load collapsed preference from localStorage
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored === "true") setCollapsed(true);
@@ -126,7 +120,6 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     setPopoverId(null);
   }
 
-  // Active section detection
   const activeSectionId = useMemo(() => {
     if (pathname === "/dashboard") return null;
     for (const section of NAV_SECTIONS) {
@@ -152,16 +145,12 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     return pathname.startsWith(href + "/");
   }
 
-  // Calendar is a top-level cross-module timeline (not nested under Training).
-  // It sits between Progress and AI in the sidebar order.
   const calendarActive = pathname === CALENDAR_HREF || pathname.startsWith(CALENDAR_HREF + "/");
   const sectionsBeforeCalendar = NAV_SECTIONS.filter((s) => ["training", "nutrition", "progress"].includes(s.id));
   const sectionsAfterCalendar = NAV_SECTIONS.filter((s) => ["ai", "account"].includes(s.id));
   function toggleSection(id: string) { setExpandedId((prev) => (prev === id ? null : id)); }
   const handleNavClick = () => { if (onClose) onClose(); setPopoverId(null); };
 
-  // Popover handlers (collapsed mode). We measure the trigger button's on-screen
-  // rect and position the flyout with fixed coords → immune to overflow clipping.
   function anchorFromElement(el: HTMLElement | null) {
     if (!el) return;
     const r = el.getBoundingClientRect();
@@ -186,7 +175,6 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     if (closeTimerRef.current) { clearTimeout(closeTimerRef.current); closeTimerRef.current = null; }
   }
 
-  // Keyboard handler for popover
   function handlePopoverKeyDown(e: React.KeyboardEvent<HTMLButtonElement>, sectionId: string) {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
@@ -208,20 +196,17 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           "md:static md:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full",
           collapsed ? "md:w-[68px]" : "md:w-60",
-          "w-60", // Mobile always full width
+          "w-[280px]", // Mobile: 280px para que los items quepan bien
         ].join(" ")}
       >
         {/* Logo */}
         <div className="flex h-16 items-center justify-between border-b border-zinc-100 px-4">
           {collapsed ? (
             <Link href="/dashboard" onClick={handleNavClick} className="mx-auto flex transition-opacity hover:opacity-80" title="Movive" aria-label="Movive">
-              {/* Collapsed: icon-only isotipo */}
               <Logo variant="isotipo" className="h-6" alt="" />
             </Link>
           ) : (
             <Link href="/dashboard" onClick={handleNavClick} className="flex transition-opacity hover:opacity-80 md:mx-auto" aria-label="Movive">
-              {/* Expanded: full isologo lockup — centered on desktop (the close
-                  button that shares this row is hidden on md+). */}
               <Logo variant="isologo" className="h-6" />
             </Link>
           )}
@@ -230,8 +215,8 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2 py-4">
+        {/* Navigation - con overflow-x-hidden para evitar desbordamiento */}
+        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden px-2 py-4">
           {/* Dashboard */}
           <Link
             href="/dashboard"
@@ -239,7 +224,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
             title={collapsed ? nav.dashboard : undefined}
             className={[
               "flex items-center rounded-lg transition-colors",
-              collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5 text-sm font-medium",
+              collapsed ? "justify-center p-2.5" : "gap-3 px-2.5 py-2 text-sm font-medium",
               pathname === "/dashboard" ? "bg-primary text-white" : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900",
             ].join(" ")}
             aria-current={pathname === "/dashboard" ? "page" : undefined}
@@ -252,14 +237,14 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           <div className="mt-2 flex flex-col gap-0.5">
             {sectionsBeforeCalendar.map(renderSection)}
 
-            {/* Calendar — top-level cross-module timeline */}
+            {/* Calendar */}
             <Link
               href={CALENDAR_HREF}
               onClick={handleNavClick}
               title={collapsed ? nav.calendar : undefined}
               className={[
                 "flex items-center rounded-lg transition-colors",
-                collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5 text-sm font-medium",
+                collapsed ? "justify-center p-2.5" : "gap-3 px-2.5 py-2 text-sm font-medium",
                 calendarActive
                   ? "bg-primary text-white"
                   : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900",
@@ -291,109 +276,109 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     </>
   );
 
-  // ── Section renderer (shared by before/after Calendar groups) ───────────────
+  // ── Section renderer ────────────────────────────────────────────────────────
   function renderSection(section: NavSection) {
     const isExpanded = expandedId === section.id;
     const isPopoverOpen = popoverId === section.id;
     const sectionActive = section.matchPrefixes.some((p) => pathname === p || pathname.startsWith(p + "/"));
 
-    // ── COLLAPSED MODE ──
+    // COLLAPSED MODE
     if (collapsed) {
       return (
-                  <div
-                    key={section.id}
-                    className="relative"
-                    onMouseEnter={(e) => openPopover(section.id, e.currentTarget.querySelector("button"))}
-                    onMouseLeave={scheduleClosePopover}
-                  >
-                    <button
-                      type="button"
-                      onClick={(e) => togglePopover(section.id, e.currentTarget)}
-                      onKeyDown={(e) => handlePopoverKeyDown(e, section.id)}
-                      title={section.label}
-                      className={[
-                        "flex w-full items-center justify-center rounded-lg p-2.5 transition-colors",
-                        sectionActive ? "bg-zinc-100 text-zinc-900" : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900",
-                      ].join(" ")}
-                      aria-haspopup="true"
-                      aria-expanded={isPopoverOpen}
-                    >
-                      {section.icon}
-                    </button>
+        <div
+          key={section.id}
+          className="relative"
+          onMouseEnter={(e) => openPopover(section.id, e.currentTarget.querySelector("button"))}
+          onMouseLeave={scheduleClosePopover}
+        >
+          <button
+            type="button"
+            onClick={(e) => togglePopover(section.id, e.currentTarget)}
+            onKeyDown={(e) => handlePopoverKeyDown(e, section.id)}
+            title={section.label}
+            className={[
+              "flex w-full items-center justify-center rounded-lg p-2.5 transition-colors",
+              sectionActive ? "bg-zinc-100 text-zinc-900" : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900",
+            ].join(" ")}
+            aria-haspopup="true"
+            aria-expanded={isPopoverOpen}
+          >
+            {section.icon}
+          </button>
 
-                    {/* Popover — fixed position so the nav's overflow can't clip it */}
-                    {isPopoverOpen && popoverAnchor && (
-                      <div
-                        className="fixed z-[60] w-48 rounded-xl border border-zinc-200 bg-white py-1 shadow-lg"
-                        style={{ top: popoverAnchor.top, left: popoverAnchor.left }}
-                        onMouseEnter={cancelClosePopover}
-                        onMouseLeave={scheduleClosePopover}
-                        role="menu"
-                      >
-                        <p className="px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-zinc-400">{section.label}</p>
-                        {section.items.map((item) => {
-                          const active = isItemActive(item.href);
-                          return (
-                            <Link
-                              key={item.href}
-                              href={item.href}
-                              onClick={handleNavClick}
-                              role="menuitem"
-                              className={[
-                                "flex items-center gap-2.5 px-3 py-2 text-sm font-medium transition-colors",
-                                active ? "bg-primary text-white" : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900",
-                              ].join(" ")}
-                            >
-                              {item.icon}
-                              {item.label}
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              }
-
-              // ── EXPANDED MODE ──
-              return (
-                <div key={section.id}>
-                  <button
-                    type="button"
-                    onClick={() => toggleSection(section.id)}
+          {/* Popover — fixed position */}
+          {isPopoverOpen && popoverAnchor && (
+            <div
+              className="fixed z-[60] w-48 rounded-xl border border-zinc-200 bg-white py-1 shadow-lg"
+              style={{ top: popoverAnchor.top, left: popoverAnchor.left }}
+              onMouseEnter={cancelClosePopover}
+              onMouseLeave={scheduleClosePopover}
+              role="menu"
+            >
+              <p className="px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-zinc-400">{section.label}</p>
+              {section.items.map((item) => {
+                const active = isItemActive(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={handleNavClick}
+                    role="menuitem"
                     className={[
-                      "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                      sectionActive && !isExpanded ? "bg-zinc-100 text-zinc-900" : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900",
+                      "flex items-center gap-2.5 px-3 py-2 text-sm font-medium transition-colors",
+                      active ? "bg-primary text-white" : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900",
                     ].join(" ")}
-                    aria-expanded={isExpanded}
                   >
-                    {section.icon}
-                    <span className="flex-1 text-left">{section.label}</span>
-                    <IconChevron open={isExpanded} />
-                  </button>
-                  {isExpanded && (
-                    <div className="ml-4 mt-0.5 flex flex-col gap-0.5 border-l border-zinc-100 pl-3">
-                      {section.items.map((item) => {
-                        const active = isItemActive(item.href);
-                        return (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            onClick={handleNavClick}
-                            className={[
-                              "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors",
-                              active ? "bg-primary text-white" : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900",
-                            ].join(" ")}
-                            aria-current={active ? "page" : undefined}
-                          >
-                            {item.icon}
-                            {item.label}
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
+                    {item.icon}
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // EXPANDED MODE
+    return (
+      <div key={section.id}>
+        <button
+          type="button"
+          onClick={() => toggleSection(section.id)}
+          className={[
+            "flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors",
+            sectionActive && !isExpanded ? "bg-zinc-100 text-zinc-900" : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900",
+          ].join(" ")}
+          aria-expanded={isExpanded}
+        >
+          {section.icon}
+          <span className="flex-1 text-left">{section.label}</span>
+          <IconChevron open={isExpanded} />
+        </button>
+        {isExpanded && (
+          <div className="ml-4 mt-0.5 flex flex-col gap-0.5 border-l border-zinc-100 pl-2.5">
+            {section.items.map((item) => {
+              const active = isItemActive(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={handleNavClick}
+                  className={[
+                    "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors",
+                    active ? "bg-primary text-white" : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900",
+                  ].join(" ")}
+                  aria-current={active ? "page" : undefined}
+                >
+                  {item.icon}
+                  {item.label}
+                </Link>
               );
+            })}
+          </div>
+        )}
+      </div>
+    );
   }
 }
