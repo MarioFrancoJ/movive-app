@@ -18,16 +18,12 @@ import {
 } from "@/lib/nutrition";
 import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 
-// Common units offered in the add form + inline editor.
 const UNIT_OPTIONS = ["g", "kg", "ml", "l", "unit", "slice", "scoop", "cup", "tbsp", "tsp", ""] as const;
 
-// Format a row's quantity for display: "500 g", "2 unit", or "—" when empty.
 function formatQty(qty: number | null, unit: string): string {
   if (qty == null) return "—";
   return unit ? `${qty} ${unit}` : String(qty);
 }
-
-// ── Component ─────────────────────────────────────────────────────────────────
 
 export default function ShoppingListPage() {
   const { dict } = useDictionary();
@@ -40,29 +36,22 @@ export default function ShoppingListPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  // Add form
   const [name, setName] = useState("");
   const [qty, setQty] = useState("");
   const [unit, setUnit] = useState("g");
   const [category, setCategory] = useState<ShoppingCategory>("Other");
 
-  // Inline edit
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editQty, setEditQty] = useState("");
   const [editUnit, setEditUnit] = useState("");
 
-  // Bought section collapsed by default (active list is the protagonist).
   const [boughtOpen, setBoughtOpen] = useState(false);
-  // Per-category collapse state (persists while navigating the page).
-  // Undefined = use the default (expanded if the category has pending items).
   const [collapsedCats, setCollapsedCats] = useState<Record<string, boolean>>({});
 
   const supabase = createClient();
 
-  // Recipe id → name map for ingredient provenance ("from N recipes").
   const [recipeNames, setRecipeNames] = useState<Record<string, string>>({});
-  // Which item's provenance detail is expanded (mobile-friendly; no tooltip lib).
   const [openSource, setOpenSource] = useState<string | null>(null);
 
   const refreshRecipeNames = async (list: ShoppingListItemRow[]) => {
@@ -81,13 +70,10 @@ export default function ShoppingListPage() {
       setLoading(false);
     }
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Localized category label.
   const catLabel = (c: ShoppingCategory) => t.categories?.[c] ?? c;
 
-  // Split rows into pending (grouped by category) and bought.
   const { pendingByCat, bought } = useMemo(() => {
     const pending = rows.filter((r) => !r.checked);
     const done = rows.filter((r) => r.checked);
@@ -99,15 +85,12 @@ export default function ShoppingListPage() {
     return { pendingByCat: byCat, bought: done };
   }, [rows]);
 
-  // Progress summary (point 2): total / pending / bought / % complete.
   const progress = useMemo(() => {
     const total = rows.length;
     const boughtN = rows.filter((r) => r.checked).length;
     return { total, bought: boughtN, pending: total - boughtN, pct: total > 0 ? Math.round((boughtN / total) * 100) : 0 };
   }, [rows]);
 
-  // Whether a category section is expanded. Default: expanded if it has pending
-  // items; collapsed if all its items are bought. Local override persists.
   function isCatOpen(c: ShoppingCategory): boolean {
     if (c in collapsedCats) return !collapsedCats[c];
     return (pendingByCat[c]?.length ?? 0) > 0;
@@ -115,8 +98,6 @@ export default function ShoppingListPage() {
   function toggleCat(c: ShoppingCategory) {
     setCollapsedCats((prev) => ({ ...prev, [c]: !( c in prev ? !prev[c] : (pendingByCat[c]?.length ?? 0) > 0) }));
   }
-
-  // ── Persistence helpers (granular, per row) ────────────────────────────────
 
   async function insertRow(row: Omit<ShoppingListItemRow, "id">): Promise<ShoppingListItemRow | null> {
     if (!userId) return null;
@@ -149,8 +130,6 @@ export default function ShoppingListPage() {
     if (e) setError(e.message);
   }
 
-  // ── Actions ─────────────────────────────────────────────────────────────────
-
   async function handleAdd(e: FormEvent) {
     e.preventDefault();
     if (!name.trim()) { setError(t.errorNameRequired); return; }
@@ -159,12 +138,10 @@ export default function ShoppingListPage() {
     const qNum = qty.trim() === "" ? null : Math.round((Number(qty) || 0) * 100) / 100;
     const incoming: MergeIngredientInput = { name: name.trim(), quantity: qNum ?? 0, unit, category };
 
-    // Single engine: does this collide with an existing row (name+unit)?
     const merged = mergeRows(rows, [incoming]);
-    const isMerge = merged.length === rows.length; // no new row → merged into existing
+    const isMerge = merged.length === rows.length;
 
     if (isMerge) {
-      // Find the changed row and persist just it.
       const changed = merged.find((m) => {
         const prev = rows.find((r) => r.id === m.id);
         return prev && (prev.qty !== m.qty || prev.checked !== m.checked);
@@ -226,7 +203,6 @@ export default function ShoppingListPage() {
     const newQty = editQty.trim() === "" ? null : Math.round((Number(editQty) || 0) * 100) / 100;
     const newUnit = editUnit;
 
-    // Collision check: another row with same normalized name + unit → auto-merge.
     const collision = rows.find(
       (r) => r.id !== id &&
         r.name.trim().toLowerCase() === newName.trim().toLowerCase() &&
@@ -236,7 +212,6 @@ export default function ShoppingListPage() {
     if (collision) {
       const editedRow: ShoppingListItemRow = { ...row, name: newName, qty: newQty, unit: newUnit };
       const mergedInto = mergeTwoRows(collision, editedRow);
-      // Persist: update the surviving row, delete the edited one.
       setRows((prev) => prev
         .filter((r) => r.id !== id)
         .map((r) => (r.id === collision.id ? mergedInto : r)));
@@ -252,14 +227,11 @@ export default function ShoppingListPage() {
     await updateRow(id, { name: newName, qty: newQty, unit: newUnit });
   }
 
-  // ── Generate from meal plan (single engine) ─────────────────────────────────
-
   async function handleGenerate() {
     if (!userId) return;
     setError("");
     const weekStart = getWeekBounds(new Date()).start;
     setSaving(true);
-    // Shared generator — same single merge engine used by the Meal Planner.
     const res = await generateShoppingListFromWeek(weekStart);
     setSaving(false);
     if (!res.ok) {
@@ -283,14 +255,12 @@ export default function ShoppingListPage() {
     );
   }
 
-  // ── Render ──────────────────────────────────────────────────────────────────
-
   if (loading) return <PageLoader text={t.loading} />;
 
   const pendingCount = rows.length - bought.length;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -311,7 +281,7 @@ export default function ShoppingListPage() {
         )}
       </div>
 
-      {/* Primary CTA — generate the list from the meal plan (protagonist). */}
+      {/* Primary CTA */}
       <button
         type="button"
         onClick={handleGenerate}
@@ -323,7 +293,7 @@ export default function ShoppingListPage() {
 
       {error && <p className="text-sm text-red-500" role="alert">{error}</p>}
 
-      {/* Progress summary (point 2) */}
+      {/* Progress summary */}
       {rows.length > 0 && (
         <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
           <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
@@ -340,7 +310,7 @@ export default function ShoppingListPage() {
         </div>
       )}
 
-      {/* Add form — mobile-first: stacks on small, row on sm+ */}
+      {/* Add form */}
       <form onSubmit={handleAdd} className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5">
         <p className="mb-3 text-sm font-semibold text-zinc-700">{t.addIngredient}</p>
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
@@ -384,13 +354,13 @@ export default function ShoppingListPage() {
         </div>
       ) : (
         <>
-          {/* Pending — grouped by category */}
+          {/* Pending */}
           {pendingCount === 0 ? (
             <div className="rounded-xl border border-zinc-200 bg-white px-6 py-8 text-center text-sm text-zinc-400 shadow-sm">
               {t.allBought}
             </div>
           ) : (
-            <div className="flex flex-col gap-4">
+            <div className="space-y-4">
               {SHOPPING_CATEGORIES.filter((c) => pendingByCat[c]?.length).map((c) => (
                 <div key={c} className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
                   <button
@@ -410,7 +380,6 @@ export default function ShoppingListPage() {
                     {pendingByCat[c].map((item) => (
                       <li key={item.id} className="px-4 py-3">
                         {editingId === item.id ? (
-                          // ── Inline editor ──
                           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                             <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)}
                               aria-label={t.ingredient}
@@ -434,7 +403,6 @@ export default function ShoppingListPage() {
                             </div>
                           </div>
                         ) : (
-                          // ── Display row ──
                           <div className="flex items-center gap-3">
                             <button type="button" onClick={() => handleToggle(item.id)}
                               aria-label={`${dict.common.add} ${item.name}`}
@@ -464,7 +432,6 @@ export default function ShoppingListPage() {
                                 </>
                               )}
                             </div>
-                            {/* Category quick-change */}
                             <select value={item.category} onChange={(e) => handleChangeCategory(item.id, e.target.value as ShoppingCategory)}
                               aria-label={t.category}
                               className="h-8 rounded-lg border border-zinc-200 bg-white px-1.5 text-xs text-zinc-500 focus:border-zinc-400 focus:outline-none">
@@ -476,7 +443,7 @@ export default function ShoppingListPage() {
                             </button>
                             <button type="button" onClick={() => handleRemove(item.id)} aria-label={`${dict.common.delete} ${item.name}`}
                               className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-600">
-                              <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true"><path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.519.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4Z" clipRule="evenodd" /></svg>
+                              <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true"><path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.519.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5Z" clipRule="evenodd" /></svg>
                             </button>
                           </div>
                         )}
@@ -489,7 +456,7 @@ export default function ShoppingListPage() {
             </div>
           )}
 
-          {/* Bought — collapsible, collapsed by default, with counter */}
+          {/* Bought */}
           {bought.length > 0 && (
             <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
               <button type="button" onClick={() => setBoughtOpen((o) => !o)} aria-expanded={boughtOpen}
