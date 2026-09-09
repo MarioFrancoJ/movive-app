@@ -213,9 +213,9 @@ export default function Topbar({ locale, onMenuToggle }: TopbarProps) {
     <NotificationPanel isOpen={notificationsOpen} onClose={closeNotifications} onUnreadCountChange={handleUnreadCountChange} />
   </div>
 
-  {/* SuperAdmin + Sandbox - completely hidden until 1024px */}
+  {/* SuperAdmin + Sandbox - visible from 900px and up */}
   {isSuperAdmin && (
-    <div className="hidden items-center gap-2 lg:flex">
+    <div className="hidden min-[900px]:flex items-center gap-2">
       <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2 py-0.5 text-xs font-bold text-purple-700">
         ⚡ {t.superAdmin}
       </span>
@@ -233,12 +233,12 @@ export default function Topbar({ locale, onMenuToggle }: TopbarProps) {
     {userInitial}
   </Link>
 
-  {/* Logout - hidden until 1024px */}
+  {/* Logout - visible from 900px and up */}
   <button
     type="button"
     onClick={handleLogout}
     aria-label={t.signOut}
-    className="hidden rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 lg:block"
+    className="hidden min-[900px]:block rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
   >
     {t.signOut}
   </button>
