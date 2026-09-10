@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import { ToastProvider } from "@/components/ui/Toast";
@@ -18,6 +19,7 @@ interface AppShellProps {
 
 export default function AppShell({ locale, dict, children }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const pathname = usePathname();
 
   const handleMenuToggle = useCallback(() => {
     setSidebarOpen((prev) => !prev);
@@ -26,6 +28,14 @@ export default function AppShell({ locale, dict, children }: AppShellProps) {
   const handleSidebarClose = useCallback(() => {
     setSidebarOpen(false);
   }, []);
+
+  // Red de seguridad: limpiar el body al cambiar de ruta.
+  // Evita que el body quede con overflow:hidden después de usar un modal/bottom sheet.
+  useEffect(() => {
+    document.body.style.overflow = "";
+    document.body.style.position = "";
+    document.body.style.height = "";
+  }, [pathname]);
 
   return (
     <DictionaryProvider dict={dict} locale={locale}>
@@ -37,7 +47,6 @@ export default function AppShell({ locale, dict, children }: AppShellProps) {
               <SandboxBanner />
               <Topbar locale={locale} onMenuToggle={handleMenuToggle} />
               <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-                {/* Padding aplicado a un div interno para asegurar que se respete */}
                 <div className="mx-auto w-full max-w-7xl px-4 py-4 md:px-6 md:py-6">
                   {children}
                 </div>
