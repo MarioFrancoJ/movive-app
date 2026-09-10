@@ -157,3 +157,23 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LAYOUT — Altura del viewport y scroll único
+   Garantiza que el <body> ocupe exactamente el viewport y que solo el <main>
+   tenga scroll (evita el doble scroll). Usa 100dvh con fallback a 100vh.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+html,
+body {
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* Fallback para navegadores que no soportan dvh */
+@supports not (height: 100dvh) {
+  html,
+  body {
+    height: 100vh;
+  }
+}
