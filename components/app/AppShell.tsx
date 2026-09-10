@@ -41,7 +41,7 @@ export default function AppShell({ locale, dict, children }: AppShellProps) {
     <DictionaryProvider dict={dict} locale={locale}>
       <ToastProvider>
         <SandboxProvider>
-          <div className="flex h-dvh w-full overflow-hidden bg-zinc-50">
+          <div className="flex h-screen w-full overflow-hidden bg-zinc-50">
             <Sidebar open={sidebarOpen} onClose={handleSidebarClose} />
             <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
               <SandboxBanner />
