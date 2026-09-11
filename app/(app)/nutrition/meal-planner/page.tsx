@@ -844,7 +844,7 @@ export default function MealPlannerPage() {
         </div>
 
         {/* Day totals */}
-        <div className="grid gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="flex flex-col items-center rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
             <p className="text-lg font-bold text-zinc-900">{totals.calories}</p>
             <p className="text-xs text-zinc-400">{nt.calories}</p>
