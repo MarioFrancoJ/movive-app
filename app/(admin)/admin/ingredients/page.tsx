@@ -20,6 +20,7 @@ interface Ingredient {
   carbs_per_100g: number;
   fat_per_100g: number;
   unit: string;
+  cooking_factor: number | null;
 }
 
 const INGREDIENT_CATEGORIES: IngredientCategory[] = ["Protein", "Carbohydrate", "Fat", "Vegetable", "Fruit", "Dairy", "Beverage", "Other"];
@@ -44,14 +45,15 @@ export default function AdminIngredientsPage() {
   const [carbs, setCarbs] = useState("");
   const [fat, setFat] = useState("");
   const [unit, setUnit] = useState("g");
-  const [formError, setFormError] = useState("");
+const [cookingFactor, setCookingFactor] = useState("");
+const [formError, setFormError] = useState("");
 
   useEffect(() => {
     async function loadData() {
       const supabase = createClient();
       const { data } = await supabase
         .from("ingredients")
-        .select("id, name, category, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, unit")
+        .select("id, name, category, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, unit, cooking_factor")
         .order("name");
       if (data) setIngredients(data as Ingredient[]);
       setLoading(false);
@@ -65,22 +67,23 @@ export default function AdminIngredientsPage() {
     return matchesSearch && matchesCategory;
   });
 
-  function resetForm() {
-    setName(""); setCategory("Protein"); setCalories(""); setProtein(""); setCarbs(""); setFat(""); setUnit("g");
-    setFormError(""); setEditId(null); setShowForm(false);
-  }
+ function resetForm() {
+  setName(""); setCategory("Protein"); setCalories(""); setProtein(""); setCarbs(""); setFat(""); setUnit("g"); setCookingFactor("");
+  setFormError(""); setEditId(null); setShowForm(false);
+}
 
   function handleEdit(ingredient: Ingredient) {
-    setName(ingredient.name);
-    setCategory(ingredient.category);
-    setCalories(ingredient.calories_per_100g.toString());
-    setProtein(ingredient.protein_per_100g.toString());
-    setCarbs(ingredient.carbs_per_100g.toString());
-    setFat(ingredient.fat_per_100g.toString());
-    setUnit(ingredient.unit || "g");
-    setEditId(ingredient.id);
-    setShowForm(true);
-  }
+  setName(ingredient.name);
+  setCategory(ingredient.category);
+  setCalories(ingredient.calories_per_100g.toString());
+  setProtein(ingredient.protein_per_100g.toString());
+  setCarbs(ingredient.carbs_per_100g.toString());
+  setFat(ingredient.fat_per_100g.toString());
+  setUnit(ingredient.unit || "g");
+  setCookingFactor(ingredient.cooking_factor != null ? ingredient.cooking_factor.toString() : "");
+  setEditId(ingredient.id);
+  setShowForm(true);
+}
 
   async function handleDelete(id: string) {
     const supabase = createClient();
@@ -98,14 +101,15 @@ export default function AdminIngredientsPage() {
     const supabase = createClient();
 
     const data = {
-      name: name.trim(),
-      category,
-      calories_per_100g: parseFloat(calories) || 0,
-      protein_per_100g: parseFloat(protein) || 0,
-      carbs_per_100g: parseFloat(carbs) || 0,
-      fat_per_100g: parseFloat(fat) || 0,
-      unit,
-    };
+  name: name.trim(),
+  category,
+  calories_per_100g: parseFloat(calories) || 0,
+  protein_per_100g: parseFloat(protein) || 0,
+  carbs_per_100g: parseFloat(carbs) || 0,
+  fat_per_100g: parseFloat(fat) || 0,
+  unit,
+  cooking_factor: cookingFactor.trim() === "" ? null : parseFloat(cookingFactor) || 1,
+};
 
     try {
       if (editId) {
@@ -158,6 +162,24 @@ export default function AdminIngredientsPage() {
                 <option value="g">g</option><option value="ml">ml</option><option value="unit">unit</option><option value="slice">slice</option>
               </select>
             </div>
+            <div className="flex flex-col gap-1.5">
+  <label htmlFor="ing-cook" className="text-sm font-medium text-zinc-700">
+    Factor de cocción
+    <span className="ml-1 text-xs font-normal text-zinc-400">(opcional)</span>
+  </label>
+  <Input
+    id="ing-cook"
+    type="number"
+    value={cookingFactor}
+    onChange={(e) => setCookingFactor(e.target.value)}
+    placeholder="Ej: 2.8 (arroz)"
+    min={0.5}
+    step={0.1}
+  />
+  <p className="text-xs text-zinc-400">
+    Crudo → cocido. 100g crudo × 2.8 = 280g cocido.
+  </p>
+</div>
           </div>
           <div className="mt-5 flex gap-3">
             <Button type="submit" disabled={saving}>{saving ? "Saving..." : editId ? "Save Changes" : "Create"}</Button>
@@ -192,6 +214,7 @@ export default function AdminIngredientsPage() {
                   <th className="px-5 py-3 font-semibold text-zinc-700">Carbs</th>
                   <th className="px-5 py-3 font-semibold text-zinc-700">Fat</th>
                   <th className="px-5 py-3 font-semibold text-zinc-700">Unit</th>
+                  <th className="px-5 py-3 font-semibold text-zinc-700">Factor</th>
                   <th className="px-5 py-3 font-semibold text-zinc-700">Actions</th>
                 </tr>
               </thead>
@@ -205,6 +228,7 @@ export default function AdminIngredientsPage() {
                     <td className="px-5 py-3 text-zinc-600">{i.carbs_per_100g}g</td>
                     <td className="px-5 py-3 text-zinc-600">{i.fat_per_100g}g</td>
                     <td className="px-5 py-3 text-zinc-600">{i.unit || "g"}</td>
+                    <td className="px-5 py-3 text-zinc-600">   {i.cooking_factor != null ? i.cooking_factor : "—"} </td>
                     <td className="px-5 py-3">
                       <div className="flex gap-2">
                         <button type="button" onClick={() => handleEdit(i)} className="text-xs font-medium text-zinc-500 hover:text-zinc-900">Edit</button>
