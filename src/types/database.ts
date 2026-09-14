@@ -306,7 +306,7 @@ export type Database = {
           },
         ]
       }
-      ingredients: {
+            ingredients: {
         Row: {
           id: string
           name: string
@@ -317,6 +317,7 @@ export type Database = {
           fat_per_100g: number
           unit: string
           unit_weight: number | null
+          cooking_factor: number | null
           created_at: string
         }
         Insert: {
@@ -329,6 +330,7 @@ export type Database = {
           fat_per_100g: number
           unit?: string
           unit_weight?: number | null
+          cooking_factor?: number | null
           created_at?: string
         }
         Update: {
@@ -341,6 +343,7 @@ export type Database = {
           fat_per_100g?: number
           unit?: string
           unit_weight?: number | null
+          cooking_factor?: number | null
           created_at?: string
         }
         Relationships: []
