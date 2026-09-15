@@ -763,3 +763,190 @@ export async function getRecipeNames(ids: string[]): Promise<Record<string, stri
   for (const r of (data as { id: string; name: string }[] | null) ?? []) map[r.id] = r.name;
   return map;
 }
+
+
+// ── Recipe Macros (Fase 2) ────────────────────────────────────────────────────
+// Motor único de cálculo de macros desde ingredientes.
+// Los ingredientes son la fuente de verdad — los macros de recipes son caché.
+
+/**
+ * Ingrediente con macros para el cálculo.
+ * Los macros están en estado CRUDO (calories_per_100g, etc.).
+ */
+export interface IngredientMacros {
+  quantity: number;
+  calories_per_100g: number;
+  protein_per_100g: number;
+  carbs_per_100g: number;
+  fat_per_100g: number;
+  unit: string;
+  unit_weight?: number | null;
+}
+
+/**
+ * Calcula los macros de una receta desde sus ingredientes (función pura).
+ *
+ * Fórmula:
+ *   - Si unit === "g": grams = quantity
+ *   - Si unit !== "g": grams = quantity × unit_weight
+ *   - factor = grams / 100
+ *   - macros += macros_per_100g × factor
+ *
+ * Los ingredientes están en CRUDO. El resultado es en CRUDO.
+ * Para mostrar equivalentes cocidos usar cooking_factor (solo UI).
+ */
+export function calculateRecipeMacros(
+  ingredients: IngredientMacros[]
+): RecipeMacros {
+  let calories = 0;
+  let protein = 0;
+  let carbs = 0;
+  let fat = 0;
+
+  for (const ing of ingredients) {
+    // Convertir a gramos si la unidad no es 'g'
+    let grams = ing.quantity;
+    if (ing.unit !== "g" && ing.unit_weight && ing.unit_weight > 0) {
+      grams = ing.quantity * ing.unit_weight;
+    }
+
+    const factor = grams / 100;
+
+    calories += (ing.calories_per_100g || 0) * factor;
+    protein += (ing.protein_per_100g || 0) * factor;
+    carbs += (ing.carbs_per_100g || 0) * factor;
+    fat += (ing.fat_per_100g || 0) * factor;
+  }
+
+  return {
+    calories: Math.round(calories),
+    protein: Math.round(protein),
+    carbs: Math.round(carbs),
+    fat: Math.round(fat),
+  };
+}
+
+/**
+ * Calcula los macros de una receta desde la base de datos.
+ * Hace el JOIN de recipe_ingredients → ingredients.
+ *
+ * Uso:
+ *   const macros = await calculateRecipeMacrosFromDB(recipeId);
+ */
+export async function calculateRecipeMacrosFromDB(
+  recipeId: string
+): Promise<RecipeMacros | null> {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("recipe_ingredients")
+    .select(`
+      quantity,
+      unit,
+      ingredients (
+        calories_per_100g,
+        protein_per_100g,
+        carbs_per_100g,
+        fat_per_100g,
+        unit,
+        unit_weight
+      )
+    `)
+    .eq("recipe_id", recipeId);
+
+  if (error || !data || data.length === 0) return null;
+
+  const ingredients: IngredientMacros[] = data
+    .map((ri: any) => {
+      const ing = ri.ingredients;
+      if (!ing) return null;
+      return {
+        quantity: ri.quantity || 0,
+        calories_per_100g: ing.calories_per_100g || 0,
+        protein_per_100g: ing.protein_per_100g || 0,
+        carbs_per_100g: ing.carbs_per_100g || 0,
+        fat_per_100g: ing.fat_per_100g || 0,
+        unit: ing.unit || "g",
+        unit_weight: ing.unit_weight,
+      };
+    })
+    .filter(Boolean) as IngredientMacros[];
+
+  return calculateRecipeMacros(ingredients);
+}
+
+/**
+ * Recalcula los macros de una receta y los guarda en la tabla recipes.
+ * Útil para:
+ *   - Migrar recetas existentes
+ *   - Recalcular después de cambios manuales
+ *   - Testing
+ *
+ * Uso:
+ *   await recalculateAndSaveRecipeMacros(recipeId);
+ */
+export async function recalculateAndSaveRecipeMacros(
+  recipeId: string
+): Promise<{ ok: boolean; error?: string; macros?: RecipeMacros }> {
+  const supabase = createClient();
+
+  const macros = await calculateRecipeMacrosFromDB(recipeId);
+  if (!macros) {
+    return { ok: false, error: "No se pudieron calcular los macros (sin ingredientes)" };
+  }
+
+  const { error } = await supabase
+    .from("recipes")
+    .update({
+      calories: macros.calories,
+      protein: macros.protein,
+      carbs: macros.carbs,
+      fat: macros.fat,
+    })
+    .eq("id", recipeId);
+
+  if (error) return { ok: false, error: error.message };
+
+  return { ok: true, macros };
+}
+
+/**
+ * Recalcula TODAS las recetas de la base de datos.
+ * Útil para migración inicial (Fase 5).
+ *
+ * Uso:
+ *   const result = await recalculateAllRecipes();
+ *   console.log(`Recalculadas: ${result.updated} / ${result.total}`);
+ */
+export async function recalculateAllRecipes(): Promise<{
+  ok: boolean;
+  total: number;
+  updated: number;
+  failed: number;
+  error?: string;
+}> {
+  const supabase = createClient();
+
+  const { data: recipes, error: loadError } = await supabase
+    .from("recipes")
+    .select("id");
+
+  if (loadError) {
+    return { ok: false, total: 0, updated: 0, failed: 0, error: loadError.message };
+  }
+
+  const total = recipes?.length ?? 0;
+  let updated = 0;
+  let failed = 0;
+
+  for (const recipe of recipes ?? []) {
+    const result = await recalculateAndSaveRecipeMacros(recipe.id);
+    if (result.ok) {
+      updated++;
+    } else {
+      failed++;
+    }
+  }
+
+  return { ok: true, total, updated, failed };
+}
