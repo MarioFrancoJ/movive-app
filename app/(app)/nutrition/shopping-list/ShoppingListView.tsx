@@ -26,7 +26,7 @@ function formatQty(qty: number | null, unit: string): string {
   return unit ? `${qty} ${unit}` : String(qty);
 }
 
-export default function ShoppingListPage() {
+export default function ShoppingListView() {
   const { dict } = useDictionary();
   const t = dict.nutrition.shoppingList;
   const { success, info, error: toastError } = useToast();
