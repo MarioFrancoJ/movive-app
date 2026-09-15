@@ -1,18 +1,21 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Metadata } from "next";
+import { getLocaleCookie } from "@/lib/i18n/actions";
+import { getDictionary } from "@/lib/i18n/getDictionary";
 import RecipesView, {
   type Recipe,
   type RecipeGoal,
   type MealType,
 } from "./RecipesView";
 
-export const metadata: Metadata = {
-  title: "Recetas",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocaleCookie();
+  const dict = await getDictionary(locale);
+  return {
+    title: dict.nav.nutrition.recipes,
+  };
+}
 
-// Server Component: fetch recipes on the server (no client waterfall / spinner)
-// and hand the data to the interactive client view. RLS is enforced via the
-// user's JWT from cookies.
 export default async function RecipesPage() {
   const supabase = await createClient();
 
