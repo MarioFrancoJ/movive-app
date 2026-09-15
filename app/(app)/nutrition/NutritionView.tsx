@@ -155,7 +155,7 @@ function EmptyState({ onAdd, t }: { onAdd: () => void; t: ReturnType<typeof useD
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export default function NutritionPage() {
+export default function NutritionView() {
   const { dict } = useDictionary();
   const t = dict.nutrition;
   const { success: showToast } = useToast();
