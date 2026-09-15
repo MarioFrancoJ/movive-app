@@ -439,39 +439,38 @@ function RecipeForm({
     setFormNotice(notes.join(" · "));
   }
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    setFormNotice("");
-    if (!name.trim()) { setFormError("Name is required."); return; }
-    if (recipeIngredients.length === 0) { setFormError("Add at least one ingredient."); return; }
-    if (!recommendedMealType) { setFormError("Recommended meal type is required."); return; }
+ async function handleSubmit(e: FormEvent) {
+  e.preventDefault();
+  setFormNotice("");
+  if (!name.trim()) { setFormError("Name is required."); return; }
+  if (recipeIngredients.length === 0) { setFormError("Add at least one ingredient."); return; }
+  if (!recommendedMealType) { setFormError("Recommended meal type is required."); return; }
 
-    const nutrition = {
-      calories: Math.max(0, Math.round(Number(calories) || 0)),
-      protein: Math.max(0, Math.round(Number(protein) || 0)),
-      carbs: Math.max(0, Math.round(Number(carbs) || 0)),
-      fat: Math.max(0, Math.round(Number(fat) || 0)),
-    };
-    const macrosEmpty = nutrition.calories === 0 && nutrition.protein === 0 && nutrition.carbs === 0 && nutrition.fat === 0;
-    if (macrosEmpty && !nutritionWarningAck) {
-      setNutritionWarningAck(true);
-      setFormError("This recipe has no nutrition info (all macros are 0). Click Save again to confirm, or enter values / use Auto-calculate.");
-      return;
-    }
-
-    setSaving(true);
-    const ok = await onSave({
-      editId,
-      name: name.trim(), description: description.trim(), goal,
-      servings: parseInt(servings) || 1, prep_time: parseInt(prepTime) || 0,
-      ...nutrition,
-      recommendedMealType: recommendedMealType as RecommendedMealType,
-      ingredients: recipeIngredients,
-      instructions: instructionsText.split("\n").filter((l) => l.trim()),
-    });
-    setSaving(false);
-    if (!ok) setFormError("Failed to save recipe.");
+  // SIEMPRE recalcular desde ingredientes al guardar.
+  // Los macros nunca se editan a mano — el catálogo es la fuente de verdad.
+  const nutrition = calculateNutrition(recipeIngredients, ingredientOptions);
+  const macrosEmpty = nutrition.calories === 0 && nutrition.protein === 0 && nutrition.carbs === 0 && nutrition.fat === 0;
+  if (macrosEmpty) {
+    setFormError("No se pudieron calcular los macros. Verifica que los ingredientes existan en el catálogo y tengan cantidades válidas.");
+    return;
   }
+
+  setSaving(true);
+  const ok = await onSave({
+    editId,
+    name: name.trim(), description: description.trim(), goal,
+    servings: parseInt(servings) || 1, prep_time: parseInt(prepTime) || 0,
+    calories: nutrition.calories,
+    protein: nutrition.protein,
+    carbs: nutrition.carbs,
+    fat: nutrition.fat,
+    recommendedMealType: recommendedMealType as RecommendedMealType,
+    ingredients: recipeIngredients,
+    instructions: instructionsText.split("\n").filter((l) => l.trim()),
+  });
+  setSaving(false);
+  if (!ok) setFormError("Failed to save recipe.");
+}
 
   const previewNutrition = calculateNutrition(recipeIngredients, ingredientOptions);
 
@@ -500,27 +499,55 @@ function RecipeForm({
         <div className="sm:col-span-2 lg:col-span-3"><Input id={`rec-desc-${editId ?? "new"}`} type="text" label="Description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Short description" /></div>
       </div>
 
-      {/* Nutrition — always-visible editable fields. */}
-      <div className="mt-5 rounded-lg border border-zinc-100 bg-zinc-50 p-4">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <p className="text-xs font-semibold uppercase tracking-widest text-zinc-400">Nutrition (per serving)</p>
-          <button
-            type="button"
-            onClick={handleAutoFillNutrition}
-            disabled={recipeIngredients.length === 0}
-            className="rounded-golden-md border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 disabled:opacity-40"
-            title="Recalculate macros from the ingredient catalog"
-          >
-            Auto-calculate from ingredients
-          </button>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Input id={`rec-cal-${editId ?? "new"}`} type="number" label="Calories (kcal)" value={calories} min={0} onChange={(e) => { setCalories(e.target.value); setNutritionWarningAck(false); setFormError(""); }} placeholder="0" />
-          <Input id={`rec-pro-${editId ?? "new"}`} type="number" label="Protein (g)" value={protein} min={0} step={0.1} onChange={(e) => { setProtein(e.target.value); setNutritionWarningAck(false); setFormError(""); }} placeholder="0" />
-          <Input id={`rec-carb-${editId ?? "new"}`} type="number" label="Carbs (g)" value={carbs} min={0} step={0.1} onChange={(e) => { setCarbs(e.target.value); setNutritionWarningAck(false); setFormError(""); }} placeholder="0" />
-          <Input id={`rec-fat-${editId ?? "new"}`} type="number" label="Fat (g)" value={fat} min={0} step={0.1} onChange={(e) => { setFat(e.target.value); setNutritionWarningAck(false); setFormError(""); }} placeholder="0" />
-        </div>
+    {/* Nutrition — read-only, se calcula automáticamente desde los ingredientes. */}
+<div className="mt-5 rounded-lg border border-zinc-100 bg-zinc-50 p-4">
+  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-widest text-zinc-400">
+        Nutrition (per serving)
+      </p>
+      <p className="mt-0.5 text-xs text-zinc-500">
+        Se calcula automáticamente desde los ingredientes
+      </p>
+    </div>
+    <button
+      type="button"
+      onClick={handleAutoFillNutrition}
+      disabled={recipeIngredients.length === 0}
+      className="rounded-golden-md border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 disabled:opacity-40"
+      title="Recalculate macros from the ingredient catalog"
+    >
+      Recalcular desde ingredientes
+    </button>
+  </div>
+  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="flex flex-col gap-1.5">
+      <label className="text-sm font-medium text-zinc-500">Calories (kcal)</label>
+      <div className="flex h-10 items-center rounded-lg border border-zinc-200 bg-zinc-100 px-3 text-sm font-medium text-zinc-700">
+        {calories || "0"}
       </div>
+    </div>
+    <div className="flex flex-col gap-1.5">
+      <label className="text-sm font-medium text-zinc-500">Protein (g)</label>
+      <div className="flex h-10 items-center rounded-lg border border-zinc-200 bg-zinc-100 px-3 text-sm font-medium text-zinc-700">
+        {protein || "0"}
+      </div>
+    </div>
+    <div className="flex flex-col gap-1.5">
+      <label className="text-sm font-medium text-zinc-500">Carbs (g)</label>
+      <div className="flex h-10 items-center rounded-lg border border-zinc-200 bg-zinc-100 px-3 text-sm font-medium text-zinc-700">
+        {carbs || "0"}
+      </div>
+    </div>
+    <div className="flex flex-col gap-1.5">
+      <label className="text-sm font-medium text-zinc-500">Fat (g)</label>
+      <div className="flex h-10 items-center rounded-lg border border-zinc-200 bg-zinc-100 px-3 text-sm font-medium text-zinc-700">
+        {fat || "0"}
+      </div>
+    </div>
+  </div>
+</div>
+      
 
       {/* Ingredients */}
       <div className="mt-5 rounded-lg border border-zinc-100 bg-zinc-50 p-4">
