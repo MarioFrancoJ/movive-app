@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import DashboardContent from "@/components/app/DashboardContent";
 
 export const metadata: Metadata = {
-  title: "Dashboard — Movive",
+  title: "Dashboard",
 };
 
 export default function DashboardPage() {
