@@ -89,7 +89,7 @@ const TYPE_ICONS: Record<string, string> = {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function CalendarPage() {
+export default function CalendarView() {
   const { toast: globalToast } = useToast();
   const { dict } = useDictionary();
   const t = dict.calendar;
