@@ -1,3 +1,5 @@
+"use client";
+
 import type { Metadata } from "next";
 import { getLocaleCookie } from "@/lib/i18n/actions";
 import { getDictionary } from "@/lib/i18n/getDictionary";
