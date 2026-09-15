@@ -1,9 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
+import type { Metadata } from "next";
 import RecipesView, {
   type Recipe,
   type RecipeGoal,
   type MealType,
 } from "./RecipesView";
+
+export const metadata: Metadata = {
+  title: "Recetas",
+};
 
 // Server Component: fetch recipes on the server (no client waterfall / spinner)
 // and hand the data to the interactive client view. RLS is enforced via the
