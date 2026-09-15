@@ -59,15 +59,15 @@ type NavDict = {
 
 function buildNavSections(nav: NavDict): NavSection[] {
   return [
-    { id: "training", label: nav.sections.training, icon: <IconDumbbell />, matchPrefixes: ["/workouts", "/training"], items: [
-      { label: nav.training.overview, href: "/training", icon: <IconOverview /> },        // ← NUEVO
-      { label: nav.training.startWorkout, href: "/training/start", icon: <IconPlay /> },
-      { label: nav.training.workouts, href: "/workouts", icon: <IconDumbbell /> },
-      { label: nav.training.workoutBuilder, href: "/training/workout-builder", icon: <IconHammer /> },
-      { label: nav.training.exercises, href: "/training/exercises", icon: <IconExercises /> },
-      { label: nav.training.templates, href: "/training/templates", icon: <IconTemplates /> },
-      { label: nav.training.history, href: "/training/history", icon: <IconClock /> },
-    ]},,
+  { id: "training", label: nav.sections.training, icon: <IconDumbbell />, matchPrefixes: ["/workouts", "/training"], items: [
+  { label: nav.training.overview, href: "/training", icon: <IconOverview /> },
+  { label: nav.training.startWorkout, href: "/training/start", icon: <IconPlay /> },
+  { label: nav.training.workouts, href: "/workouts", icon: <IconDumbbell /> },
+  { label: nav.training.workoutBuilder, href: "/training/workout-builder", icon: <IconHammer /> },
+  { label: nav.training.exercises, href: "/training/exercises", icon: <IconExercises /> },
+  { label: nav.training.templates, href: "/training/templates", icon: <IconTemplates /> },
+  { label: nav.training.history, href: "/training/history", icon: <IconClock /> },
+]},
     { id: "nutrition", label: nav.sections.nutrition, icon: <IconLeaf />, matchPrefixes: ["/nutrition"], items: [
       { label: nav.nutrition.meals, href: "/nutrition", icon: <IconMeal /> },
       { label: nav.nutrition.recipes, href: "/nutrition/recipes", icon: <IconBook /> },
