@@ -50,7 +50,7 @@ interface NavSection {
 
 type NavDict = {
   sections: { training: string; nutrition: string; progress: string; ai: string; account: string };
-  training: { startWorkout: string; workouts: string; workoutBuilder: string; exercises: string; templates: string; history: string };
+  training: { overview: string; startWorkout: string; workouts: string; workoutBuilder: string; exercises: string; templates: string; history: string };  // ← AÑADIR overview
   nutrition: { meals: string; recipes: string; mealPlanner: string; shoppingList: string };
   progress: { overview: string; weight: string; measurements: string; photos: string };
   ai: { aiChat: string; aiCoach: string; recommendations: string };
