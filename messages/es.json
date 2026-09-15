@@ -55,6 +55,7 @@
       "account": "Cuenta"
     },
     "training": {
+      "overview": "Resumen",
       "startWorkout": "Iniciar entrenamiento",
       "workouts": "Rutinas",
       "workoutBuilder": "Creador de rutinas",
