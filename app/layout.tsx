@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
 // overridden per-environment via NEXT_PUBLIC_APP_URL (e.g. Vercel previews).
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://movive-hazel-six.vercel.app";
 const SITE_NAME = "Movive";
-const SITE_TITLE = "Movive — Transform Your Fitness Journey";
+const SITE_TITLE = "Movive | Transform Your Fitness Journey";
 const SITE_DESCRIPTION =
   "Personalized workouts, nutrition plans and progress tracking in one modern platform.";
 
