@@ -16,6 +16,9 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
+// Server Component: fetch recipes on the server (no client waterfall / spinner)
+// and hand the data to the interactive client view. RLS is enforced via the
+// user's JWT from cookies.
 export default async function RecipesPage() {
   const supabase = await createClient();
 
