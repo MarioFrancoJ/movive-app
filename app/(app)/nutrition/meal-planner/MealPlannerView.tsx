@@ -8,6 +8,9 @@ import { useToast } from "@/components/ui/Toast";
 import { readSlot, getWeekBounds, generateShoppingListFromWeek, type PlanSlotValue } from "@/lib/nutrition";
 import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 import NavIcon from "@/components/ui/NavIcon";
+import KpiCard from "@/components/ui/KpiCard";
+
+// Dictionary slices for the meal-planner view.
 
 // Dictionary slices for the meal-planner view.
 type NutritionDict = ReturnType<typeof useDictionary>["dict"]["nutrition"];
@@ -774,24 +777,28 @@ export default function MealPlannerView() {
           </button>
         </div>
 
-        {/* Weekly KPIs — shown above the grid for the whole selected week */}
+                {/* Weekly KPIs — using the unified KpiCard component */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="flex flex-col items-center rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <p className="text-2xl font-bold text-zinc-900">{weekTotals.calories}</p>
-            <p className="mt-0.5 text-xs font-medium text-zinc-400">{t.weeklyCalories}</p>
-          </div>
-          <div className="flex flex-col items-center rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <p className="text-2xl font-bold text-blue-600">{weekTotals.protein}g</p>
-            <p className="mt-0.5 text-xs font-medium text-zinc-400">{t.weeklyProtein}</p>
-          </div>
-          <div className="flex flex-col items-center rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <p className="text-2xl font-bold text-amber-600">{weekTotals.carbs}g</p>
-            <p className="mt-0.5 text-xs font-medium text-zinc-400">{t.weeklyCarbs}</p>
-          </div>
-          <div className="flex flex-col items-center rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <p className="text-2xl font-bold text-success">{weekTotals.fat}g</p>
-            <p className="mt-0.5 text-xs font-medium text-zinc-400">{t.weeklyFat}</p>
-          </div>
+          <KpiCard
+            icon={<span aria-hidden="true">🔥</span>}
+            label={t.weeklyCalories}
+            value={String(weekTotals.calories)}
+          />
+          <KpiCard
+            icon={<span aria-hidden="true">🥩</span>}
+            label={t.weeklyProtein}
+            value={`${weekTotals.protein}g`}
+          />
+          <KpiCard
+            icon={<span aria-hidden="true">🍞</span>}
+            label={t.weeklyCarbs}
+            value={`${weekTotals.carbs}g`}
+          />
+          <KpiCard
+            icon={<span aria-hidden="true">🥑</span>}
+            label={t.weeklyFat}
+            value={`${weekTotals.fat}g`}
+          />
         </div>
 
         {/* ── MOBILE / TABLET: day-tab experience (unchanged) ── */}
