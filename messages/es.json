@@ -917,9 +917,9 @@
     "difficultyBeginner": "Principiante",
     "difficultyIntermediate": "Intermedio",
     "difficultyAdvanced": "Avanzado",
-      "view": "Ver",
-      "edit": "Editar",
-      "exerciseSuffixShort": "ej.",
+    "view": "Ver",
+    "edit": "Editar",
+    "exerciseSuffixShort": "ej.",
   },
   "progress": {
     "title": "Seguimiento del progreso",
