@@ -8,18 +8,18 @@ import DayCard, { type DayName, type DayVariant } from "./DayCard";
 export interface WeekPlannerProps {
   /** Localized labels passed in from the parent. */
   labels: {
-    title: string;           // "This Week"
-    prevWeek: string;        // "Previous week"
-    nextWeek: string;        // "Next week"
-    today: string;           // "Today"
-    addWorkout: string;      // "Add workout"
-    restDay: string;         // "Rest day"
-    planned: string;         // "Planned"
-    completed: string;       // "Completed"
-    min: string;             // "min"
+    title: string;
+    prevWeek: string;
+    nextWeek: string;
+    today: string;
+    addWorkout: string;
+    restDay: string;
+    planned: string;
+    completed: string;
+    min: string;
   };
   /** Weekday abbreviations in order Mon→Sun. */
-  weekdayLabels: string[];   // ["Mon", "Tue", ...]
+  weekdayLabels: string[];
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -29,7 +29,7 @@ const DAYS: DayName[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
 /** Monday of the week containing `date`. */
 function getMonday(date: Date): Date {
   const d = new Date(date);
-  const day = d.getDay(); // 0=Sun … 6=Sat
+  const day = d.getDay();
   const diff = day === 0 ? -6 : 1 - day;
   d.setDate(d.getDate() + diff);
   d.setHours(0, 0, 0, 0);
@@ -70,7 +70,6 @@ export default function WeekPlanner({ labels, weekdayLabels }: WeekPlannerProps)
 
   const weekRange = useMemo(() => formatWeekRange(monday), [monday]);
 
-  // Dates for the 7 days of the current week.
   const dayDates = useMemo(() => {
     return DAYS.map((_, i) => {
       const d = new Date(monday);
@@ -90,25 +89,24 @@ export default function WeekPlanner({ labels, weekdayLabels }: WeekPlannerProps)
   }
 
   // Placeholder variants — all empty until we add persistence.
-  // Future: read from training_plans and pass "planned" | "completed" | "rest".
   const getVariant = (_day: DayName): DayVariant => "empty";
 
   return (
     <div className="flex flex-col rounded-xl border border-zinc-200 bg-white shadow-sm">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-100 px-5 py-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-100 px-6 py-5">
         <div>
-          <h2 className="text-base font-bold text-zinc-900">{labels.title}</h2>
-          <p className="mt-0.5 text-xs text-zinc-400">{weekRange}</p>
+          <h2 className="text-lg font-bold text-zinc-900">{labels.title}</h2>
+          <p className="mt-1 text-sm text-zinc-400">{weekRange}</p>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={goPrev}
             aria-label={labels.prevWeek}
             title={labels.prevWeek}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 transition-colors hover:bg-zinc-50 hover:text-zinc-900"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 transition-colors hover:bg-zinc-50 hover:text-zinc-900"
           >
             <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
               <path fillRule="evenodd" d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z" clipRule="evenodd" />
@@ -119,7 +117,7 @@ export default function WeekPlanner({ labels, weekdayLabels }: WeekPlannerProps)
             type="button"
             onClick={goToday}
             disabled={isCurrentWeek}
-            className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {labels.today}
           </button>
@@ -129,7 +127,7 @@ export default function WeekPlanner({ labels, weekdayLabels }: WeekPlannerProps)
             onClick={goNext}
             aria-label={labels.nextWeek}
             title={labels.nextWeek}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 transition-colors hover:bg-zinc-50 hover:text-zinc-900"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 transition-colors hover:bg-zinc-50 hover:text-zinc-900"
           >
             <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
               <path fillRule="evenodd" d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
@@ -139,7 +137,7 @@ export default function WeekPlanner({ labels, weekdayLabels }: WeekPlannerProps)
       </div>
 
       {/* Days grid */}
-      <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
+      <div className="grid grid-cols-2 gap-4 p-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
         {DAYS.map((day, i) => (
           <DayCard
             key={day}
