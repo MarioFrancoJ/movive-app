@@ -1,0 +1,149 @@
+"use client";
+
+import NavIcon from "@/components/ui/NavIcon";
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+export type DayName = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
+export type DayVariant = "empty" | "planned" | "completed" | "rest";
+
+export interface DayCardProps {
+  /** Full weekday name — also the logic key used in i18n lookups. */
+  day: DayName;
+  /** Short date label, e.g. "Apr 21". */
+  date: string;
+  /** Localized abbreviated day label, e.g. "Mon" / "Lun". */
+  dayLabel: string;
+  /** Visual + semantic state of the day. */
+  variant: DayVariant;
+  /** Workout name — only used when variant = planned | completed. */
+  workoutName?: string;
+  /** Duration in minutes — only used when variant = planned | completed. */
+  duration?: number;
+  /** Localized labels (passed in so the card stays dumb). */
+  labels: {
+    addWorkout: string;
+    restDay: string;
+    planned: string;
+    completed: string;
+    min: string;
+  };
+  /** Optional click handler — reserved for future interactions. */
+  onClick?: () => void;
+}
+
+// ── Variant styles ────────────────────────────────────────────────────────────
+
+const VARIANT_STYLES: Record<DayVariant, string> = {
+  empty:     "border-dashed border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50",
+  planned:   "border-blue-100 bg-blue-50/40",
+  completed: "border-success-light bg-success-light/30",
+  rest:      "border-zinc-100 bg-zinc-50",
+};
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export default function DayCard({
+  day,
+  date,
+  dayLabel,
+  variant,
+  workoutName,
+  duration,
+  labels,
+  onClick,
+}: DayCardProps) {
+  const interactive = typeof onClick === "function";
+
+  const baseClasses = [
+    "flex flex-col rounded-xl border p-3 transition-colors text-left w-full",
+    VARIANT_STYLES[variant],
+    interactive ? "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30" : "",
+  ].join(" ");
+
+  const content = (
+    <>
+      {/* Header: day + date */}
+      <div className="flex flex-col">
+        <span className="text-xs font-bold uppercase tracking-widest text-zinc-500">{dayLabel}</span>
+        <span className="mt-0.5 text-xs text-zinc-400">{date}</span>
+      </div>
+
+      {/* Body — variant-specific */}
+      <div className="mt-3 flex flex-1 flex-col items-center justify-center gap-1.5 text-center">
+        {variant === "empty" && (
+          <>
+            <span
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-dashed border-zinc-300 text-zinc-400"
+              aria-hidden="true"
+            >
+              <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                <path d="M10 5a.75.75 0 0 1 .75.75v3.5h3.5a.75.75 0 0 1 0 1.5h-3.5v3.5a.75.75 0 0 1-1.5 0v-3.5h-3.5a.75.75 0 0 1 0-1.5h3.5v-3.5A.75.75 0 0 1 10 5Z" />
+              </svg>
+            </span>
+            <span className="text-xs font-medium text-zinc-500">{labels.addWorkout}</span>
+          </>
+        )}
+
+        {variant === "rest" && (
+          <>
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-100" aria-hidden="true">
+              <NavIcon name="rest-day.svg" className="h-5 w-5 text-zinc-500" />
+            </span>
+            <span className="text-xs font-semibold text-zinc-600">{labels.restDay}</span>
+          </>
+        )}
+
+        {(variant === "planned" || variant === "completed") && (
+          <>
+            <span
+              className={[
+                "flex h-9 w-9 items-center justify-center rounded-full",
+                variant === "completed" ? "bg-success-light" : "bg-blue-100",
+              ].join(" ")}
+              aria-hidden="true"
+            >
+              <NavIcon
+                name={variant === "completed" ? "workout-complete.svg" : "workout-planned.svg"}
+                className={[
+                  "h-5 w-5",
+                  variant === "completed" ? "text-success" : "text-blue-600",
+                ].join(" ")}
+              />
+            </span>
+            <span className="text-xs font-semibold text-zinc-900 line-clamp-2">
+              {workoutName ?? ""}
+            </span>
+            {typeof duration === "number" && duration > 0 && (
+              <span className="text-[11px] text-zinc-400">
+                {duration} {labels.min}
+              </span>
+            )}
+            <span
+              className={[
+                "mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                variant === "completed" ? "bg-success-light text-success" : "bg-blue-100 text-blue-700",
+              ].join(" ")}
+            >
+              {variant === "completed" ? labels.completed : labels.planned}
+            </span>
+          </>
+        )}
+      </div>
+    </>
+  );
+
+  if (interactive) {
+    return (
+      <button type="button" onClick={onClick} className={baseClasses}>
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <div className={baseClasses} role="group" aria-label={`${dayLabel} ${date}`}>
+      {content}
+    </div>
+  );
+}
