@@ -916,10 +916,10 @@
     "difficultyBeginner": "Beginner",
     "difficultyIntermediate": "Intermediate",
     "difficultyAdvanced": "Advanced",
-      "view": "View",
-      "edit": "Edit",
-      "exerciseSuffixShort": "ex.",
-          "currentWeek": "Current Week",
+    "view": "View",
+    "edit": "Edit",
+    "exerciseSuffixShort": "ex.",
+    "currentWeek": "Current Week",
     "goToCurrentWeek": "Go to Current Week"
   },
   "progress": {
