@@ -5,14 +5,14 @@ import Link from "next/link";
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface KpiCardProps {
-  /** Emoji or icon element rendered inside the leading square. */
-  icon: React.ReactNode;
-  /** Uppercase label above the value. */
+  /** Optional emoji or icon element. Rendered inside a leading square. */
+  icon?: React.ReactNode;
+  /** Uppercase label above the value. Required. */
   label: string;
-  /** Primary value (number + unit). */
+  /** Primary value (number + unit). Required. */
   value: string;
   /** Optional small text below the value. */
-  sub: string;
+  sub?: string;
   /** Optional destination URL — makes the whole card clickable. */
   href?: string;
 }
@@ -22,9 +22,11 @@ export interface KpiCardProps {
 export default function KpiCard({ icon, label, value, sub, href }: KpiCardProps) {
   const inner = (
     <>
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-golden-md bg-zinc-100 text-golden-md">
-        {icon}
-      </span>
+      {icon && (
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-golden-md bg-zinc-100 text-golden-md">
+          {icon}
+        </span>
+      )}
       <div className="min-w-0 flex-1">
         <p className="text-golden-xs font-bold uppercase tracking-widest text-zinc-400">
           {label}
@@ -32,7 +34,7 @@ export default function KpiCard({ icon, label, value, sub, href }: KpiCardProps)
         <p className="mt-golden-1 truncate text-golden-base font-bold text-zinc-900">
           {value}
         </p>
-        <p className="truncate text-golden-xs text-zinc-400">{sub}</p>
+        {sub && <p className="truncate text-golden-xs text-zinc-400">{sub}</p>}
       </div>
       {href && (
         <svg
