@@ -71,7 +71,7 @@ function SandboxToggle() {
           ].join(" ")}
         />
       </span>
-      {isSandbox ? t.sandboxOn : t.sandbox}
+      <span className="text-sm leading-none" aria-hidden="true">🧪</span>
     </button>
   );
 }
