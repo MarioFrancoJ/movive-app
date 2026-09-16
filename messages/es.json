@@ -581,9 +581,6 @@
       "previousWeek": "Semana anterior",
       "nextWeek": "Semana siguiente",
       "saved": "Guardado",
-      "myWorkoutsSubtitle": "Tu biblioteca personal de rutinas",
-      "searchWorkoutsPlaceholder": "Buscar rutinas...",
-      "goalAll": "Todas",
       "currentWeek": "Semana actual",
       "goToCurrentWeek": "Ir a la semana actual",
       "weeklyCalories": "Calorías semanales",
@@ -922,7 +919,10 @@
     "view": "Ver",
     "edit": "Editar",
     "exerciseSuffixShort": "ej.",
-    "currentWeek": "Semana actual",
+    "myWorkoutsSubtitle": "Tu biblioteca personal de rutinas",
+    "searchWorkoutsPlaceholder": "Buscar rutinas...",
+    "goalAll": "Todas",
+      "currentWeek": "Semana actual",
     "goToCurrentWeek": "Ir a la semana actual"
   },
   "progress": {
