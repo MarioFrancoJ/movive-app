@@ -4,99 +4,21 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import PageLoader from "@/components/ui/PageLoader";
-import { SkeletonPage } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import EmptyState from "@/components/ui/EmptyState";
 import { useDictionary } from "@/lib/i18n/DictionaryProvider";
+import WorkoutCard, {
+  difficultyColor,
+  difficultyLabel,
+  goalColor,
+  goalLabel,
+  type WorkoutItem,
+  type WorkoutDifficulty,
+} from "@/components/training/WorkoutCard";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type WorkoutsDict = ReturnType<typeof useDictionary>["dict"]["workouts"];
-
-type WorkoutGoal = "Fat Loss" | "Muscle Gain" | "Strength" | "Endurance" | "Mobility" | "General Fitness";
-type WorkoutDifficulty = "Beginner" | "Intermediate" | "Advanced";
-
-interface WorkoutItem {
-  id: string;
-  name: string;
-  description: string | null;
-  goal: WorkoutGoal | null;
-  difficulty: WorkoutDifficulty | null;
-  duration: number | null;
-  is_template: boolean;
-  exerciseCount: number;
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function difficultyColor(d: WorkoutDifficulty | null): string {
-  switch (d) {
-    case "Beginner":     return "bg-success-light text-success";
-    case "Intermediate": return "bg-amber-50 text-amber-700";
-    case "Advanced":     return "bg-red-50 text-red-700";
-    default:             return "bg-zinc-100 text-zinc-600";
-  }
-}
-
-function goalColor(g: WorkoutGoal | null): string {
-  switch (g) {
-    case "Fat Loss":        return "bg-rose-50 text-rose-700";
-    case "Muscle Gain":     return "bg-blue-50 text-blue-700";
-    case "Strength":        return "bg-purple-50 text-purple-700";
-    case "Endurance":       return "bg-orange-50 text-orange-700";
-    case "Mobility":        return "bg-teal-50 text-teal-700";
-    case "General Fitness": return "bg-zinc-100 text-zinc-700";
-    default:                return "bg-zinc-100 text-zinc-600";
-  }
-}
-
-// Localized display label for a goal value (value stays the logic/DB key).
-function goalLabel(g: WorkoutGoal | null, t: WorkoutsDict): string {
-  switch (g) {
-    case "Fat Loss":        return t.goalFatLoss;
-    case "Muscle Gain":     return t.goalMuscleGain;
-    case "Strength":        return t.goalStrength;
-    case "Endurance":       return t.goalEndurance;
-    case "Mobility":        return t.goalMobility;
-    case "General Fitness": return t.goalGeneralFitness;
-    default:                return g ?? "";
-  }
-}
-
-// Localized display label for a difficulty value (value stays the logic/DB key).
-function difficultyLabel(d: WorkoutDifficulty | null, t: WorkoutsDict): string {
-  switch (d) {
-    case "Beginner":     return t.difficultyBeginner;
-    case "Intermediate": return t.difficultyIntermediate;
-    case "Advanced":     return t.difficultyAdvanced;
-    default:             return d ?? "";
-  }
-}
-
-// ── Workout Card ──────────────────────────────────────────────────────────────
-
-function WorkoutCard({ workout, href, t }: { workout: WorkoutItem; href: string; t: WorkoutsDict }) {
-  return (
-    <Link href={href} className="flex flex-col rounded-xl border border-zinc-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
-      <div className="mb-2 flex items-start justify-between gap-2">
-        <h3 className="text-sm font-semibold text-zinc-900">{workout.name}</h3>
-        {workout.difficulty && (
-          <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${difficultyColor(workout.difficulty)}`}>
-            {difficultyLabel(workout.difficulty, t)}
-          </span>
-        )}
-      </div>
-      {workout.description && <p className="mb-3 text-xs text-zinc-400 line-clamp-2">{workout.description}</p>}
-      <div className="mt-auto flex flex-wrap items-center gap-2 border-t border-zinc-100 pt-3">
-        {workout.goal && (
-          <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${goalColor(workout.goal)}`}>{goalLabel(workout.goal, t)}</span>
-        )}
-        <span className="text-xs text-zinc-400">{workout.exerciseCount} exercises</span>
-        {workout.duration && <span className="text-xs text-zinc-400">{workout.duration} min</span>}
-      </div>
-    </Link>
-  );
-}
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -117,8 +39,6 @@ export default function WorkoutsView() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
 
-    // User workouts (non-template) + system templates are independent → fetch
-    // both concurrently instead of one after the other.
     const [userWorkoutsRes, templateRes] = await Promise.all([
       supabase
         .from("workouts")
@@ -162,7 +82,7 @@ export default function WorkoutsView() {
       id: w.id,
       name: w.name,
       description: w.description,
-      goal: w.goal as WorkoutGoal | null,
+      goal: w.goal as WorkoutItem["goal"],
       difficulty: w.difficulty as WorkoutDifficulty | null,
       duration: w.duration,
       is_template: w.is_template,
@@ -177,7 +97,6 @@ export default function WorkoutsView() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Fetch template with full nested data
     const { data: tpl } = await supabase
       .from("workouts")
       .select("name, description, goal, difficulty, duration, workout_days(day_name, sort_order, workout_exercises(exercise_id, exercise_name, sets, reps, rest_seconds, notes, sort_order))")
@@ -186,7 +105,6 @@ export default function WorkoutsView() {
 
     if (!tpl) return;
 
-    // Create user's copy
     const { data: newWorkout } = await supabase
       .from("workouts")
       .insert({
@@ -203,10 +121,6 @@ export default function WorkoutsView() {
 
     if (!newWorkout) return;
 
-    // Copy days + exercises without an N+1 loop:
-    //  1) batch-insert ALL days in one call (returning their new ids, ordered),
-    //  2) batch-insert ALL exercises in one call, mapping each day's exercises
-    //     to the new day id by matching sort_order.
     const templateDays = tpl.workout_days || [];
     if (templateDays.length > 0) {
       const { data: newDays } = await supabase
@@ -222,7 +136,6 @@ export default function WorkoutsView() {
         .select("id, sort_order");
 
       if (newDays) {
-        // Map original template day (by sort_order) → its new inserted id.
         const newDayIdBySort = new Map<number, string>(
           newDays.map((d) => [d.sort_order as number, d.id as string])
         );
@@ -249,7 +162,6 @@ export default function WorkoutsView() {
       }
     }
 
-    // Refresh list
     await loadData();
     showToast(t.toastTemplateLoaded);
   }
@@ -267,9 +179,7 @@ export default function WorkoutsView() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   if (loading) {
-    return (
-      <PageLoader text={t.loading} />
-    );
+    return <PageLoader text={t.loading} />;
   }
 
   return (
@@ -350,8 +260,6 @@ export default function WorkoutsView() {
           </div>
         </div>
       )}
-
-      {/* Toast */}
     </div>
   );
 }
