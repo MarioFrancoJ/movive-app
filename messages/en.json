@@ -918,7 +918,9 @@
     "difficultyAdvanced": "Advanced",
       "view": "View",
       "edit": "Edit",
-      "exerciseSuffixShort": "ex."
+      "exerciseSuffixShort": "ex.",
+          "currentWeek": "Current Week",
+    "goToCurrentWeek": "Go to Current Week"
   },
   "progress": {
     "title": "Progress Tracking",
