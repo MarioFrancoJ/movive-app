@@ -1,10 +1,5 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import ExerciseForm from "@/components/admin/ExerciseForm";
-
-export const metadata: Metadata = {
-  title: "New Exercise — Admin",
-};
 
 export default function NewExercisePage() {
   return (
