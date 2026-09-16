@@ -922,6 +922,7 @@
     "myWorkoutsSubtitle": "Your personal workout library",
     "searchWorkoutsPlaceholder": "Search workouts...",
     "goalAll": "All",
+    "noMatch": "No workouts match your filters.",
     "currentWeek": "Current Week",
     "goToCurrentWeek": "Go to Current Week"
   },
