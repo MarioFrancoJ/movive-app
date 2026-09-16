@@ -892,6 +892,9 @@
       "errorCreating": "Error al crear la rutina: {msg}",
       "errorCreatingDay": "Error al crear el día: {msg}",
       "errorSavingExercises": "Error al guardar los ejercicios: {msg}"
+      "view": "Ver",
+      "edit": "Editar",
+      "exerciseSuffixShort": "ej.",
     },
     "detail": {
       "loading": "Cargando rutina...",
