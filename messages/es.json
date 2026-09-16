@@ -83,6 +83,7 @@
     "account": {
       "profile": "Perfil",
       "subscription": "Suscripción"
+      "signOut": "Cerrar sesión"
     }
   },
   "topbar": {
