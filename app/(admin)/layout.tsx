@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminTopbar from "@/components/admin/AdminTopbar";
 import AdminGuard from "@/components/admin/AdminGuard";
@@ -5,6 +6,12 @@ import AuthGuard from "@/components/auth/AuthGuard";
 import { DictionaryProvider } from "@/lib/i18n/DictionaryProvider";
 import { getLocaleCookie } from "@/lib/i18n/actions";
 import { getDictionary } from "@/lib/i18n/getDictionary";
+
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: "Admin",
+  };
+}
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocaleCookie();
