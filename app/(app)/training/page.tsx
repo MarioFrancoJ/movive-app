@@ -1,16 +1,8 @@
-import type { Metadata } from "next";
-import { getLocaleCookie } from "@/lib/i18n/actions";
-import { getDictionary } from "@/lib/i18n/getDictionary";
-import TrainingView from "./TrainingView";
+import { redirect } from "next/navigation";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const locale = await getLocaleCookie();
-  const dict = await getDictionary(locale);
-  return {
-    title: dict.nav.training.overview,
-  };
-}
-
+// The Training "Overview" page has been deprecated. The Training module now
+// uses /workouts as its hub. This redirect keeps old bookmarks and the
+// sidebar "Resumen" link working.
 export default function TrainingPage() {
-  return <TrainingView />;
+  redirect("/workouts");
 }
