@@ -168,18 +168,18 @@ function RecipeCard({ recipe, onAddToPlan, t, nt }: { recipe: Recipe; onAddToPla
           </div>
         </Link>
 
-        {/* Actions */}
+                {/* Actions */}
         <div className="mt-golden-3 flex items-stretch gap-2">
           <Link
             href={`/nutrition/recipes/${recipe.id}`}
-            className="inline-flex min-h-[44px] basis-[35%] items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-center text-golden-sm font-semibold text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
+            className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-center text-golden-sm font-semibold text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
           >
             {t.view}
           </Link>
           <button
             type="button"
             onClick={handleAddToPlan}
-            className="inline-flex min-h-[44px] basis-[65%] items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2.5 text-golden-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            className="inline-flex min-h-[44px] flex-[1.5] items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2.5 text-golden-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             {t.addMealPlan}
           </button>
