@@ -65,7 +65,6 @@ function goalLabel(goal: RecipeGoal, t: RecipesDict): string {
   }
 }
 
-// Filter chip label for goals, including the "All" pseudo-value.
 function goalFilterLabel(goal: "All" | RecipeGoal, t: RecipesDict): string {
   return goal === "All" ? t.goalAll : goalLabel(goal, t);
 }
@@ -84,11 +83,10 @@ function mealTypeLabel(type: MealType, nt: NutritionDict): string {
 function RecipeCard({ recipe, onAddToPlan, t, nt }: { recipe: Recipe; onAddToPlan: (r: Recipe) => void; t: RecipesDict; nt: NutritionDict }) {
   const { success, error: toastError } = useToast();
   const [busy, setBusy] = useState<null | "shop">(null);
-  // Brief ✓ badge over the cart icon after a successful add.
   const [justAdded, setJustAdded] = useState(false);
 
   function handleAddToPlan(e: React.MouseEvent) {
-    e.preventDefault(); // don't navigate — the card is wrapped in a Link
+    e.preventDefault();
     e.stopPropagation();
     onAddToPlan(recipe);
   }
@@ -109,8 +107,7 @@ function RecipeCard({ recipe, onAddToPlan, t, nt }: { recipe: Recipe; onAddToPla
 
   return (
     <div className="flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm transition-shadow hover:shadow-md">
-      {/* Image — dominant element, 4:3, object-cover. Goal + meal-type badges
-          sit over the photo for a cleaner, more visual card. */}
+      {/* Image */}
       <Link href={`/nutrition/recipes/${recipe.id}`} className="block">
         <div className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-100">
           {recipe.imageUrl ? (
@@ -130,7 +127,6 @@ function RecipeCard({ recipe, onAddToPlan, t, nt }: { recipe: Recipe; onAddToPla
               </svg>
             </div>
           )}
-          {/* Badges over the image */}
           <div className="absolute inset-x-2 top-2 flex items-start justify-between gap-2">
             <span className={`rounded-full px-2 py-0.5 text-golden-xs font-semibold shadow-sm ${goalColor(recipe.goal)}`}>
               {goalLabel(recipe.goal, t)}
@@ -147,12 +143,10 @@ function RecipeCard({ recipe, onAddToPlan, t, nt }: { recipe: Recipe; onAddToPla
       <div className="flex flex-1 flex-col p-golden-3">
         {/* Text block */}
         <Link href={`/nutrition/recipes/${recipe.id}`} className="block">
-          {/* Title — second most important element after the photo */}
           <h3 className="line-clamp-2 text-golden-lg font-bold leading-snug text-zinc-900">
             {recipe.name}
           </h3>
 
-          {/* Secondary meta — single line with dot separators */}
           <p className="mt-1 truncate text-golden-xs text-zinc-400">
             {[
               recipe.prepTime > 0 ? `${recipe.prepTime} ${t.unitMin}` : null,
@@ -163,8 +157,6 @@ function RecipeCard({ recipe, onAddToPlan, t, nt }: { recipe: Recipe; onAddToPla
               .join(" • ")}
           </p>
 
-          {/* Nutrition — calories are the primary datum, macros a quiet
-              text-only line below (no icons). */}
           <div className="mt-golden-2 border-t border-zinc-100 pt-golden-2">
             <p className="text-golden-lg font-bold leading-none text-zinc-900">
               {recipe.calories}
@@ -176,9 +168,7 @@ function RecipeCard({ recipe, onAddToPlan, t, nt }: { recipe: Recipe; onAddToPla
           </div>
         </Link>
 
-        {/* Actions — same base size as the design-system CTAs (min-h 44px,
-            py-2.5, text-golden-sm). Hierarchy: "Ver" secondary (35%), "+ Plan de
-            comidas" primary (65%), shopping icon a tertiary fixed-size action. */}
+        {/* Actions */}
         <div className="mt-golden-3 flex items-stretch gap-2">
           <Link
             href={`/nutrition/recipes/${recipe.id}`}
@@ -194,20 +184,25 @@ function RecipeCard({ recipe, onAddToPlan, t, nt }: { recipe: Recipe; onAddToPla
             {t.addMealPlan}
           </button>
           <button
-  type="button"
-  onClick={handleQuickShop}
-  disabled={busy !== null || recipe.ingredients.length === 0}
-  title={`Add ${recipe.name} ingredients to shopping list`}
-  aria-label={`Add ${recipe.name} ingredients to shopping list`}
-  className="relative inline-flex min-h-[44px] w-11 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 transition-colors hover:border-zinc-300 hover:bg-zinc-50 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
->
-  {busy === "shop" ? (
-    <span className="text-golden-sm">…</span>
-  ) : (
-    <NavIcon name="shopping-list.svg" className="h-4 w-4" aria-hidden="true" />
-  )}
-  ...
-</button>        </div>
+            type="button"
+            onClick={handleQuickShop}
+            disabled={busy !== null || recipe.ingredients.length === 0}
+            title={`Add ${recipe.name} ingredients to shopping list`}
+            aria-label={`Add ${recipe.name} ingredients to shopping list`}
+            className="relative inline-flex min-h-[44px] w-11 shrink-0 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 transition-colors hover:border-zinc-300 hover:bg-zinc-50 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
+          >
+            {busy === "shop" ? (
+              <span className="text-golden-sm">…</span>
+            ) : (
+              <NavIcon name="shopping-list.svg" className="h-4 w-4" aria-hidden="true" />
+            )}
+            {justAdded && (
+              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-success text-white shadow-sm" aria-hidden="true">
+                <svg viewBox="0 0 20 20" fill="currentColor" className="h-2.5 w-2.5"><path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" /></svg>
+              </span>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -231,12 +226,6 @@ function RecipeSection({ title, recipes, onAddToPlan, t, nt }: { title: string; 
 
 // ── View (client) ──────────────────────────────────────────────────────────────
 
-/**
- * Interactive recipes view. Data is fetched on the server (see page.tsx) and
- * passed in as `initialRecipes` — no client-side loading spinner / waterfall.
- * All interactivity (search, filters, add-to-plan modal, quick shopping-list)
- * lives here as a Client Component.
- */
 export default function RecipesView({ initialRecipes }: { initialRecipes: Recipe[] }) {
   const { dict } = useDictionary();
   const t = dict.nutrition.recipes;
@@ -263,8 +252,6 @@ export default function RecipesView({ initialRecipes }: { initialRecipes: Recipe
     });
   }, [allRecipes, search, goalFilter, mealTypeFilter]);
 
-  // Grouped view: group by GOAL. Each recipe appears in exactly one section
-  // (no "Featured" duplicate). Only shown when no filters/search are active.
   const showGrouped = goalFilter === "All" && mealTypeFilter === "All" && !search.trim();
   const byGoal = useMemo(() => {
     const groups: Record<RecipeGoal, Recipe[]> = {
@@ -311,7 +298,6 @@ export default function RecipesView({ initialRecipes }: { initialRecipes: Recipe
           </div>
         </div>
 
-        {/* Meal-type filter (Breakfast / Lunch / Dinner / Snack) */}
         <div className="flex flex-wrap gap-2">
           {(["All", ...MEAL_TYPES] as const).map((m) => (
             <Chip key={m} active={mealTypeFilter === m} onClick={() => setMealTypeFilter(m)}>
