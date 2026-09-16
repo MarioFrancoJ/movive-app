@@ -203,7 +203,7 @@ export default function WorkoutsView() {
         weekdayLabels={[t.dayMon, t.dayTue, t.dayWed, t.dayThu, t.dayFri, t.daySat, t.daySun]}
       />
 
-      {/* ── Weekly Progress ── */}
+            {/* ── Weekly Progress ── */}
       <WeeklyProgress
         workoutsCompleted={weeklyStats.workoutsCompleted}
         totalTimeMinutes={weeklyStats.totalTimeMinutes}
@@ -212,9 +212,11 @@ export default function WorkoutsView() {
           title: t.weeklyProgressTitle,
           subtitle: t.weeklyProgressSubtitle,
           workoutsCompleted: t.weeklyProgressCompleted,
+          workoutsCompletedSub: t.weeklyProgressCompletedSub,
           totalTime: t.weeklyProgressTotalTime,
+          totalTimeSub: t.weeklyProgressTotalTimeSub,
           currentStreak: t.weeklyProgressStreak,
-          dayPlural: t.weeklyProgressStreak,
+          currentStreakSub: t.weeklyProgressStreakSub,
         }}
       />
 
