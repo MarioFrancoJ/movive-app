@@ -142,7 +142,7 @@ export default function WeekPlanner({ labels, weekdayLabels }: WeekPlannerProps)
       </div>
 
       {/* ── Days grid ── */}
-      <div className="grid grid-cols-2 gap-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
+      <div className="grid grid-cols-2 gap-3 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
         {DAYS.map((day, i) => (
           <DayCard
             key={day}
