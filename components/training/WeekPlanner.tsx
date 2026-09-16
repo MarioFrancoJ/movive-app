@@ -8,10 +8,12 @@ import DayCard, { type DayName, type DayVariant } from "./DayCard";
 export interface WeekPlannerProps {
   /** Localized labels passed in from the parent. */
   labels: {
-    title: string;
-    prevWeek: string;
-    nextWeek: string;
-    today: string;
+    title: string;           // Kept for future use
+    prevWeek: string;        // "Previous Week"
+    nextWeek: string;        // "Next Week"
+    today: string;           // "Today" (unused in header, kept for compat)
+    currentWeek: string;     // "Current Week"
+    goToCurrentWeek: string; // "Go to Current Week"
     addWorkout: string;
     restDay: string;
     planned: string;
@@ -43,7 +45,7 @@ function shiftWeek(monday: Date, weeks: number): Date {
   return d;
 }
 
-/** Format "Apr 21 – Apr 27, 2025" for a Monday→Sunday range. */
+/** Format "Sep 14 – Sep 20, 2026" for a Monday→Sunday range. */
 function formatWeekRange(monday: Date): string {
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
@@ -88,56 +90,59 @@ export default function WeekPlanner({ labels, weekdayLabels }: WeekPlannerProps)
     setMonday(getMonday(new Date()));
   }
 
-  // Placeholder variants — all empty until we add persistence.
   const getVariant = (_day: DayName): DayVariant => "empty";
 
   return (
-    <div className="flex flex-col rounded-xl border border-zinc-200 bg-white shadow-sm">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-100 px-6 py-5">
-        <div>
-          <h2 className="text-lg font-bold text-zinc-900">{labels.title}</h2>
-          <p className="mt-1 text-sm text-zinc-400">{weekRange}</p>
+    <div className="flex flex-col gap-6">
+      {/* ── Week navigation (mirrors Meal Planner) ── */}
+      <div className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white px-3 py-2 shadow-sm">
+        <button
+          type="button"
+          onClick={goPrev}
+          aria-label={labels.prevWeek}
+          className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
+        >
+          <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+            <path fillRule="evenodd" d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z" clipRule="evenodd" />
+          </svg>
+          <span className="hidden sm:inline">{labels.prevWeek}</span>
+        </button>
+
+        <div className="flex items-center gap-2 text-center">
+          <span className="text-sm font-semibold text-zinc-900">{weekRange}</span>
+          {isCurrentWeek ? (
+            <span className="rounded-full bg-success-light px-2 py-0.5 text-xs font-medium text-success">
+              {labels.currentWeek}
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={goToday}
+              className="inline-flex items-center gap-1 rounded-md border border-zinc-200 bg-white px-2.5 py-1 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50"
+            >
+              <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
+                <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-13a.75.75 0 0 0-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 0 0 0-1.5h-3.25V5Z" clipRule="evenodd" />
+              </svg>
+              {labels.goToCurrentWeek}
+            </button>
+          )}
         </div>
 
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={goPrev}
-            aria-label={labels.prevWeek}
-            title={labels.prevWeek}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 transition-colors hover:bg-zinc-50 hover:text-zinc-900"
-          >
-            <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
-              <path fillRule="evenodd" d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z" clipRule="evenodd" />
-            </svg>
-          </button>
-
-          <button
-            type="button"
-            onClick={goToday}
-            disabled={isCurrentWeek}
-            className="rounded-lg border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {labels.today}
-          </button>
-
-          <button
-            type="button"
-            onClick={goNext}
-            aria-label={labels.nextWeek}
-            title={labels.nextWeek}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 transition-colors hover:bg-zinc-50 hover:text-zinc-900"
-          >
-            <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
-              <path fillRule="evenodd" d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
-            </svg>
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={goNext}
+          aria-label={labels.nextWeek}
+          className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
+        >
+          <span className="hidden sm:inline">{labels.nextWeek}</span>
+          <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+            <path fillRule="evenodd" d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+          </svg>
+        </button>
       </div>
 
-      {/* Days grid */}
-      <div className="grid grid-cols-2 gap-4 p-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
+      {/* ── Days grid ── */}
+      <div className="grid grid-cols-2 gap-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
         {DAYS.map((day, i) => (
           <DayCard
             key={day}
