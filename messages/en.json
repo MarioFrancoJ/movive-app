@@ -916,6 +916,9 @@
     "difficultyBeginner": "Beginner",
     "difficultyIntermediate": "Intermediate",
     "difficultyAdvanced": "Advanced"
+      "view": "View",
+      "edit": "Edit",
+      "exerciseSuffixShort": "ex.",
   },
   "progress": {
     "title": "Progress Tracking",
