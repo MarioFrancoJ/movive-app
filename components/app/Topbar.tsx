@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { Locale } from "@/lib/i18n/config";
 import LanguageMenu from "@/components/i18n/LanguageMenu";
@@ -85,7 +84,6 @@ interface TopbarProps {
 }
 
 export default function Topbar({ locale, onMenuToggle }: TopbarProps) {
-  const router = useRouter();
   const { dict } = useDictionary();
   const t = dict.topbar;
   const { isSuperAdmin, role } = useSandbox();
@@ -136,11 +134,7 @@ export default function Topbar({ locale, onMenuToggle }: TopbarProps) {
     setUnread(count);
   }, []);
 
-  async function handleLogout() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.replace("/login");
-  }
+
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-between border-b border-zinc-100 bg-white px-4 md:px-6">
@@ -214,14 +208,18 @@ export default function Topbar({ locale, onMenuToggle }: TopbarProps) {
   </div>
 
   {/* SuperAdmin + Sandbox - visible from 900px and up */}
-  {isSuperAdmin && (
-    <div className="hidden min-[900px]:flex items-center gap-2">
-      <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2 py-0.5 text-xs font-bold text-purple-700">
-        ⚡ {t.superAdmin}
-      </span>
-      <SandboxToggle />
-    </div>
-  )}
+    {isSuperAdmin && (
+      <div className="hidden min-[900px]:flex items-center gap-2">
+        <span
+          className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-purple-100 text-sm text-purple-700"
+          title="Super Administrator"
+          aria-label="Super Administrator"
+        >
+          ⚡
+        </span>
+    <SandboxToggle />
+  </div>
+)}
 
   {/* User avatar */}
   <Link
@@ -233,15 +231,9 @@ export default function Topbar({ locale, onMenuToggle }: TopbarProps) {
     {userInitial}
   </Link>
 
-  {/* Logout - visible from 900px and up */}
-  <button
-    type="button"
-    onClick={handleLogout}
-    aria-label={t.signOut}
-    className="hidden min-[900px]:block rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
-  >
-    {t.signOut}
-  </button>
+ {/* Logout — moved to Sidebar (Account section) */}
+
+  
 </div>
     </header>
   );
