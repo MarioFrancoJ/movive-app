@@ -919,6 +919,8 @@
     "view": "Ver",
     "edit": "Editar",
     "exerciseSuffixShort": "ej."
+    "currentWeek": "Semana actual",
+    "goToCurrentWeek": "Ir a la semana actual"
   },
   "progress": {
     "title": "Seguimiento del progreso",
