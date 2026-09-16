@@ -2,10 +2,11 @@
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import NavIcon from "@/components/ui/NavIcon";
 import Logo from "@/components/ui/Logo";
 import { useDictionary } from "@/lib/i18n/DictionaryProvider";
+import { createClient } from "@/lib/supabase/client";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -33,6 +34,7 @@ function IconStar() { return <NavIcon name="recommendations.svg" />; }
 function IconUser() { return <NavIcon name="account.svg" />; }
 function IconProfile() { return <NavIcon name="profile.svg" />; }
 function IconSubscription() { return <NavIcon name="subscription.svg" />; }
+function IconLogout() { return <NavIcon name="logout.svg" />; }
 function IconChevron({ open }: { open: boolean }) { return <svg viewBox="0 0 20 20" fill="currentColor" className={`h-3.5 w-3.5 text-zinc-400 transition-transform duration-200 ${open ? "rotate-90" : ""}`} aria-hidden="true"><path fillRule="evenodd" d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" /></svg>; }
 function IconCollapse() { return <NavIcon name="collapsed-menu.svg" />; }
 function IconExpand() { return <NavIcon name="expanded-menu.svg" />; }
@@ -50,11 +52,11 @@ interface NavSection {
 
 type NavDict = {
   sections: { training: string; nutrition: string; progress: string; ai: string; account: string };
-  training: { overview: string; startWorkout: string; workouts: string; workoutBuilder: string; exercises: string; templates: string; history: string };  // ← AÑADIR overview
+  training: { overview: string; startWorkout: string; workouts: string; workoutBuilder: string; exercises: string; templates: string; history: string };
   nutrition: { meals: string; recipes: string; mealPlanner: string; shoppingList: string };
   progress: { overview: string; weight: string; measurements: string; photos: string };
   ai: { aiChat: string; aiCoach: string; recommendations: string };
-  account: { profile: string; subscription: string };
+  account: { profile: string; subscription: string; signOut: string };
 };
 
 function buildNavSections(nav: NavDict): NavSection[] {
@@ -104,6 +106,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   const nav = dict.nav;
   const NAV_SECTIONS = useMemo(() => buildNavSections(nav), [nav]);
   const pathname = usePathname();
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [popoverId, setPopoverId] = useState<string | null>(null);
   const [popoverAnchor, setPopoverAnchor] = useState<{ top: number; left: number } | null>(null);
@@ -120,6 +123,14 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     localStorage.setItem(STORAGE_KEY, String(next));
     setPopoverId(null);
   }
+
+  // Logout handler — closes the session and redirects to login.
+  const handleLogout = useCallback(async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    if (onClose) onClose();
+    router.replace("/login");
+  }, [onClose, router]);
 
   const activeSectionId = useMemo(() => {
     if (pathname === "/dashboard") return null;
@@ -206,7 +217,7 @@ useEffect(() => {
           "md:static md:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full",
           collapsed ? "md:w-[68px]" : "md:w-60",
-          "w-[250px]", // Mobile: 260px — balance entre espacio y legibilidad // 250px — Más Compato
+          "w-[250px]",
         ].join(" ")}
       >
         {/* Logo */}
@@ -225,7 +236,7 @@ useEffect(() => {
           </button>
         </div>
 
-        {/* Navigation - con overflow-x-hidden para evitar desbordamiento */}
+        {/* Navigation */}
         <nav className="flex flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden px-2 py-4">
           {/* Dashboard */}
           <Link
@@ -291,6 +302,7 @@ useEffect(() => {
     const isExpanded = expandedId === section.id;
     const isPopoverOpen = popoverId === section.id;
     const sectionActive = section.matchPrefixes.some((p) => pathname === p || pathname.startsWith(p + "/"));
+    const isAccount = section.id === "account";
 
     // COLLAPSED MODE
     if (collapsed) {
@@ -316,7 +328,7 @@ useEffect(() => {
             {section.icon}
           </button>
 
-          {/* Popover — fixed position */}
+          {/* Popover */}
           {isPopoverOpen && popoverAnchor && (
             <div
               className="fixed z-[60] w-48 rounded-xl border border-zinc-200 bg-white py-1 shadow-lg"
@@ -344,6 +356,18 @@ useEffect(() => {
                   </Link>
                 );
               })}
+              {/* Logout — solo en la sección account */}
+              {isAccount && (
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  role="menuitem"
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-50 hover:text-zinc-900"
+                >
+                  <IconLogout />
+                  {nav.account.signOut}
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -386,6 +410,17 @@ useEffect(() => {
                 </Link>
               );
             })}
+            {/* Logout — solo en la sección account */}
+            {isAccount && (
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm font-medium text-zinc-500 transition-colors hover:bg-zinc-50 hover:text-zinc-900"
+              >
+                <IconLogout />
+                {nav.account.signOut}
+              </button>
+            )}
           </div>
         )}
       </div>
