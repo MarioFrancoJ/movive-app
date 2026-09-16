@@ -15,10 +15,36 @@ import WorkoutCard, {
   type WorkoutItem,
   type WorkoutDifficulty,
 } from "@/components/training/WorkoutCard";
+import WeekPlanner from "@/components/training/WeekPlanner";
+import WeeklyProgress from "@/components/training/WeeklyProgress";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type WorkoutsDict = ReturnType<typeof useDictionary>["dict"]["workouts"];
+
+interface WeeklyStats {
+  workoutsCompleted: number;
+  totalTimeMinutes: number;
+  currentStreak: number;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/** Monday of the week containing `date` as YYYY-MM-DD. */
+function getMondayKey(date: Date): string {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Sunday key for a given Monday key. */
+function getSundayKey(mondayKey: string): string {
+  const d = new Date(`${mondayKey}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 6);
+  return d.toISOString().slice(0, 10);
+}
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -28,13 +54,19 @@ export default function WorkoutsView() {
   const t = dict.workouts;
   const [workouts, setWorkouts] = useState<WorkoutItem[]>([]);
   const [templates, setTemplates] = useState<WorkoutItem[]>([]);
+  const [weeklyStats, setWeeklyStats] = useState<WeeklyStats>({
+    workoutsCompleted: 0,
+    totalTimeMinutes: 0,
+    currentStreak: 0,
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadData();
+    loadWorkouts();
+    loadWeeklyStats();
   }, []);
 
-  async function loadData() {
+  async function loadWorkouts() {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
@@ -54,14 +86,59 @@ export default function WorkoutsView() {
         .order("name"),
     ]);
 
-    if (userWorkoutsRes.data) {
-      setWorkouts(userWorkoutsRes.data.map(mapWorkout));
-    }
-    if (templateRes.data) {
-      setTemplates(templateRes.data.map(mapWorkout));
-    }
+    if (userWorkoutsRes.data) setWorkouts(userWorkoutsRes.data.map(mapWorkout));
+    if (templateRes.data) setTemplates(templateRes.data.map(mapWorkout));
 
     setLoading(false);
+  }
+
+  async function loadWeeklyStats() {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const mondayKey = getMondayKey(new Date());
+    const sundayKey = getSundayKey(mondayKey);
+
+    // 1. This week's completed sessions
+    const { data: weekSessions } = await supabase
+      .from("training_sessions")
+      .select("date, duration_minutes")
+      .eq("user_id", user.id)
+      .eq("status", "Completed")
+      .eq("is_sandbox", false)
+      .gte("date", mondayKey)
+      .lte("date", sundayKey);
+
+    const workoutsCompleted = weekSessions?.length ?? 0;
+    const totalTimeMinutes = (weekSessions ?? []).reduce(
+      (sum, s) => sum + (s.duration_minutes || 0),
+      0
+    );
+
+    // 2. Current streak — fetch last 60 sessions and compute consecutive days
+    const { data: recentSessions } = await supabase
+      .from("training_sessions")
+      .select("date")
+      .eq("user_id", user.id)
+      .eq("status", "Completed")
+      .eq("is_sandbox", false)
+      .order("date", { ascending: false })
+      .limit(60);
+
+    let streak = 0;
+    if (recentSessions) {
+      const dates = new Set(recentSessions.map((s) => s.date));
+      const d = new Date();
+      for (let i = 0; i < 60; i++) {
+        const key = d.toISOString().slice(0, 10);
+        if (dates.has(key)) streak++;
+        else if (i > 0) break;
+        d.setDate(d.getDate() - 1);
+      }
+    }
+
+    setWeeklyStats({ workoutsCompleted, totalTimeMinutes, currentStreak: streak });
   }
 
   function mapWorkout(w: {
@@ -89,8 +166,6 @@ export default function WorkoutsView() {
       exerciseCount,
     };
   }
-
-  // ── Use Template ──────────────────────────────────────────────────────────
 
   async function handleUseTemplate(templateId: string) {
     const supabase = createClient();
@@ -162,11 +237,9 @@ export default function WorkoutsView() {
       }
     }
 
-    await loadData();
+    await loadWorkouts();
     showToast(t.toastTemplateLoaded);
   }
-
-  // ── Delete Workout ────────────────────────────────────────────────────────
 
   async function handleDelete(workoutId: string) {
     const supabase = createClient();
@@ -176,26 +249,66 @@ export default function WorkoutsView() {
     }
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────
-
   if (loading) {
     return <PageLoader text={t.loading} />;
   }
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header */}
-      <div className="flex items-start justify-between">
+      {/* ── Header ── */}
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900">{t.title}</h1>
           <p className="mt-1 text-sm text-zinc-500">{t.subtitle}</p>
         </div>
-        <Link href="/workouts/new" className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-          {t.newWorkout}
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/training/templates"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
+          >
+            {t.templates}
+          </Link>
+          <Link
+            href="/workouts/new"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            {t.newWorkout}
+          </Link>
+        </div>
       </div>
 
-      {/* My Workouts */}
+      {/* ── This Week (Planner) ── */}
+      <WeekPlanner
+        labels={{
+          title: t.thisWeekTitle,
+          prevWeek: t.prevWeek,
+          nextWeek: t.nextWeek,
+          today: t.today,
+          addWorkout: t.addWorkout,
+          restDay: t.restDay,
+          planned: t.planned,
+          completed: t.completed,
+          min: t.unitMin,
+        }}
+        weekdayLabels={[t.dayMon, t.dayTue, t.dayWed, t.dayThu, t.dayFri, t.daySat, t.daySun]}
+      />
+
+      {/* ── Weekly Progress ── */}
+      <WeeklyProgress
+        workoutsCompleted={weeklyStats.workoutsCompleted}
+        totalTimeMinutes={weeklyStats.totalTimeMinutes}
+        currentStreak={weeklyStats.currentStreak}
+        labels={{
+          title: t.weeklyProgressTitle,
+          subtitle: t.weeklyProgressSubtitle,
+          workoutsCompleted: t.weeklyProgressCompleted,
+          totalTime: t.weeklyProgressTotalTime,
+          currentStreak: t.weeklyProgressStreak,
+          dayPlural: t.weeklyProgressStreak,
+        }}
+      />
+
+      {/* ── My Workouts ── */}
       <div>
         <h2 className="mb-3 text-sm font-semibold text-zinc-900">{t.myWorkouts}</h2>
         {workouts.length === 0 ? (
@@ -229,7 +342,7 @@ export default function WorkoutsView() {
         )}
       </div>
 
-      {/* Templates */}
+      {/* ── Templates ── */}
       {templates.length > 0 && (
         <div>
           <h2 className="mb-3 text-sm font-semibold text-zinc-900">{t.templates}</h2>
