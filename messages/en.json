@@ -919,6 +919,9 @@
     "view": "View",
     "edit": "Edit",
     "exerciseSuffixShort": "ex.",
+    "myWorkoutsSubtitle": "Your personal workout library",
+    "searchWorkoutsPlaceholder": "Search workouts...",
+    "goalAll": "All",
     "currentWeek": "Current Week",
     "goToCurrentWeek": "Go to Current Week"
   },
