@@ -21,7 +21,7 @@ export interface WorkoutItem {
   exerciseCount: number;
 }
 
-// ── Helpers (exported so callers can reuse them) ──────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 export function difficultyColor(d: WorkoutDifficulty | null): string {
   switch (d) {
@@ -71,27 +71,61 @@ interface WorkoutCardProps {
   workout: WorkoutItem;
   href: string;
   t: WorkoutsDict;
+  /** Optional handler for the "Edit" action (currently visual-only). */
+  onEdit?: () => void;
 }
 
-export default function WorkoutCard({ workout, href, t }: WorkoutCardProps) {
+export default function WorkoutCard({ workout, href, t, onEdit }: WorkoutCardProps) {
   return (
-    <Link href={href} className="flex flex-col rounded-xl border border-zinc-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
-      <div className="mb-2 flex items-start justify-between gap-2">
-        <h3 className="text-sm font-semibold text-zinc-900">{workout.name}</h3>
-        {workout.difficulty && (
-          <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${difficultyColor(workout.difficulty)}`}>
-            {difficultyLabel(workout.difficulty, t)}
+    <div className="flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm transition-shadow hover:shadow-md">
+      {/* Body */}
+      <Link href={href} className="flex flex-1 flex-col p-5">
+        {/* Title + difficulty badge */}
+        <div className="mb-2 flex items-start justify-between gap-2">
+          <h3 className="text-sm font-semibold text-zinc-900 line-clamp-2">{workout.name}</h3>
+          {workout.difficulty && (
+            <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${difficultyColor(workout.difficulty)}`}>
+              {difficultyLabel(workout.difficulty, t)}
+            </span>
+          )}
+        </div>
+
+        {/* Description */}
+        {workout.description && (
+          <p className="mb-3 text-xs text-zinc-400 line-clamp-2">{workout.description}</p>
+        )}
+
+        {/* Meta — category + exercises + duration */}
+        <div className="mt-auto flex flex-wrap items-center gap-2 border-t border-zinc-100 pt-3">
+          {workout.goal && (
+            <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${goalColor(workout.goal)}`}>
+              {goalLabel(workout.goal, t)}
+            </span>
+          )}
+          <span className="text-xs text-zinc-400">
+            {workout.exerciseCount} {t.exerciseSuffixShort ?? "ex."}
           </span>
-        )}
+          {workout.duration && <span className="text-xs text-zinc-400">{workout.duration} {t.unitMin}</span>}
+        </div>
+      </Link>
+
+      {/* Actions */}
+      <div className="flex items-stretch gap-2 border-t border-zinc-100 p-3">
+        <Link
+          href={href}
+          className="inline-flex min-h-[40px] flex-1 items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-zinc-50"
+        >
+          {t.view ?? "View"}
+        </Link>
+        <button
+          type="button"
+          onClick={onEdit}
+          disabled={!onEdit}
+          className="inline-flex min-h-[40px] flex-1 items-center justify-center rounded-lg bg-primary px-3 text-xs font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {t.edit ?? "Edit"}
+        </button>
       </div>
-      {workout.description && <p className="mb-3 text-xs text-zinc-400 line-clamp-2">{workout.description}</p>}
-      <div className="mt-auto flex flex-wrap items-center gap-2 border-t border-zinc-100 pt-3">
-        {workout.goal && (
-          <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${goalColor(workout.goal)}`}>{goalLabel(workout.goal, t)}</span>
-        )}
-        <span className="text-xs text-zinc-400">{workout.exerciseCount} exercises</span>
-        {workout.duration && <span className="text-xs text-zinc-400">{workout.duration} min</span>}
-      </div>
-    </Link>
+    </div>
   );
 }
