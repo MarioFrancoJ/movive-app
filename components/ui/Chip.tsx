@@ -39,7 +39,7 @@ interface ChipProps {
 
 // Frozen visual DNA — matches MealPlanModal's day/slot chips exactly.
 const BASE =
-  "inline-flex min-h-[44px] items-center justify-center rounded-golden-md px-golden-1 text-golden-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:opacity-40 disabled:cursor-not-allowed sm:min-h-[38px]";
+  "inline-flex min-h-[44px] items-center justify-center rounded-golden-md px-golden-3 text-golden-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:opacity-40 disabled:cursor-not-allowed sm:min-h-[38px]";
 const ACTIVE = "bg-primary text-white";
 const INACTIVE = "bg-white text-zinc-600 ring-1 ring-inset ring-zinc-200 hover:bg-zinc-100";
 
