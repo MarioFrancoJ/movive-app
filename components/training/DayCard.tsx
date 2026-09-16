@@ -56,7 +56,7 @@ export default function DayCard({
   const interactive = typeof onClick === "function";
 
   const baseClasses = [
-    "flex flex-col rounded-xl border p-3 transition-colors text-left w-full",
+    "flex min-h-[140px] w-full flex-col rounded-xl border p-4 text-left transition-colors",
     VARIANT_STYLES[variant],
     interactive ? "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30" : "",
   ].join(" ");
@@ -70,14 +70,14 @@ export default function DayCard({
       </div>
 
       {/* Body — variant-specific */}
-      <div className="mt-3 flex flex-1 flex-col items-center justify-center gap-1.5 text-center">
+      <div className="mt-4 flex flex-1 flex-col items-center justify-center gap-2 text-center">
         {variant === "empty" && (
           <>
             <span
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-dashed border-zinc-300 text-zinc-400"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-dashed border-zinc-300 text-zinc-400"
               aria-hidden="true"
             >
-              <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+              <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
                 <path d="M10 5a.75.75 0 0 1 .75.75v3.5h3.5a.75.75 0 0 1 0 1.5h-3.5v3.5a.75.75 0 0 1-1.5 0v-3.5h-3.5a.75.75 0 0 1 0-1.5h3.5v-3.5A.75.75 0 0 1 10 5Z" />
               </svg>
             </span>
@@ -87,7 +87,7 @@ export default function DayCard({
 
         {variant === "rest" && (
           <>
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-100" aria-hidden="true">
+            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-zinc-100" aria-hidden="true">
               <NavIcon name="rest-day.svg" className="h-5 w-5 text-zinc-500" />
             </span>
             <span className="text-xs font-semibold text-zinc-600">{labels.restDay}</span>
@@ -98,7 +98,7 @@ export default function DayCard({
           <>
             <span
               className={[
-                "flex h-9 w-9 items-center justify-center rounded-full",
+                "flex h-11 w-11 items-center justify-center rounded-full",
                 variant === "completed" ? "bg-success-light" : "bg-blue-100",
               ].join(" ")}
               aria-hidden="true"
