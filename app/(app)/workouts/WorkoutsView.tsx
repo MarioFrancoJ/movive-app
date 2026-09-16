@@ -279,19 +279,21 @@ export default function WorkoutsView() {
 
       {/* ── This Week (Planner) ── */}
       <WeekPlanner
-        labels={{
-          title: t.thisWeekTitle,
-          prevWeek: t.prevWeek,
-          nextWeek: t.nextWeek,
-          today: t.today,
-          addWorkout: t.addWorkout,
-          restDay: t.restDay,
-          planned: t.planned,
-          completed: t.completed,
-          min: t.unitMin,
-        }}
-        weekdayLabels={[t.dayMon, t.dayTue, t.dayWed, t.dayThu, t.dayFri, t.daySat, t.daySun]}
-      />
+  labels={{
+    title: t.thisWeekTitle,
+    prevWeek: t.prevWeek,
+    nextWeek: t.nextWeek,
+    today: t.today,
+    currentWeek: t.currentWeek,
+    goToCurrentWeek: t.goToCurrentWeek,
+    addWorkout: t.addWorkout,
+    restDay: t.restDay,
+    planned: t.planned,
+    completed: t.completed,
+    min: t.unitMin,
+  }}
+  weekdayLabels={[t.dayMon, t.dayTue, t.dayWed, t.dayThu, t.dayFri, t.daySat, t.daySun]}
+/>
 
       {/* ── Weekly Progress ── */}
       <WeeklyProgress
