@@ -48,7 +48,7 @@ export default function DayCard({
   const interactive = typeof onClick === "function";
 
   const baseClasses = [
-    "flex min-h-[180px] w-full flex-col rounded-xl border p-5 text-left transition-all",
+    "flex min-h-[140px] w-full flex-col rounded-xl border p-5 text-left transition-all",
     VARIANT_STYLES[variant],
     interactive ? "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30" : "",
   ].join(" ");
