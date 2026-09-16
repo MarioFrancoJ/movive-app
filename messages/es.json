@@ -892,9 +892,7 @@
       "errorCreating": "Error al crear la rutina: {msg}",
       "errorCreatingDay": "Error al crear el día: {msg}",
       "errorSavingExercises": "Error al guardar los ejercicios: {msg}"
-      "view": "Ver",
-      "edit": "Editar",
-      "exerciseSuffixShort": "ej.",
+      
     },
     "detail": {
       "loading": "Cargando rutina...",
@@ -919,6 +917,9 @@
     "difficultyBeginner": "Principiante",
     "difficultyIntermediate": "Intermedio",
     "difficultyAdvanced": "Avanzado"
+      "view": "Ver",
+      "edit": "Editar",
+      "exerciseSuffixShort": "ej.",
   },
   "progress": {
     "title": "Seguimiento del progreso",
