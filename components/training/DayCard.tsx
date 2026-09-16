@@ -8,19 +8,12 @@ export type DayName = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday"
 export type DayVariant = "empty" | "planned" | "completed" | "rest";
 
 export interface DayCardProps {
-  /** Full weekday name — also the logic key used in i18n lookups. */
   day: DayName;
-  /** Short date label, e.g. "Apr 21". */
   date: string;
-  /** Localized abbreviated day label, e.g. "Mon" / "Lun". */
   dayLabel: string;
-  /** Visual + semantic state of the day. */
   variant: DayVariant;
-  /** Workout name — only used when variant = planned | completed. */
   workoutName?: string;
-  /** Duration in minutes — only used when variant = planned | completed. */
   duration?: number;
-  /** Localized labels (passed in so the card stays dumb). */
   labels: {
     addWorkout: string;
     restDay: string;
@@ -28,17 +21,16 @@ export interface DayCardProps {
     completed: string;
     min: string;
   };
-  /** Optional click handler — reserved for future interactions. */
   onClick?: () => void;
 }
 
-// ── Variant styles ────────────────────────────────────────────────────────────
+// ── Variant styles — soft backgrounds per day ─────────────────────────────────
 
 const VARIANT_STYLES: Record<DayVariant, string> = {
-  empty:     "border-dashed border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50",
-  planned:   "border-blue-100 bg-blue-50/40",
-  completed: "border-success-light bg-success-light/30",
-  rest:      "border-zinc-100 bg-zinc-50",
+  empty:     "border-zinc-200 bg-zinc-50 hover:border-zinc-300 hover:bg-zinc-100",
+  planned:   "border-blue-100 bg-blue-50",
+  completed: "border-success-light bg-success-light",
+  rest:      "border-zinc-100 bg-zinc-100",
 };
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -74,7 +66,7 @@ export default function DayCard({
         {variant === "empty" && (
           <>
             <span
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-dashed border-zinc-300 text-zinc-400"
+              className="flex h-11 w-11 items-center justify-center rounded-lg border border-dashed border-zinc-300 bg-white text-zinc-400"
               aria-hidden="true"
             >
               <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
@@ -87,7 +79,7 @@ export default function DayCard({
 
         {variant === "rest" && (
           <>
-            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-zinc-100" aria-hidden="true">
+            <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-white" aria-hidden="true">
               <NavIcon name="rest-day.svg" className="h-5 w-5 text-zinc-500" />
             </span>
             <span className="text-xs font-semibold text-zinc-600">{labels.restDay}</span>
@@ -97,10 +89,7 @@ export default function DayCard({
         {(variant === "planned" || variant === "completed") && (
           <>
             <span
-              className={[
-                "flex h-11 w-11 items-center justify-center rounded-full",
-                variant === "completed" ? "bg-success-light" : "bg-blue-100",
-              ].join(" ")}
+              className="flex h-11 w-11 items-center justify-center rounded-lg bg-white"
               aria-hidden="true"
             >
               <NavIcon
@@ -115,14 +104,14 @@ export default function DayCard({
               {workoutName ?? ""}
             </span>
             {typeof duration === "number" && duration > 0 && (
-              <span className="text-[11px] text-zinc-400">
+              <span className="text-[11px] text-zinc-500">
                 {duration} {labels.min}
               </span>
             )}
             <span
               className={[
                 "mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold",
-                variant === "completed" ? "bg-success-light text-success" : "bg-blue-100 text-blue-700",
+                variant === "completed" ? "bg-white text-success" : "bg-white text-blue-700",
               ].join(" ")}
             >
               {variant === "completed" ? labels.completed : labels.planned}
