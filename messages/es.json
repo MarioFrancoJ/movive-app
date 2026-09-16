@@ -922,7 +922,8 @@
     "myWorkoutsSubtitle": "Tu biblioteca personal de rutinas",
     "searchWorkoutsPlaceholder": "Buscar rutinas...",
     "goalAll": "Todas",
-      "currentWeek": "Semana actual",
+    "noMatch": "Ninguna rutina coincide con tus filtros.",
+    "currentWeek": "Semana actual",
     "goToCurrentWeek": "Ir a la semana actual"
   },
   "progress": {
