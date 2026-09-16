@@ -82,7 +82,7 @@
     },
     "account": {
       "profile": "Perfil",
-      "subscription": "Suscripción"
+      "subscription": "Suscripción",
       "signOut": "Cerrar sesión"
     }
   },
