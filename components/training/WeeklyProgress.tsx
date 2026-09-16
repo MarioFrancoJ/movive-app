@@ -16,9 +16,11 @@ export interface WeeklyProgressProps {
     title: string;
     subtitle: string;
     workoutsCompleted: string;
+    workoutsCompletedSub: string;
     totalTime: string;
+    totalTimeSub: string;
     currentStreak: string;
-    dayPlural: string;
+    currentStreakSub: string;
   };
   className?: string;
 }
@@ -89,7 +91,7 @@ export default function WeeklyProgress({
           icon={<NavIcon name="workout-complete.svg" className="h-5 w-5 text-success" />}
           label={labels.workoutsCompleted}
           value={String(workoutsCompleted)}
-          sub={labels.workoutsCompleted}
+          sub={labels.workoutsCompletedSub}
         />
         <KpiCard
           icon={
@@ -99,7 +101,7 @@ export default function WeeklyProgress({
           }
           label={labels.totalTime}
           value={formatDuration(totalTimeMinutes)}
-          sub={labels.totalTime}
+          sub={labels.totalTimeSub}
         />
         <KpiCard
           icon={
@@ -109,7 +111,7 @@ export default function WeeklyProgress({
           }
           label={labels.currentStreak}
           value={String(currentStreak)}
-          sub={labels.currentStreak}
+          sub={labels.currentStreakSub}
         />
       </div>
     </div>
