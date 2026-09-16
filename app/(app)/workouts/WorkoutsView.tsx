@@ -248,7 +248,7 @@ export default function WorkoutsView() {
                 active={filter === cat}
                 onClick={() => setFilter(cat)}
               >
-                {cat === "All" ? t.goalAll ?? "All" : cat}
+                {cat === "All" ? t.goalAll : cat}
               </Chip>
             ))}
           </div>
@@ -267,7 +267,7 @@ export default function WorkoutsView() {
           />
         ) : filteredWorkouts.length === 0 ? (
           <div className="flex h-48 items-center justify-center rounded-xl border border-zinc-200 bg-white shadow-sm">
-            <p className="text-sm text-zinc-400">{t.noMatch ?? "No workouts match your filters."}</p>
+            <p className="text-sm text-zinc-400">{t.noMatch}</p>
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
