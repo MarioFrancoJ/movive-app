@@ -1,17 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import PageLoader from "@/components/ui/PageLoader";
 import { useToast } from "@/components/ui/Toast";
 import EmptyState from "@/components/ui/EmptyState";
+import Chip from "@/components/ui/Chip";
 import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 import WorkoutCard, {
-  difficultyColor,
-  difficultyLabel,
-  goalColor,
-  goalLabel,
   type WorkoutItem,
   type WorkoutDifficulty,
 } from "@/components/training/WorkoutCard";
@@ -20,17 +17,16 @@ import WeeklyProgress from "@/components/training/WeeklyProgress";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type WorkoutsDict = ReturnType<typeof useDictionary>["dict"]["workouts"];
-
 interface WeeklyStats {
   workoutsCompleted: number;
   totalTimeMinutes: number;
   currentStreak: number;
 }
 
+type FilterCategory = "All" | "Strength" | "Hypertrophy" | "Calisthenics" | "Mobility";
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-/** Monday of the week containing `date` as YYYY-MM-DD. */
 function getMondayKey(date: Date): string {
   const d = new Date(date);
   const day = d.getDay();
@@ -39,7 +35,6 @@ function getMondayKey(date: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-/** Sunday key for a given Monday key. */
 function getSundayKey(mondayKey: string): string {
   const d = new Date(`${mondayKey}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + 6);
@@ -49,16 +44,16 @@ function getSundayKey(mondayKey: string): string {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function WorkoutsView() {
-  const { success: showToast } = useToast();
   const { dict } = useDictionary();
   const t = dict.workouts;
   const [workouts, setWorkouts] = useState<WorkoutItem[]>([]);
-  const [templates, setTemplates] = useState<WorkoutItem[]>([]);
   const [weeklyStats, setWeeklyStats] = useState<WeeklyStats>({
     workoutsCompleted: 0,
     totalTimeMinutes: 0,
     currentStreak: 0,
   });
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<FilterCategory>("All");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -71,24 +66,14 @@ export default function WorkoutsView() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
 
-    const [userWorkoutsRes, templateRes] = await Promise.all([
-      supabase
-        .from("workouts")
-        .select("id, name, description, goal, difficulty, duration, is_template, workout_days(workout_exercises(id))")
-        .eq("user_id", user.id)
-        .eq("is_template", false)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("workouts")
-        .select("id, name, description, goal, difficulty, duration, is_template, workout_days(workout_exercises(id))")
-        .is("user_id", null)
-        .eq("is_template", true)
-        .order("name"),
-    ]);
+    const { data } = await supabase
+      .from("workouts")
+      .select("id, name, description, goal, difficulty, duration, is_template, workout_days(workout_exercises(id))")
+      .eq("user_id", user.id)
+      .eq("is_template", false)
+      .order("created_at", { ascending: false });
 
-    if (userWorkoutsRes.data) setWorkouts(userWorkoutsRes.data.map(mapWorkout));
-    if (templateRes.data) setTemplates(templateRes.data.map(mapWorkout));
-
+    if (data) setWorkouts(data.map(mapWorkout));
     setLoading(false);
   }
 
@@ -100,7 +85,6 @@ export default function WorkoutsView() {
     const mondayKey = getMondayKey(new Date());
     const sundayKey = getSundayKey(mondayKey);
 
-    // 1. This week's completed sessions
     const { data: weekSessions } = await supabase
       .from("training_sessions")
       .select("date, duration_minutes")
@@ -116,7 +100,6 @@ export default function WorkoutsView() {
       0
     );
 
-    // 2. Current streak — fetch last 60 sessions and compute consecutive days
     const { data: recentSessions } = await supabase
       .from("training_sessions")
       .select("date")
@@ -167,87 +150,12 @@ export default function WorkoutsView() {
     };
   }
 
-  async function handleUseTemplate(templateId: string) {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data: tpl } = await supabase
-      .from("workouts")
-      .select("name, description, goal, difficulty, duration, workout_days(day_name, sort_order, workout_exercises(exercise_id, exercise_name, sets, reps, rest_seconds, notes, sort_order))")
-      .eq("id", templateId)
-      .single();
-
-    if (!tpl) return;
-
-    const { data: newWorkout } = await supabase
-      .from("workouts")
-      .insert({
-        user_id: user.id,
-        name: tpl.name,
-        description: tpl.description,
-        goal: tpl.goal,
-        difficulty: tpl.difficulty,
-        duration: tpl.duration,
-        is_template: false,
-      })
-      .select("id")
-      .single();
-
-    if (!newWorkout) return;
-
-    const templateDays = tpl.workout_days || [];
-    if (templateDays.length > 0) {
-      const { data: newDays } = await supabase
-        .from("workout_days")
-        .insert(
-          templateDays.map((day) => ({
-            workout_id: newWorkout.id,
-            user_id: user.id,
-            day_name: day.day_name,
-            sort_order: day.sort_order,
-          }))
-        )
-        .select("id, sort_order");
-
-      if (newDays) {
-        const newDayIdBySort = new Map<number, string>(
-          newDays.map((d) => [d.sort_order as number, d.id as string])
-        );
-
-        const allExercises = templateDays.flatMap((day) => {
-          const newDayId = newDayIdBySort.get(day.sort_order);
-          if (!newDayId) return [];
-          return (day.workout_exercises || []).map((ex) => ({
-            workout_day_id: newDayId,
-            user_id: user.id,
-            exercise_id: ex.exercise_id,
-            exercise_name: ex.exercise_name,
-            sets: ex.sets,
-            reps: ex.reps,
-            rest_seconds: ex.rest_seconds,
-            notes: ex.notes,
-            sort_order: ex.sort_order,
-          }));
-        });
-
-        if (allExercises.length > 0) {
-          await supabase.from("workout_exercises").insert(allExercises);
-        }
-      }
-    }
-
-    await loadWorkouts();
-    showToast(t.toastTemplateLoaded);
-  }
-
-  async function handleDelete(workoutId: string) {
-    const supabase = createClient();
-    const { error } = await supabase.from("workouts").delete().eq("id", workoutId);
-    if (!error) {
-      setWorkouts((prev) => prev.filter((w) => w.id !== workoutId));
-    }
-  }
+  // Visual-only filters (no logic yet).
+  const filteredWorkouts = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return workouts;
+    return workouts.filter((w) => w.name.toLowerCase().includes(q));
+  }, [workouts, search]);
 
   if (loading) {
     return <PageLoader text={t.loading} />;
@@ -277,23 +185,23 @@ export default function WorkoutsView() {
         </div>
       </div>
 
-      {/* ── This Week (Planner) ── */}
+      {/* ── Week Planner ── */}
       <WeekPlanner
-  labels={{
-    title: t.thisWeekTitle,
-    prevWeek: t.prevWeek,
-    nextWeek: t.nextWeek,
-    today: t.today,
-    currentWeek: t.currentWeek,
-    goToCurrentWeek: t.goToCurrentWeek,
-    addWorkout: t.addWorkout,
-    restDay: t.restDay,
-    planned: t.planned,
-    completed: t.completed,
-    min: t.unitMin,
-  }}
-  weekdayLabels={[t.dayMon, t.dayTue, t.dayWed, t.dayThu, t.dayFri, t.daySat, t.daySun]}
-/>
+        labels={{
+          title: t.thisWeekTitle,
+          prevWeek: t.prevWeek,
+          nextWeek: t.nextWeek,
+          today: t.today,
+          currentWeek: t.currentWeek,
+          goToCurrentWeek: t.goToCurrentWeek,
+          addWorkout: t.addWorkout,
+          restDay: t.restDay,
+          planned: t.planned,
+          completed: t.completed,
+          min: t.unitMin,
+        }}
+        weekdayLabels={[t.dayMon, t.dayTue, t.dayWed, t.dayThu, t.dayFri, t.daySat, t.daySun]}
+      />
 
       {/* ── Weekly Progress ── */}
       <WeeklyProgress
@@ -312,7 +220,41 @@ export default function WorkoutsView() {
 
       {/* ── My Workouts ── */}
       <div>
-        <h2 className="mb-3 text-sm font-semibold text-zinc-900">{t.myWorkouts}</h2>
+        <div className="mb-4">
+          <h2 className="text-lg font-bold text-zinc-900">{t.myWorkouts}</h2>
+          <p className="mt-1 text-sm text-zinc-500">{t.myWorkoutsSubtitle}</p>
+        </div>
+
+        {/* Search + Filter chips (visual only for filters) */}
+        <div className="mb-4 flex flex-col gap-3">
+          <div className="relative w-full sm:w-80">
+            <svg viewBox="0 0 20 20" fill="currentColor" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" aria-hidden="true">
+              <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clipRule="evenodd" />
+            </svg>
+            <input
+              type="search"
+              placeholder={t.searchWorkoutsPlaceholder}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label={t.searchWorkoutsPlaceholder}
+              className="h-11 w-full rounded-lg border border-zinc-200 bg-white pl-9 pr-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200 sm:h-9"
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {(["All", "Strength", "Hypertrophy", "Calisthenics", "Mobility"] as const).map((cat) => (
+              <Chip
+                key={cat}
+                active={filter === cat}
+                onClick={() => setFilter(cat)}
+              >
+                {cat === "All" ? t.goalAll ?? "All" : cat}
+              </Chip>
+            ))}
+          </div>
+        </div>
+
+        {/* Workouts Grid */}
         {workouts.length === 0 ? (
           <EmptyState
             icon="🏋️"
@@ -323,58 +265,18 @@ export default function WorkoutsView() {
             secondaryLabel={t.emptySecondary}
             secondaryHref="/training/templates"
           />
+        ) : filteredWorkouts.length === 0 ? (
+          <div className="flex h-48 items-center justify-center rounded-xl border border-zinc-200 bg-white shadow-sm">
+            <p className="text-sm text-zinc-400">{t.noMatch ?? "No workouts match your filters."}</p>
+          </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {workouts.map((w) => (
-              <div key={w.id} className="relative">
-                <WorkoutCard workout={w} href={`/workouts/${w.id}`} t={t} />
-                <button
-                  type="button"
-                  onClick={() => handleDelete(w.id)}
-                  className="absolute right-3 top-3 rounded-md p-1 text-zinc-300 transition-colors hover:bg-red-50 hover:text-red-600"
-                  aria-label={`Delete ${w.name}`}
-                >
-                  <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
-                    <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
-                  </svg>
-                </button>
-              </div>
+            {filteredWorkouts.map((w) => (
+              <WorkoutCard key={w.id} workout={w} href={`/workouts/${w.id}`} t={t} />
             ))}
           </div>
         )}
       </div>
-
-      {/* ── Templates ── */}
-      {templates.length > 0 && (
-        <div>
-          <h2 className="mb-3 text-sm font-semibold text-zinc-900">{t.templates}</h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {templates.map((tpl) => (
-              <div key={tpl.id} className="flex flex-col rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-                <div className="mb-2 flex items-start justify-between gap-2">
-                  <h3 className="text-sm font-semibold text-zinc-900">{tpl.name}</h3>
-                  {tpl.difficulty && (
-                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${difficultyColor(tpl.difficulty)}`}>
-                      {difficultyLabel(tpl.difficulty, t)}
-                    </span>
-                  )}
-                </div>
-                {tpl.description && <p className="mb-3 text-xs text-zinc-400 line-clamp-2">{tpl.description}</p>}
-                <div className="mt-auto flex items-center justify-between border-t border-zinc-100 pt-3">
-                  <div className="flex items-center gap-2">
-                    {tpl.goal && <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${goalColor(tpl.goal)}`}>{goalLabel(tpl.goal, t)}</span>}
-                    {tpl.duration && <span className="text-xs text-zinc-400">{tpl.duration} min</span>}
-                    <span className="text-xs text-zinc-400">{tpl.exerciseCount} ex.</span>
-                  </div>
-                  <button type="button" onClick={() => handleUseTemplate(tpl.id)} className="text-xs font-semibold text-zinc-600 hover:text-zinc-900">
-                    {t.useTemplate}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
