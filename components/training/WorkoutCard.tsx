@@ -103,9 +103,11 @@ export default function WorkoutCard({ workout, href, t, onEdit }: WorkoutCardPro
             </span>
           )}
           <span className="text-xs text-zinc-400">
-            {workout.exerciseCount} {t.exerciseSuffixShort ?? "ex."}
+            {workout.exerciseCount} {t.exerciseSuffixShort}
           </span>
-          {workout.duration && <span className="text-xs text-zinc-400">{workout.duration} {t.unitMin}</span>}
+          {workout.duration && (
+            <span className="text-xs text-zinc-400">{workout.duration} {t.unitMin}</span>
+          )}
         </div>
       </Link>
 
@@ -115,7 +117,7 @@ export default function WorkoutCard({ workout, href, t, onEdit }: WorkoutCardPro
           href={href}
           className="inline-flex min-h-[40px] flex-1 items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-zinc-50"
         >
-          {t.view ?? "View"}
+          {t.view}
         </Link>
         <button
           type="button"
@@ -123,7 +125,7 @@ export default function WorkoutCard({ workout, href, t, onEdit }: WorkoutCardPro
           disabled={!onEdit}
           className="inline-flex min-h-[40px] flex-1 items-center justify-center rounded-lg bg-primary px-3 text-xs font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {t.edit ?? "Edit"}
+          {t.edit}
         </button>
       </div>
     </div>
