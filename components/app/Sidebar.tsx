@@ -62,17 +62,8 @@ type NavDict = {
 function buildNavSections(nav: NavDict): NavSection[] {
   return [
   { id: "training", label: nav.sections.training, icon: <IconDumbbell />, matchPrefixes: ["/workouts", "/training"], items: [
-  { label: nav.training.overview, href: "/training", icon: <IconOverview /> },
+  { label: nav.training.overview, href: "/workouts", icon: <IconOverview /> },
   { label: nav.training.startWorkout, href: "/training/start", icon: <IconPlay /> },
-  { label: nav.training.workouts, href: "/workouts", icon: <IconDumbbell /> },
-  // ──────────────────────────────────────────────────────────────────
-  // OCULTOS FASE 1 — Fase 2 los integrará como fuentes internas del
-  // futuro Training Planner (similar a Meal Planner). Las rutas siguen
-  // existiendo y funcionando; solo se ocultan del menú.
-  // { label: nav.training.workoutBuilder, href: "/training/workout-builder", icon: <IconHammer /> },
-  // { label: nav.training.exercises, href: "/training/exercises", icon: <IconExercises /> },
-  // { label: nav.training.templates, href: "/training/templates", icon: <IconTemplates /> },
-  // ──────────────────────────────────────────────────────────────────
   { label: nav.training.history, href: "/training/history", icon: <IconClock /> },
 ]},
 
