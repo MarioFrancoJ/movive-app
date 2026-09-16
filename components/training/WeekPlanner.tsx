@@ -6,21 +6,19 @@ import DayCard, { type DayName, type DayVariant } from "./DayCard";
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface WeekPlannerProps {
-  /** Localized labels passed in from the parent. */
   labels: {
-    title: string;           // Kept for future use
-    prevWeek: string;        // "Previous Week"
-    nextWeek: string;        // "Next Week"
-    today: string;           // "Today" (unused in header, kept for compat)
-    currentWeek: string;     // "Current Week"
-    goToCurrentWeek: string; // "Go to Current Week"
+    title: string;
+    prevWeek: string;
+    nextWeek: string;
+    today: string;
+    currentWeek: string;
+    goToCurrentWeek: string;
     addWorkout: string;
     restDay: string;
     planned: string;
     completed: string;
     min: string;
   };
-  /** Weekday abbreviations in order Mon→Sun. */
   weekdayLabels: string[];
 }
 
@@ -28,7 +26,6 @@ export interface WeekPlannerProps {
 
 const DAYS: DayName[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-/** Monday of the week containing `date`. */
 function getMonday(date: Date): Date {
   const d = new Date(date);
   const day = d.getDay();
@@ -38,14 +35,12 @@ function getMonday(date: Date): Date {
   return d;
 }
 
-/** Shift a date by ±7*n days. */
 function shiftWeek(monday: Date, weeks: number): Date {
   const d = new Date(monday);
   d.setDate(d.getDate() + weeks * 7);
   return d;
 }
 
-/** Format "Sep 14 – Sep 20, 2026" for a Monday→Sunday range. */
 function formatWeekRange(monday: Date): string {
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
@@ -55,7 +50,6 @@ function formatWeekRange(monday: Date): string {
   return `${startStr} – ${endStr}, ${sunday.getFullYear()}`;
 }
 
-/** Short date label "Apr 21" for a given day. */
 function formatDayDate(date: Date): string {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
@@ -80,21 +74,15 @@ export default function WeekPlanner({ labels, weekdayLabels }: WeekPlannerProps)
     });
   }, [monday]);
 
-  function goPrev() {
-    setMonday((m) => shiftWeek(m, -1));
-  }
-  function goNext() {
-    setMonday((m) => shiftWeek(m, 1));
-  }
-  function goToday() {
-    setMonday(getMonday(new Date()));
-  }
+  function goPrev() { setMonday((m) => shiftWeek(m, -1)); }
+  function goNext() { setMonday((m) => shiftWeek(m, 1)); }
+  function goToday() { setMonday(getMonday(new Date())); }
 
   const getVariant = (_day: DayName): DayVariant => "empty";
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* ── Week navigation (mirrors Meal Planner) ── */}
+    <div className="flex flex-col gap-4">
+      {/* ── Week navigation — sin card contenedor, fila fina como Meal Planner ── */}
       <div className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white px-3 py-2 shadow-sm">
         <button
           type="button"
@@ -141,8 +129,8 @@ export default function WeekPlanner({ labels, weekdayLabels }: WeekPlannerProps)
         </button>
       </div>
 
-      {/* ── Days grid ── */}
-      <div className="grid grid-cols-2 gap-3 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
+      {/* ── Days grid — SIN card contenedor, como Meal Planner ── */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
         {DAYS.map((day, i) => (
           <DayCard
             key={day}
