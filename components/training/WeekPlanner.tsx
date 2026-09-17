@@ -160,6 +160,5 @@ export default function WeekPlanner({ labels, weekdayLabels }: WeekPlannerProps)
           </div>
         </div>
       </div>
-    </div>
   );
 }
