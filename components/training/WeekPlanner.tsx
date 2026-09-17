@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import DayCard, { type DayName, type DayVariant } from "./DayCard";
 import WeekDayHeader from "@/components/ui/WeekDayHeader";
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface WeekPlannerProps {
@@ -129,17 +130,19 @@ export default function WeekPlanner({ labels, weekdayLabels }: WeekPlannerProps)
         </button>
       </div>
 
-     {/* Header row: shared WeekDayHeader component */}
-<div className="grid grid-cols-7 gap-3 px-1 pb-2">
-  {DAYS.map((day, i) => (
-    <WeekDayHeader
-      key={day}
-      dayLabel={weekdayLabels[i] ?? day.slice(0, 3)}
-      dateLabel={formatDayDate(dayDates[i])}
-      // menu + onMenuToggle + menuOpen: reserved for future day actions
-    />
-  ))}
-</div>
+      {/* ── Days grid — header row + cards row ── */}
+      <div className="overflow-x-auto">
+        <div className="min-w-[640px]">
+          {/* Header row: shared WeekDayHeader component */}
+          <div className="grid grid-cols-7 gap-3 px-1 pb-2">
+            {DAYS.map((day, i) => (
+              <WeekDayHeader
+                key={day}
+                dayLabel={weekdayLabels[i] ?? day.slice(0, 3)}
+                dateLabel={formatDayDate(dayDates[i])}
+              />
+            ))}
+          </div>
 
           {/* Cards row */}
           <div className="grid grid-cols-7 gap-3">
@@ -160,5 +163,6 @@ export default function WeekPlanner({ labels, weekdayLabels }: WeekPlannerProps)
           </div>
         </div>
       </div>
+    </div>
   );
 }
