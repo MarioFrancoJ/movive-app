@@ -18,7 +18,7 @@
     "details": "Detalles",
     "viewAll": "Ver todo",
     "remove": "Quitar",
-    "all": "Todo",
+    "all": "Todo",f
     "dismiss": "Descartar",
     "optional": "Opcional",
     "date": "Fecha",
@@ -831,7 +831,7 @@
     "workouts": {
     "loading": "Cargando rutinas...",
     "title": "Rutinas",
-    "subtitle": "Planifica tu semana, gestiona tus rutinas y mantén la constancia.",
+    "subtitle": "Organiza tus entrenamientos semanales y asigna rutinas a cada día.",
     "newWorkout": "+ Nueva rutina",
     "templates": "Plantillas",
     "myWorkouts": "Mis rutinas",
