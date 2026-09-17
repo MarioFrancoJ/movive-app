@@ -56,7 +56,7 @@ export default function KpiCard({ icon, label, value, sub, href }: KpiCardProps)
     return (
       <Link
         href={href}
-        className="group flex items-center gap-golden-3 rounded-golden-lg border border-zinc-200 bg-white px-golden-3 py-golden-3 shadow-sm transition-all hover:border-zinc-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-zinc-300"
+        className="group flex items-center gap-golden-3 rounded-golden-lg border border-zinc-200 bg-white px-golden-3 py-golden-2 shadow-sm transition-all hover:border-zinc-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-zinc-300"
       >
         {inner}
       </Link>
@@ -65,7 +65,7 @@ export default function KpiCard({ icon, label, value, sub, href }: KpiCardProps)
 
   // Non-clickable variant — plain div.
   return (
-    <div className="flex items-center gap-golden-3 rounded-golden-lg border border-zinc-200 bg-white px-golden-3 py-golden-3 shadow-sm">
+    <div className="flex items-center gap-golden-3 rounded-golden-lg border border-zinc-200 bg-white px-golden-3 py-golden-2 shadow-sm">
       {inner}
     </div>
   );
