@@ -865,6 +865,9 @@
     "dayFri": "Fri",
     "daySat": "Sat",
     "daySun": "Sun",
+    "assign": "Assign",
+    "assignedThisWeek": "Assigned {n} times this week",
+    "notUsedThisWeek": "Not used this week",
     "new": {
       "loading": "Loading exercises...",
       "title": "Create Workout",
