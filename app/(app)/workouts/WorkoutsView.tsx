@@ -272,11 +272,11 @@ export default function WorkoutsView() {
             <p className="text-sm text-zinc-400">{t.noMatch}</p>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 lg:grid-cols-2">
             {filteredWorkouts.map((w) => (
-              <WorkoutCard key={w.id} workout={w} href={`/workouts/${w.id}`} t={t} />
-            ))}
-          </div>
+            <WorkoutCard key={w.id} workout={w} href={`/workouts/${w.id}`} t={t} />
+          ))}
+        </div>
         )}
       </div>
     </div>
