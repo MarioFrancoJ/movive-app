@@ -959,37 +959,55 @@ export default function MealPlannerView() {
         ) : (
           <div className="hidden lg:block overflow-x-auto">
             <div className="min-w-[880px]">
-              {/* Header row: soft day labels + per-day tools (menu board, not a calendar bar) */}
-              <div className="grid grid-cols-[104px_repeat(7,1fr)] gap-2">
-                <div />
-                {DAYS.map((day) => (
-                  <div key={day} className="relative flex items-center justify-between px-1 pb-1">
-                    <span className="text-sm font-bold tracking-tight text-zinc-800">{weekdayAbbrev(day, cal)}</span>
-                    <button
-                      type="button"
-                      onClick={() => setOpenDayMenu((d) => (d === day ? null : day))}
-                      aria-label={`${day} options`}
-                      aria-haspopup="menu"
-                      aria-expanded={openDayMenu === day}
-                      className="flex h-6 w-6 items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
-                    >
-                      <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true"><path d="M10 6a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM10 11.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM11.5 15.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" /></svg>
-                    </button>
-                    {openDayMenu === day && (
-                      <DayMenu
-                        day={day}
-                        t={t}
-                        canCopyOrClear={dayHasMeals(day)}
-                        canPaste={clipboardDay !== null}
-                        onCopy={() => { copyDayOf(day); setOpenDayMenu(null); }}
-                        onPaste={() => { pasteDayInto(day); setOpenDayMenu(null); }}
-                        onClear={() => { clearDayOf(day); setOpenDayMenu(null); }}
-                        onClose={() => setOpenDayMenu(null)}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
+              {/* Header row: soft day labels + date + per-day tools */}
+<div className="grid grid-cols-[104px_repeat(7,1fr)] gap-2">
+  <div />
+  {DAYS.map((day, i) => {
+    // Calculate the concrete date for this day (Mon=0, ..., Sun=6)
+    const dateObj = new Date(`${weekStart}T00:00:00Z`);
+    dateObj.setUTCDate(dateObj.getUTCDate() + i);
+    const dateLabel = dateObj.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      timeZone: "UTC",
+    });
+
+    return (
+      <div key={day} className="relative flex items-start justify-between px-1 pb-1">
+        <div className="flex flex-col">
+          <span className="text-sm font-bold tracking-tight text-zinc-800">
+            {weekdayAbbrev(day, cal)}
+          </span>
+          <span className="mt-0.5 text-xs font-normal text-zinc-400">
+            {dateLabel}
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={() => setOpenDayMenu((d) => (d === day ? null : day))}
+          aria-label={`${day} options`}
+          aria-haspopup="menu"
+          aria-expanded={openDayMenu === day}
+          className="flex h-6 w-6 items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
+        >
+          <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true"><path d="M10 6a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM10 11.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM11.5 15.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" /></svg>
+        </button>
+        {openDayMenu === day && (
+          <DayMenu
+            day={day}
+            t={t}
+            canCopyOrClear={dayHasMeals(day)}
+            canPaste={clipboardDay !== null}
+            onCopy={() => { copyDayOf(day); setOpenDayMenu(null); }}
+            onPaste={() => { pasteDayInto(day); setOpenDayMenu(null); }}
+            onClear={() => { clearDayOf(day); setOpenDayMenu(null); }}
+            onClose={() => setOpenDayMenu(null)}
+          />
+        )}
+      </div>
+    );
+  })}
+</div>
 
               {/* One row per meal slot — each slot has its own identity (icon + tint) */}
               {MEALS.map((meal) => {
