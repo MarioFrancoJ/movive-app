@@ -62,7 +62,7 @@ type NavDict = {
 function buildNavSections(nav: NavDict): NavSection[] {
   return [
   { id: "training", label: nav.sections.training, icon: <IconDumbbell />, matchPrefixes: ["/workouts", "/training"], items: [
-  { label: nav.training.overview, href: "/workouts", icon: <IconOverview /> },
+  { label: nav.training.overview, href: "/workouts", icon: <IconExercises /> },
   { label: nav.training.startWorkout, href: "/training/start", icon: <IconPlay /> },
   { label: nav.training.history, href: "/training/history", icon: <IconClock /> },
 ]},
