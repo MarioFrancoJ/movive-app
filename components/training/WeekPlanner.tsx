@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import DayCard, { type DayName, type DayVariant } from "./DayCard";
-
+import WeekDayHeader from "@/components/ui/WeekDayHeader";
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface WeekPlannerProps {
