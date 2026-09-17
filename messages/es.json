@@ -864,6 +864,9 @@
     "dayFri": "Vie",
     "daySat": "Sáb",
     "daySun": "Dom",
+    "assign": "Asignar",
+    "assignedThisWeek": "Asignada {n} veces esta semana",
+    "notUsedThisWeek": "No usada esta semana",
     "new": {
       "loading": "Cargando ejercicios...",
       "title": "Crear rutina",
