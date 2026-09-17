@@ -129,22 +129,17 @@ export default function WeekPlanner({ labels, weekdayLabels }: WeekPlannerProps)
         </button>
       </div>
 
-      {/* ── Days grid — header row with day + date, then cards ── */}
-      <div className="overflow-x-auto">
-        <div className="min-w-[640px]">
-          {/* Header row: day + date */}
-          <div className="grid grid-cols-7 gap-3 px-1 pb-2">
-            {DAYS.map((day, i) => (
-              <div key={day} className="text-center">
-                <p className="text-xs font-bold uppercase tracking-widest text-zinc-700">
-                  {weekdayLabels[i] ?? day.slice(0, 3)}
-                </p>
-                <p className="mt-0.5 text-xs text-zinc-400">
-                  {formatDayDate(dayDates[i])}
-                </p>
-              </div>
-            ))}
-          </div>
+     {/* Header row: shared WeekDayHeader component */}
+<div className="grid grid-cols-7 gap-3 px-1 pb-2">
+  {DAYS.map((day, i) => (
+    <WeekDayHeader
+      key={day}
+      dayLabel={weekdayLabels[i] ?? day.slice(0, 3)}
+      dateLabel={formatDayDate(dayDates[i])}
+      // menu + onMenuToggle + menuOpen: reserved for future day actions
+    />
+  ))}
+</div>
 
           {/* Cards row */}
           <div className="grid grid-cols-7 gap-3">
