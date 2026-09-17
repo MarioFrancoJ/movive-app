@@ -82,7 +82,7 @@ export default function WeekPlanner({ labels, weekdayLabels }: WeekPlannerProps)
 
   return (
     <div className="flex flex-col gap-4">
-      {/* ── Week navigation — sin card contenedor, fila fina como Meal Planner ── */}
+      {/* ── Week navigation ── */}
       <div className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white px-3 py-2 shadow-sm">
         <button
           type="button"
@@ -129,24 +129,41 @@ export default function WeekPlanner({ labels, weekdayLabels }: WeekPlannerProps)
         </button>
       </div>
 
-      {/* ── Days grid — SIN card contenedor, como Meal Planner ── */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
-        {DAYS.map((day, i) => (
-          <DayCard
-            key={day}
-            day={day}
-            date={formatDayDate(dayDates[i])}
-            dayLabel={weekdayLabels[i] ?? day.slice(0, 3)}
-            variant={getVariant(day)}
-            labels={{
-              addWorkout: labels.addWorkout,
-              restDay: labels.restDay,
-              planned: labels.planned,
-              completed: labels.completed,
-              min: labels.min,
-            }}
-          />
-        ))}
+      {/* ── Days grid — header row with day + date, then cards ── */}
+      <div className="overflow-x-auto">
+        <div className="min-w-[640px]">
+          {/* Header row: day + date */}
+          <div className="grid grid-cols-7 gap-3 px-1 pb-2">
+            {DAYS.map((day, i) => (
+              <div key={day} className="text-center">
+                <p className="text-xs font-bold uppercase tracking-widest text-zinc-700">
+                  {weekdayLabels[i] ?? day.slice(0, 3)}
+                </p>
+                <p className="mt-0.5 text-xs text-zinc-400">
+                  {formatDayDate(dayDates[i])}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Cards row */}
+          <div className="grid grid-cols-7 gap-3">
+            {DAYS.map((day) => (
+              <DayCard
+                key={day}
+                day={day}
+                variant={getVariant(day)}
+                labels={{
+                  addWorkout: labels.addWorkout,
+                  restDay: labels.restDay,
+                  planned: labels.planned,
+                  completed: labels.completed,
+                  min: labels.min,
+                }}
+              />
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
