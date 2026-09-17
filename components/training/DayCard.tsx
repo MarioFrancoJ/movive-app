@@ -64,18 +64,18 @@ export default function DayCard({
       {/* Body */}
       <div className="mt-4 flex flex-1 flex-col items-center justify-center gap-2 text-center">
         {variant === "empty" && (
-          <>
-            <svg
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              className="h-6 w-6 text-zinc-400"
-              aria-hidden="true"
-            >
-              <path d="M10 5a.75.75 0 0 1 .75.75v3.5h3.5a.75.75 0 0 1 0 1.5h-3.5v3.5a.75.75 0 0 1-1.5 0v-3.5h-3.5a.75.75 0 0 1 0-1.5h3.5v-3.5A.75.75 0 0 1 10 5Z" />
-            </svg>
-            <span className="text-xs font-medium text-zinc-500">{labels.addWorkout}</span>
-          </>
-        )}
+  <>
+    <svg
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      className="h-8 w-8 text-zinc-300"
+      aria-hidden="true"
+    >
+      <path d="M10 5a.75.75 0 0 1 .75.75v3.5h3.5a.75.75 0 0 1 0 1.5h-3.5v3.5a.75.75 0 0 1-1.5 0v-3.5h-3.5a.75.75 0 0 1 0-1.5h3.5v-3.5A.75.75 0 0 1 10 5Z" />
+    </svg>
+    <span className="text-xs font-medium text-zinc-500">{labels.addWorkout}</span>
+  </>
+)}
 
         {variant === "rest" && (
           <>
