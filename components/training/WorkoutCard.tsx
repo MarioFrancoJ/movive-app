@@ -19,6 +19,8 @@ export interface WorkoutItem {
   duration: number | null;
   is_template: boolean;
   exerciseCount: number;
+  /** How many times this workout is assigned in the current week (optional). */
+  assignedThisWeek?: number;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -71,18 +73,18 @@ interface WorkoutCardProps {
   workout: WorkoutItem;
   href: string;
   t: WorkoutsDict;
-  /** Optional handler for the "Edit" action (currently visual-only). */
   onEdit?: () => void;
+  onAssign?: () => void;
 }
 
-export default function WorkoutCard({ workout, href, t, onEdit }: WorkoutCardProps) {
+export default function WorkoutCard({ workout, href, t, onEdit, onAssign }: WorkoutCardProps) {
   return (
     <div className="flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm transition-shadow hover:shadow-md">
       {/* Body */}
       <Link href={href} className="flex flex-1 flex-col p-5">
         {/* Title + difficulty badge */}
         <div className="mb-2 flex items-start justify-between gap-2">
-          <h3 className="text-sm font-semibold text-zinc-900 line-clamp-2">{workout.name}</h3>
+          <h3 className="text-base font-semibold text-zinc-900 line-clamp-2">{workout.name}</h3>
           {workout.difficulty && (
             <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${difficultyColor(workout.difficulty)}`}>
               {difficultyLabel(workout.difficulty, t)}
@@ -92,10 +94,10 @@ export default function WorkoutCard({ workout, href, t, onEdit }: WorkoutCardPro
 
         {/* Description */}
         {workout.description && (
-          <p className="mb-3 text-xs text-zinc-400 line-clamp-2">{workout.description}</p>
+          <p className="mb-3 text-sm text-zinc-500 line-clamp-2">{workout.description}</p>
         )}
 
-        {/* Meta — category + exercises + duration */}
+        {/* Meta — goal + exercises + duration */}
         <div className="mt-auto flex flex-wrap items-center gap-2 border-t border-zinc-100 pt-3">
           {workout.goal && (
             <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${goalColor(workout.goal)}`}>
@@ -109,9 +111,24 @@ export default function WorkoutCard({ workout, href, t, onEdit }: WorkoutCardPro
             <span className="text-xs text-zinc-400">{workout.duration} {t.unitMin}</span>
           )}
         </div>
+
+        {/* Contextual info — assignment status (optional) */}
+        {typeof workout.assignedThisWeek === "number" && (
+          <div className="mt-3 border-t border-zinc-100 pt-3">
+            {workout.assignedThisWeek > 0 ? (
+              <p className="text-xs text-zinc-500">
+                <span className="font-semibold text-primary-fg">
+                  {t.assignedThisWeek.replace("{n}", String(workout.assignedThisWeek))}
+                </span>
+              </p>
+            ) : (
+              <p className="text-xs text-zinc-400">{t.notUsedThisWeek}</p>
+            )}
+          </div>
+        )}
       </Link>
 
-      {/* Actions */}
+      {/* Actions — View / Edit / Assign */}
       <div className="flex items-stretch gap-2 border-t border-zinc-100 p-3">
         <Link
           href={href}
@@ -123,9 +140,17 @@ export default function WorkoutCard({ workout, href, t, onEdit }: WorkoutCardPro
           type="button"
           onClick={onEdit}
           disabled={!onEdit}
-          className="inline-flex min-h-[40px] flex-1 items-center justify-center rounded-lg bg-primary px-3 text-xs font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex min-h-[40px] flex-1 items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-700 transition-colors hover:border-zinc-300 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {t.edit}
+        </button>
+        <button
+          type="button"
+          onClick={onAssign}
+          disabled={!onAssign}
+          className="inline-flex min-h-[40px] flex-1 items-center justify-center rounded-lg bg-primary px-3 text-xs font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {t.assign}
         </button>
       </div>
     </div>
