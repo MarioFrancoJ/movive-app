@@ -3,10 +3,12 @@
 import { useState, useMemo } from "react";
 import DayCard, { type DayName, type DayVariant } from "./DayCard";
 import WeekDayHeader from "@/components/ui/WeekDayHeader";
+import WorkoutPicker, { type WorkoutPickerItem } from "./WorkoutPicker";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface WeekPlannerProps {
+  workouts: WorkoutPickerItem[];
   labels: {
     title: string;
     prevWeek: string;
@@ -19,6 +21,13 @@ export interface WeekPlannerProps {
     planned: string;
     completed: string;
     min: string;
+    picker: {
+      title: string;
+      searchPlaceholder: string;
+      noMatch: string;
+      countSummary: string;
+      all: string;
+    };
   };
   weekdayLabels: string[];
 }
@@ -57,8 +66,19 @@ function formatDayDate(date: Date): string {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function WeekPlanner({ labels, weekdayLabels }: WeekPlannerProps) {
+export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPlannerProps) {
   const [monday, setMonday] = useState<Date>(() => getMonday(new Date()));
+  // Local assignments: day → workoutId (no persistence yet)
+  const [assignments, setAssignments] = useState<Record<DayName, string | null>>({
+    Monday: null,
+    Tuesday: null,
+    Wednesday: null,
+    Thursday: null,
+    Friday: null,
+    Saturday: null,
+    Sunday: null,
+  });
+  const [pickerTarget, setPickerTarget] = useState<DayName | null>(null);
 
   const isCurrentWeek = useMemo(() => {
     const today = getMonday(new Date());
@@ -79,7 +99,37 @@ export default function WeekPlanner({ labels, weekdayLabels }: WeekPlannerProps)
   function goNext() { setMonday((m) => shiftWeek(m, 1)); }
   function goToday() { setMonday(getMonday(new Date())); }
 
-  const getVariant = (_day: DayName): DayVariant => "empty";
+  function getVariant(day: DayName): DayVariant {
+    return assignments[day] ? "planned" : "empty";
+  }
+
+  function getWorkoutName(day: DayName): string | undefined {
+    const id = assignments[day];
+    if (!id) return undefined;
+    return workouts.find((w) => w.id === id)?.name;
+  }
+
+  function getWorkoutDuration(day: DayName): number | undefined {
+    const id = assignments[day];
+    if (!id) return undefined;
+    return workouts.find((w) => w.id === id)?.duration ?? undefined;
+  }
+
+  function handleDayClick(day: DayName) {
+    setPickerTarget(day);
+  }
+
+  function handleSelect(workoutId: string) {
+    if (!pickerTarget) return;
+    setAssignments((prev) => ({ ...prev, [pickerTarget]: workoutId }));
+    setPickerTarget(null);
+  }
+
+  const pickerDayLabel = useMemo(() => {
+    if (!pickerTarget) return "";
+    const idx = DAYS.indexOf(pickerTarget);
+    return `${weekdayLabels[idx] ?? pickerTarget} · ${formatDayDate(dayDates[idx])}`;
+  }, [pickerTarget, weekdayLabels, dayDates]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -133,7 +183,6 @@ export default function WeekPlanner({ labels, weekdayLabels }: WeekPlannerProps)
       {/* ── Days grid — header row + cards row ── */}
       <div className="overflow-x-auto">
         <div className="min-w-[640px]">
-          {/* Header row: shared WeekDayHeader component */}
           <div className="grid grid-cols-7 gap-3 px-1 pb-2">
             {DAYS.map((day, i) => (
               <WeekDayHeader
@@ -144,13 +193,15 @@ export default function WeekPlanner({ labels, weekdayLabels }: WeekPlannerProps)
             ))}
           </div>
 
-          {/* Cards row */}
           <div className="grid grid-cols-7 gap-3">
             {DAYS.map((day) => (
               <DayCard
                 key={day}
                 day={day}
                 variant={getVariant(day)}
+                workoutName={getWorkoutName(day)}
+                duration={getWorkoutDuration(day)}
+                onClick={() => handleDayClick(day)}
                 labels={{
                   addWorkout: labels.addWorkout,
                   restDay: labels.restDay,
@@ -163,6 +214,17 @@ export default function WeekPlanner({ labels, weekdayLabels }: WeekPlannerProps)
           </div>
         </div>
       </div>
+
+      {/* ── Picker modal ── */}
+      {pickerTarget && (
+        <WorkoutPicker
+          workouts={workouts}
+          dayLabel={pickerDayLabel}
+          labels={labels.picker}
+          onSelect={handleSelect}
+          onClose={() => setPickerTarget(null)}
+        />
+      )}
     </div>
   );
 }
