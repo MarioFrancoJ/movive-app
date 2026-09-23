@@ -121,25 +121,50 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPla
     if (!user) return;
 
     setWeekLoading(true);
-    const { data, error } = await supabase
-      .from("training_planner")
-      .select(`
-        day_of_week,
-        workout_id,
-        workouts ( name, duration )
-      `)
-      .eq("user_id", user.id)
-      .eq("week_start_date", weekStart);
+    const { data: plannerRows, error } = await supabase
+  .from("training_planner")
+  .select("day_of_week, workout_id")
+  .eq("user_id", user.id)
+  .eq("week_start_date", weekStart);
 
-    if (!error && data) {
-      const mapped: PlannerAssignment[] = data.map((row: any) => ({
-        day_of_week: row.day_of_week as DayName,
-        workout_id: row.workout_id,
-        workout_name: row.workouts?.name ?? "Workout",
-        workout_duration: row.workouts?.duration ?? null,
-      }));
-      setAssignments(mapped);
-    }
+if (error) {
+  console.error("[WeekPlanner] planner fetch error:", error);
+  setAssignments([]);
+  setWeekLoading(false);
+  return;
+}
+
+if (!plannerRows || plannerRows.length === 0) {
+  setAssignments([]);
+  setWeekLoading(false);
+  return;
+}
+
+const workoutIds = plannerRows.map((r) => r.workout_id);
+const { data: workoutRows, error: workoutError } = await supabase
+  .from("workouts")
+  .select("id, name, duration")
+  .in("id", workoutIds);
+
+if (workoutError) {
+  console.error("[WeekPlanner] workouts fetch error:", workoutError);
+  setAssignments([]);
+  setWeekLoading(false);
+  return;
+}
+
+const workoutMap = new Map((workoutRows ?? []).map((w) => [w.id, w]));
+const mapped: PlannerAssignment[] = plannerRows.map((row) => {
+  const w = workoutMap.get(row.workout_id);
+  return {
+    day_of_week: row.day_of_week as DayName,
+    workout_id: row.workout_id,
+    workout_name: w?.name ?? "Workout",
+    workout_duration: w?.duration ?? null,
+  };
+});
+
+setAssignments(mapped);
     setWeekLoading(false);
   }, [weekStart]);
 
