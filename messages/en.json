@@ -897,11 +897,8 @@
       "errorAddDay": "Add at least one workout day.",
       "errorCreating": "Error creating workout: {msg}",
       "errorCreatingDay": "Error creating day: {msg}",
-      "errorSavingExercises": "Error saving exercises: {msg}",
-      "pickerTitle": "Elegir rutina",
-"pickerSearch": "Buscar rutinas...",
-"pickerNoMatch": "Ninguna rutina coincide con \"{query}\".",
-"pickerCount": "{x} de {y} rutinas"
+      "errorSavingExercises": "Error saving exercises: {msg}"
+      
     },
     "detail": {
       "loading": "Loading workout...",
@@ -934,7 +931,11 @@
     "goalAll": "All",
     "noMatch": "No workouts match your filters.",
     "currentWeek": "Current Week",
-    "goToCurrentWeek": "Go to Current Week"
+    "goToCurrentWeek": "Go to Current Week",
+      "pickerTitle": "Choose a workout",
+"pickerSearch": "Search workouts...",
+"pickerNoMatch": "No workouts match \"{query}\".",
+"pickerCount": "{x} of {y} workouts"
   },
   "progress": {
     "title": "Progress Tracking",
