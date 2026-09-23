@@ -47,7 +47,8 @@ function getSundayKey(mondayKey: string): string {
 export default function WorkoutsView() {
   const { dict } = useDictionary();
   const t = dict.workouts;
-  const [workouts, setWorkouts] = useState<WorkoutItem[]>([]);
+  const [myWorkouts, setMyWorkouts] = useState<WorkoutItem[]>([]);
+  const [templates, setTemplates] = useState<WorkoutPickerItem[]>([]);
   const [weeklyStats, setWeeklyStats] = useState<WeeklyStats>({
     workoutsCompleted: 0,
     totalTimeMinutes: 0,
@@ -58,16 +59,16 @@ export default function WorkoutsView() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadWorkouts();
-    loadWeeklyStats();
+    loadData();
   }, []);
 
-  async function loadWorkouts() {
+  async function loadData() {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
 
-        const { data } = await supabase
+    // 1. My Workouts (user's own, NOT templates, NOT planner copies)
+    const { data: myData } = await supabase
       .from("workouts")
       .select("id, name, description, goal, difficulty, duration, is_template, is_planner_copy, workout_days(workout_exercises(id))")
       .eq("user_id", user.id)
@@ -75,7 +76,32 @@ export default function WorkoutsView() {
       .eq("is_planner_copy", false)
       .order("created_at", { ascending: false });
 
-    if (data) setWorkouts(data.map(mapWorkout));
+    if (myData) setMyWorkouts(myData.map(mapWorkout));
+
+    // 2. Templates (is_template = true; includes official + user's own templates)
+    const { data: tplData } = await supabase
+      .from("workouts")
+      .select("id, name, description, goal, difficulty, duration, workout_days(workout_exercises(id))")
+      .eq("is_template", true)
+      .order("name");
+
+    if (tplData) {
+      setTemplates(tplData.map((w) => {
+        const exerciseCount = w.workout_days?.reduce(
+          (sum, d) => sum + (d.workout_exercises?.length || 0), 0
+        ) || 0;
+        return {
+          id: w.id,
+          name: w.name,
+          description: w.description,
+          goal: w.goal,
+          difficulty: w.difficulty,
+          duration: w.duration,
+          exerciseCount,
+        };
+      }));
+    }
+
     setLoading(false);
   }
 
@@ -134,6 +160,7 @@ export default function WorkoutsView() {
     difficulty: string | null;
     duration: number | null;
     is_template: boolean;
+    is_planner_copy: boolean;
     workout_days: { workout_exercises: { id: string }[] }[] | null;
   }): WorkoutItem {
     const exerciseCount = w.workout_days?.reduce(
@@ -152,12 +179,11 @@ export default function WorkoutsView() {
     };
   }
 
-  // Visual-only filters (no logic yet).
   const filteredWorkouts = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return workouts;
-    return workouts.filter((w) => w.name.toLowerCase().includes(q));
-  }, [workouts, search]);
+    if (!q) return myWorkouts;
+    return myWorkouts.filter((w) => w.name.toLowerCase().includes(q));
+  }, [myWorkouts, search]);
 
   if (loading) {
     return <PageLoader text={t.loading} />;
@@ -173,11 +199,11 @@ export default function WorkoutsView() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
-  href="/training/templates"
-  className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-xs font-medium text-zinc-500 hover:bg-zinc-50 hover:text-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
->
-  {t.templates}
-</Link>
+            href="/training/templates"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-xs font-medium text-zinc-500 hover:bg-zinc-50 hover:text-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
+          >
+            {t.templates}
+          </Link>
           <Link
             href="/workouts/new"
             className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
@@ -188,48 +214,40 @@ export default function WorkoutsView() {
       </div>
 
       {/* ── Week Planner ── */}
-     <WeekPlanner
-  workouts={workouts.map((w) => ({
-    id: w.id,
-    name: w.name,
-    description: w.description,
-    goal: w.goal,
-    difficulty: w.difficulty,
-    duration: w.duration,
-    exerciseCount: w.exerciseCount,
-  }))}
-  labels={{
-    title: t.thisWeekTitle,
-    prevWeek: t.prevWeek,
-    nextWeek: t.nextWeek,
-    today: t.today,
-    currentWeek: t.currentWeek,
-    goToCurrentWeek: t.goToCurrentWeek,
-    addWorkout: t.addWorkout,
-    restDay: t.restDay,
-    planned: t.planned,
-    completed: t.completed,
-    min: t.unitMin,
-        applyTemplate: t.applyTemplate,
-    confirm: {
-      title: t.confirmTitle,
-      message: t.confirmMessage,
-      replace: t.confirmReplace,
-      fillEmpty: t.confirmFillEmpty,
-      cancel: t.confirmCancel,
-    },
-    picker: {
-      title: t.pickerTitle,
-  searchPlaceholder: t.pickerSearch,
-noMatch: t.pickerNoMatch,
-countSummary: t.pickerCount,
-      all: t.goalAll,
-    },
-  }}
-  weekdayLabels={[t.dayMon, t.dayTue, t.dayWed, t.dayThu, t.dayFri, t.daySat, t.daySun]}
-/>
+      <WeekPlanner
+        workouts={templates}
+        labels={{
+          title: t.thisWeekTitle,
+          prevWeek: t.prevWeek,
+          nextWeek: t.nextWeek,
+          today: t.today,
+          currentWeek: t.currentWeek,
+          goToCurrentWeek: t.goToCurrentWeek,
+          addWorkout: t.addWorkout,
+          restDay: t.restDay,
+          planned: t.planned,
+          completed: t.completed,
+          min: t.unitMin,
+          applyTemplate: t.applyTemplate,
+          confirm: {
+            title: t.confirmTitle,
+            message: t.confirmMessage,
+            replace: t.confirmReplace,
+            fillEmpty: t.confirmFillEmpty,
+            cancel: t.confirmCancel,
+          },
+          picker: {
+            title: t.pickerTitle,
+            searchPlaceholder: t.pickerSearch,
+            noMatch: t.pickerNoMatch,
+            countSummary: t.pickerCount,
+            all: t.goalAll,
+          },
+        }}
+        weekdayLabels={[t.dayMon, t.dayTue, t.dayWed, t.dayThu, t.dayFri, t.daySat, t.daySun]}
+      />
 
-            {/* ── Weekly Progress ── */}
+      {/* ── Weekly Progress ── */}
       <WeeklyProgress
         workoutsCompleted={weeklyStats.workoutsCompleted}
         totalTimeMinutes={weeklyStats.totalTimeMinutes}
@@ -253,7 +271,7 @@ countSummary: t.pickerCount,
           <p className="mt-1 text-sm text-zinc-500">{t.myWorkoutsSubtitle}</p>
         </div>
 
-        {/* Search + Filter chips (visual only for filters) */}
+        {/* Search + Filter chips */}
         <div className="mb-4 flex flex-col gap-3">
           <div className="relative w-full sm:w-80">
             <svg viewBox="0 0 20 20" fill="currentColor" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" aria-hidden="true">
@@ -271,11 +289,7 @@ countSummary: t.pickerCount,
 
           <div className="flex flex-wrap gap-2">
             {(["All", "Strength", "Hypertrophy", "Calisthenics", "Mobility"] as const).map((cat) => (
-              <Chip
-                key={cat}
-                active={filter === cat}
-                onClick={() => setFilter(cat)}
-              >
+              <Chip key={cat} active={filter === cat} onClick={() => setFilter(cat)}>
                 {cat === "All" ? t.goalAll : cat}
               </Chip>
             ))}
@@ -283,7 +297,7 @@ countSummary: t.pickerCount,
         </div>
 
         {/* Workouts Grid */}
-        {workouts.length === 0 ? (
+        {myWorkouts.length === 0 ? (
           <EmptyState
             icon="🏋️"
             title={t.emptyTitle}
@@ -300,9 +314,9 @@ countSummary: t.pickerCount,
         ) : (
           <div className="grid gap-4 lg:grid-cols-2">
             {filteredWorkouts.map((w) => (
-            <WorkoutCard key={w.id} workout={w} href={`/workouts/${w.id}`} t={t} />
-          ))}
-        </div>
+              <WorkoutCard key={w.id} workout={w} href={`/workouts/${w.id}`} t={t} />
+            ))}
+          </div>
         )}
       </div>
     </div>
