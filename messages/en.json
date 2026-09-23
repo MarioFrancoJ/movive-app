@@ -932,10 +932,10 @@
     "noMatch": "No workouts match your filters.",
     "currentWeek": "Current Week",
     "goToCurrentWeek": "Go to Current Week",
-      "pickerTitle": "Choose a workout",
-"pickerSearch": "Search workouts...",
-"pickerNoMatch": "No workouts match \"{query}\".",
-"pickerCount": "{x} of {y} workouts"
+    "pickerTitle": "Choose a workout",
+    "pickerSearch": "Search workouts...",
+    "pickerNoMatch": "No workouts match \"{query}\".",
+    "pickerCount": "{x} of {y} workouts"
   },
   "progress": {
     "title": "Progress Tracking",
