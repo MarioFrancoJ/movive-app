@@ -211,9 +211,9 @@ export default function WorkoutsView() {
     min: t.unitMin,
     picker: {
       title: t.pickerTitle,
-      searchPlaceholder: t.pickerSearch,
+  searchPlaceholder: t.pickerSearchPlaceholder,
       noMatch: t.pickerNoMatch,
-      countSummary: t.pickerCount,
+      countSummary: t.pickerCountSummary,
       all: t.goalAll,
     },
   }}
