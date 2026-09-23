@@ -214,7 +214,7 @@ export type Database = {
           },
         ]
       }
-      exercises: {
+            exercises: {
         Row: {
           id: string
           name: string
@@ -228,6 +228,8 @@ export type Database = {
           common_mistakes: Json
           image_url: string | null
           video_url: string | null
+          created_by: string | null
+          is_system: boolean
           created_at: string
           updated_at: string
         }
@@ -244,6 +246,8 @@ export type Database = {
           common_mistakes?: Json
           image_url?: string | null
           video_url?: string | null
+          created_by?: string | null
+          is_system?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -260,46 +264,15 @@ export type Database = {
           common_mistakes?: Json
           image_url?: string | null
           video_url?: string | null
+          created_by?: string | null
+          is_system?: boolean
           created_at?: string
           updated_at?: string
         }
-        Relationships: []
-      }
-      feedback: {
-        Row: {
-          id: string
-          user_id: string | null
-          type: Database["public"]["Enums"]["feedback_type"]
-          title: string
-          description: string | null
-          priority: Database["public"]["Enums"]["recommendation_priority"] | null
-          status: Database["public"]["Enums"]["feedback_status"] | null
-          submitted_at: string
-        }
-        Insert: {
-          id?: string
-          user_id?: string | null
-          type: Database["public"]["Enums"]["feedback_type"]
-          title: string
-          description?: string | null
-          priority?: Database["public"]["Enums"]["recommendation_priority"] | null
-          status?: Database["public"]["Enums"]["feedback_status"] | null
-          submitted_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string | null
-          type?: Database["public"]["Enums"]["feedback_type"]
-          title?: string
-          description?: string | null
-          priority?: Database["public"]["Enums"]["recommendation_priority"] | null
-          status?: Database["public"]["Enums"]["feedback_status"] | null
-          submitted_at?: string
-        }
         Relationships: [
           {
-            foreignKeyName: "feedback_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: "exercises_created_by_fkey"
+            columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -1170,6 +1143,61 @@ export type Database = {
           },
         ]
       }
+      training_planner: {
+        Row: {
+          id: string
+          user_id: string
+          week_start_date: string
+          day_of_week: string
+          workout_id: string
+          source_workout_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          week_start_date: string
+          day_of_week: string
+          workout_id: string
+          source_workout_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          week_start_date?: string
+          day_of_week?: string
+          workout_id?: string
+          source_workout_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_planner_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_planner_workout_id_fkey"
+            columns: ["workout_id"]
+            isOneToOne: false
+            referencedRelation: "workouts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_planner_source_workout_id_fkey"
+            columns: ["source_workout_id"]
+            isOneToOne: false
+            referencedRelation: "workouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }      
       training_sessions: {
         Row: {
           id: string
