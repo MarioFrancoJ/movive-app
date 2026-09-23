@@ -1,9 +1,13 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import DayCard, { type DayName, type DayVariant } from "./DayCard";
 import WeekDayHeader from "@/components/ui/WeekDayHeader";
 import WorkoutPicker, { type WorkoutPickerItem } from "./WorkoutPicker";
+import ApplyTemplateModal from "./ApplyTemplateModal";
+import { createClient } from "@/lib/supabase/client";
+import { applyTemplateToPlanner, type PlannerMode } from "@/lib/training/planner";
+import { useToast } from "@/components/ui/Toast";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -21,6 +25,7 @@ export interface WeekPlannerProps {
     planned: string;
     completed: string;
     min: string;
+    applyTemplate: string;
     picker: {
       title: string;
       searchPlaceholder: string;
@@ -28,8 +33,22 @@ export interface WeekPlannerProps {
       countSummary: string;
       all: string;
     };
+    confirm: {
+      title: string;
+      message: string;
+      replace: string;
+      fillEmpty: string;
+      cancel: string;
+    };
   };
   weekdayLabels: string[];
+}
+
+interface PlannerAssignment {
+  day_of_week: DayName;
+  workout_id: string;
+  workout_name: string;
+  workout_duration: number | null;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -51,6 +70,10 @@ function shiftWeek(monday: Date, weeks: number): Date {
   return d;
 }
 
+function mondayKey(monday: Date): string {
+  return monday.toISOString().slice(0, 10);
+}
+
 function formatWeekRange(monday: Date): string {
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
@@ -67,18 +90,13 @@ function formatDayDate(date: Date): string {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPlannerProps) {
+  const { success: showToast } = useToast();
   const [monday, setMonday] = useState<Date>(() => getMonday(new Date()));
-  // Local assignments: day → workoutId (no persistence yet)
-  const [assignments, setAssignments] = useState<Record<DayName, string | null>>({
-    Monday: null,
-    Tuesday: null,
-    Wednesday: null,
-    Thursday: null,
-    Friday: null,
-    Saturday: null,
-    Sunday: null,
-  });
+  const [assignments, setAssignments] = useState<PlannerAssignment[]>([]);
+  const [weekLoading, setWeekLoading] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<DayName | null>(null);
+  const [globalPickerOpen, setGlobalPickerOpen] = useState(false);
+  const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
 
   const isCurrentWeek = useMemo(() => {
     const today = getMonday(new Date());
@@ -86,6 +104,7 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPla
   }, [monday]);
 
   const weekRange = useMemo(() => formatWeekRange(monday), [monday]);
+  const weekStart = useMemo(() => mondayKey(monday), [monday]);
 
   const dayDates = useMemo(() => {
     return DAYS.map((_, i) => {
@@ -95,41 +114,82 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPla
     });
   }, [monday]);
 
+  // ── Fetch planner assignments for the current week ──
+  const loadWeek = useCallback(async () => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    setWeekLoading(true);
+    const { data, error } = await supabase
+      .from("training_planner")
+      .select(`
+        day_of_week,
+        workout_id,
+        workouts ( name, duration )
+      `)
+      .eq("user_id", user.id)
+      .eq("week_start_date", weekStart);
+
+    if (!error && data) {
+      const mapped: PlannerAssignment[] = data.map((row: any) => ({
+        day_of_week: row.day_of_week as DayName,
+        workout_id: row.workout_id,
+        workout_name: row.workouts?.name ?? "Workout",
+        workout_duration: row.workouts?.duration ?? null,
+      }));
+      setAssignments(mapped);
+    }
+    setWeekLoading(false);
+  }, [weekStart]);
+
+  useEffect(() => { loadWeek(); }, [loadWeek]);
+
+  // ── Week navigation ──
   function goPrev() { setMonday((m) => shiftWeek(m, -1)); }
   function goNext() { setMonday((m) => shiftWeek(m, 1)); }
   function goToday() { setMonday(getMonday(new Date())); }
 
+  // ── Day helpers ──
+  function getAssignment(day: DayName): PlannerAssignment | undefined {
+    return assignments.find((a) => a.day_of_week === day);
+  }
+
   function getVariant(day: DayName): DayVariant {
-    return assignments[day] ? "planned" : "empty";
+    return getAssignment(day) ? "planned" : "empty";
   }
 
-  function getWorkoutName(day: DayName): string | undefined {
-    const id = assignments[day];
-    if (!id) return undefined;
-    return workouts.find((w) => w.id === id)?.name;
+  // ── Apply template handler ──
+  async function runApply(templateId: string, mode: PlannerMode) {
+    const res = await applyTemplateToPlanner(templateId, weekStart, mode);
+    if (!res.ok) {
+      showToast(`Error: ${res.error ?? "UNKNOWN"}`);
+      return;
+    }
+    await loadWeek();
+    showToast(`${res.plannerRowsCreated ?? 0} days assigned`);
   }
 
-  function getWorkoutDuration(day: DayName): number | undefined {
-    const id = assignments[day];
-    if (!id) return undefined;
-    return workouts.find((w) => w.id === id)?.duration ?? undefined;
-  }
-
-  function handleDayClick(day: DayName) {
-    setPickerTarget(day);
-  }
-
-  function handleSelect(workoutId: string) {
-    if (!pickerTarget) return;
-    setAssignments((prev) => ({ ...prev, [pickerTarget]: workoutId }));
+  // Cuando el picker selecciona un template
+  async function handleTemplateSelected(templateId: string) {
+    setGlobalPickerOpen(false);
     setPickerTarget(null);
+
+    // Si la semana está vacía → aplica directo "replace"
+    if (assignments.length === 0) {
+      await runApply(templateId, "replace");
+    } else {
+      // Si ya hay workouts → abrir modal de confirmación
+      setPendingTemplateId(templateId);
+    }
   }
 
-  const pickerDayLabel = useMemo(() => {
-    if (!pickerTarget) return "";
-    const idx = DAYS.indexOf(pickerTarget);
-    return `${weekdayLabels[idx] ?? pickerTarget} · ${formatDayDate(dayDates[idx])}`;
-  }, [pickerTarget, weekdayLabels, dayDates]);
+  async function handleModalConfirm(mode: PlannerMode) {
+    if (!pendingTemplateId) return;
+    const id = pendingTemplateId;
+    setPendingTemplateId(null);
+    await runApply(id, mode);
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -139,9 +199,9 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPla
           type="button"
           onClick={goPrev}
           aria-label={labels.prevWeek}
-          className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
+          className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
         >
-          <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+          <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
             <path fillRule="evenodd" d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z" clipRule="evenodd" />
           </svg>
           <span className="hidden sm:inline">{labels.prevWeek}</span>
@@ -149,6 +209,7 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPla
 
         <div className="flex items-center gap-2 text-center">
           <span className="text-sm font-semibold text-zinc-900">{weekRange}</span>
+          {weekLoading && <span className="text-xs text-zinc-400">…</span>}
           {isCurrentWeek ? (
             <span className="rounded-full bg-success-light px-2 py-0.5 text-xs font-medium text-success">
               {labels.currentWeek}
@@ -159,9 +220,6 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPla
               onClick={goToday}
               className="inline-flex items-center gap-1 rounded-md border border-zinc-200 bg-white px-2.5 py-1 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50"
             >
-              <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
-                <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-13a.75.75 0 0 0-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 0 0 0-1.5h-3.25V5Z" clipRule="evenodd" />
-              </svg>
               {labels.goToCurrentWeek}
             </button>
           )}
@@ -171,16 +229,27 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPla
           type="button"
           onClick={goNext}
           aria-label={labels.nextWeek}
-          className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
+          className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
         >
           <span className="hidden sm:inline">{labels.nextWeek}</span>
-          <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+          <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
             <path fillRule="evenodd" d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
           </svg>
         </button>
       </div>
 
-      {/* ── Days grid — header row + cards row ── */}
+      {/* ── Apply Template button ── */}
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={() => setGlobalPickerOpen(true)}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-primary-hover"
+        >
+          {labels.applyTemplate}
+        </button>
+      </div>
+
+      {/* ── Days grid ── */}
       <div className="overflow-x-auto">
         <div className="min-w-[640px]">
           <div className="grid grid-cols-7 gap-3 px-1 pb-2">
@@ -194,35 +263,59 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPla
           </div>
 
           <div className="grid grid-cols-7 gap-3">
-            {DAYS.map((day) => (
-              <DayCard
-                key={day}
-                day={day}
-                variant={getVariant(day)}
-                workoutName={getWorkoutName(day)}
-                duration={getWorkoutDuration(day)}
-                onClick={() => handleDayClick(day)}
-                labels={{
-                  addWorkout: labels.addWorkout,
-                  restDay: labels.restDay,
-                  planned: labels.planned,
-                  completed: labels.completed,
-                  min: labels.min,
-                }}
-              />
-            ))}
+            {DAYS.map((day) => {
+              const a = getAssignment(day);
+              return (
+                <DayCard
+                  key={day}
+                  day={day}
+                  variant={getVariant(day)}
+                  workoutName={a?.workout_name}
+                  duration={a?.workout_duration ?? undefined}
+                  onClick={() => setPickerTarget(day)}
+                  labels={{
+                    addWorkout: labels.addWorkout,
+                    restDay: labels.restDay,
+                    planned: labels.planned,
+                    completed: labels.completed,
+                    min: labels.min,
+                  }}
+                />
+              );
+            })}
           </div>
         </div>
       </div>
 
-      {/* ── Picker modal ── */}
+      {/* ── Picker modal (global) ── */}
+      {globalPickerOpen && (
+        <WorkoutPicker
+          workouts={workouts}
+          dayLabel=""
+          labels={labels.picker}
+          onSelect={handleTemplateSelected}
+          onClose={() => setGlobalPickerOpen(false)}
+        />
+      )}
+
+      {/* ── Picker modal (per-day) ── */}
       {pickerTarget && (
         <WorkoutPicker
           workouts={workouts}
-          dayLabel={pickerDayLabel}
+          dayLabel={pickerTarget}
           labels={labels.picker}
-          onSelect={handleSelect}
+          onSelect={handleTemplateSelected}
           onClose={() => setPickerTarget(null)}
+        />
+      )}
+
+      {/* ── Confirm modal (solo si la semana tiene workouts) ── */}
+      {pendingTemplateId && (
+        <ApplyTemplateModal
+          labels={labels.confirm}
+          onReplace={() => handleModalConfirm("replace")}
+          onFillEmpty={() => handleModalConfirm("fill_empty")}
+          onCancel={() => setPendingTemplateId(null)}
         />
       )}
     </div>
