@@ -28,6 +28,20 @@ export interface WorkoutPickerProps {
   onClose: () => void;
 }
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function goalBadgeColor(goal: string | null): string {
+  switch (goal) {
+    case "Strength":     return "bg-purple-50 text-purple-700";
+    case "Hypertrophy":  return "bg-blue-50 text-blue-700";
+    case "Calisthenics": return "bg-teal-50 text-teal-700";
+    case "Mobility":     return "bg-emerald-50 text-emerald-700";
+    case "Fat Loss":     return "bg-rose-50 text-rose-700";
+    case "Endurance":    return "bg-orange-50 text-orange-700";
+    default:             return "bg-zinc-100 text-zinc-600";
+  }
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function WorkoutPicker({
@@ -105,25 +119,23 @@ export default function WorkoutPicker({
               className="h-11 w-full rounded-lg border border-zinc-200 bg-white pl-9 pr-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200 sm:h-10"
             />
           </div>
-          {goals.length > 1 && (
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {(["All", ...goals] as const).map((g) => (
-                <button
-                  key={g}
-                  type="button"
-                  onClick={() => setGoalFilter(g)}
-                  className={[
-                    "rounded-full px-3 py-1 text-xs font-medium transition-colors",
-                    goalFilter === g
-                      ? "bg-primary text-white"
-                      : "border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50",
-                  ].join(" ")}
-                >
-                  {g === "All" ? labels.all : g}
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {(["All", ...goals] as const).map((g) => (
+              <button
+                key={g}
+                type="button"
+                onClick={() => setGoalFilter(g)}
+                className={[
+                  "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                  goalFilter === g
+                    ? "bg-primary text-white"
+                    : "border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50",
+                ].join(" ")}
+              >
+                {g === "All" ? labels.all : g}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Results */}
@@ -158,7 +170,7 @@ export default function WorkoutPicker({
                       </span>
                     </span>
                     {w.goal && (
-                      <span className="shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-500">
+                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${goalBadgeColor(w.goal)}`}>
                         {w.goal}
                       </span>
                     )}
