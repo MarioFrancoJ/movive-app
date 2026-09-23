@@ -896,7 +896,7 @@
       "errorAddDay": "Añade al menos un día de entrenamiento.",
       "errorCreating": "Error al crear la rutina: {msg}",
       "errorCreatingDay": "Error al crear el día: {msg}",
-      "errorSavingExercises": "Error al guardar los ejercicios: {msg}",
+      "errorSavingExercises": "Error al guardar los ejercicios: {msg}"
       
     },
     "detail": {
