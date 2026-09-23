@@ -938,10 +938,11 @@
     "goalAll": "Todas",
     "noMatch": "Ninguna rutina coincide con tus filtros.",
     "currentWeek": "Semana actual",
-    "goToCurrentWeek": "Ir a la semana actual","pickerTitle": "Elegir rutina",
-"pickerSearch": "Buscar rutinas...",
-"pickerNoMatch": "Ninguna rutina coincide con \"{query}\".",
-"pickerCount": "{x} de {y} rutinas"
+    "goToCurrentWeek": "Ir a la semana actual",
+    "pickerTitle": "Elegir rutina",
+    "pickerSearch": "Buscar rutinas...",
+    "pickerNoMatch": "Ninguna rutina coincide con \"{query}\".",
+    "pickerCount": "{x} de {y} rutinas"
   },
   "progress": {
     "title": "Seguimiento del progreso",
