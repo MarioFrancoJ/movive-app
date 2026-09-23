@@ -209,6 +209,14 @@ export default function WorkoutsView() {
     planned: t.planned,
     completed: t.completed,
     min: t.unitMin,
+        applyTemplate: t.applyTemplate,
+    confirm: {
+      title: t.confirmTitle,
+      message: t.confirmMessage,
+      replace: t.confirmReplace,
+      fillEmpty: t.confirmFillEmpty,
+      cancel: t.confirmCancel,
+    },
     picker: {
       title: t.pickerTitle,
   searchPlaceholder: t.pickerSearch,
