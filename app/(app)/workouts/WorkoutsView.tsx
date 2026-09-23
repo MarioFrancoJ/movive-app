@@ -67,11 +67,12 @@ export default function WorkoutsView() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
 
-    const { data } = await supabase
+        const { data } = await supabase
       .from("workouts")
-      .select("id, name, description, goal, difficulty, duration, is_template, workout_days(workout_exercises(id))")
+      .select("id, name, description, goal, difficulty, duration, is_template, is_planner_copy, workout_days(workout_exercises(id))")
       .eq("user_id", user.id)
       .eq("is_template", false)
+      .eq("is_planner_copy", false)
       .order("created_at", { ascending: false });
 
     if (data) setWorkouts(data.map(mapWorkout));
