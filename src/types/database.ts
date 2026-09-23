@@ -214,7 +214,48 @@ export type Database = {
           },
         ]
       }
-            exercises: {
+            feedback: {
+        Row: {
+          id: string
+          user_id: string | null
+          type: Database["public"]["Enums"]["feedback_type"]
+          title: string
+          description: string | null
+          priority: Database["public"]["Enums"]["recommendation_priority"] | null
+          status: Database["public"]["Enums"]["feedback_status"] | null
+          submitted_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          type: Database["public"]["Enums"]["feedback_type"]
+          title: string
+          description?: string | null
+          priority?: Database["public"]["Enums"]["recommendation_priority"] | null
+          status?: Database["public"]["Enums"]["feedback_status"] | null
+          submitted_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          type?: Database["public"]["Enums"]["feedback_type"]
+          title?: string
+          description?: string | null
+          priority?: Database["public"]["Enums"]["recommendation_priority"] | null
+          status?: Database["public"]["Enums"]["feedback_status"] | null
+          submitted_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }     
+      exercises: {
         Row: {
           id: string
           name: string
