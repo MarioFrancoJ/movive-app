@@ -85,6 +85,7 @@ export async function applyTemplateToPlanner(
       difficulty: template.difficulty,
       duration: template.duration,
       is_template: false,
+      is_planner_copy: true,
     })
     .select("id")
     .single();
