@@ -12,7 +12,7 @@ import WorkoutCard, {
   type WorkoutItem,
   type WorkoutDifficulty,
 } from "@/components/training/WorkoutCard";
-import  from "@/components/training/WeekPlanner";
+import WeekPlanner from "@/components/training/WeekPlanner";
 import WeeklyProgress from "@/components/training/WeeklyProgress";
 import type { WorkoutPickerItem } from "@/components/training/WorkoutPicker";
 
