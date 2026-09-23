@@ -78,18 +78,53 @@ export default function WorkoutsView() {
 
     if (myData) setMyWorkouts(myData.map(mapWorkout));
 
-    // 2. Templates (is_template = true; includes official + user's own templates)
+        // 2. Templates (is_template = true)
     const { data: tplData } = await supabase
       .from("workouts")
-      .select("id, name, description, goal, difficulty, duration, workout_days(workout_exercises(id))")
+      .select("id, name, description, goal, difficulty, duration")
       .eq("is_template", true)
       .order("name");
 
-    if (tplData) {
+    if (tplData && tplData.length > 0) {
+      const tplIds = tplData.map((w) => w.id);
+
+      // 2a. Fetch days for all templates
+      const { data: daysData } = await supabase
+        .from("workout_days")
+        .select("id, workout_id")
+        .in("workout_id", tplIds);
+
+      const dayIds = (daysData ?? []).map((d) => d.id);
+      const daysByWorkout = new Map<string, string[]>();
+      for (const d of daysData ?? []) {
+        const arr = daysByWorkout.get(d.workout_id) ?? [];
+        arr.push(d.id);
+        daysByWorkout.set(d.workout_id, arr);
+      }
+
+      // 2b. Fetch exercises count per day
+      const exerciseCountByDay = new Map<string, number>();
+      if (dayIds.length > 0) {
+        const { data: exData } = await supabase
+          .from("workout_exercises")
+          .select("workout_day_id")
+          .in("workout_day_id", dayIds);
+
+        for (const ex of exData ?? []) {
+          exerciseCountByDay.set(
+            ex.workout_day_id,
+            (exerciseCountByDay.get(ex.workout_day_id) ?? 0) + 1
+          );
+        }
+      }
+
+      // 2c. Compute total per workout
       setTemplates(tplData.map((w) => {
-        const exerciseCount = w.workout_days?.reduce(
-          (sum, d) => sum + (d.workout_exercises?.length || 0), 0
-        ) || 0;
+        const dayIdsForW = daysByWorkout.get(w.id) ?? [];
+        const exerciseCount = dayIdsForW.reduce(
+          (sum, dayId) => sum + (exerciseCountByDay.get(dayId) ?? 0),
+          0
+        );
         return {
           id: w.id,
           name: w.name,
