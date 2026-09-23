@@ -12,8 +12,9 @@ import WorkoutCard, {
   type WorkoutItem,
   type WorkoutDifficulty,
 } from "@/components/training/WorkoutCard";
-import WeekPlanner from "@/components/training/WeekPlanner";
+import  from "@/components/training/WeekPlanner";
 import WeeklyProgress from "@/components/training/WeeklyProgress";
+import type { WorkoutPickerItem } from "@/components/training/WorkoutPicker";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -186,22 +187,38 @@ export default function WorkoutsView() {
       </div>
 
       {/* ── Week Planner ── */}
-      <WeekPlanner
-        labels={{
-          title: t.thisWeekTitle,
-          prevWeek: t.prevWeek,
-          nextWeek: t.nextWeek,
-          today: t.today,
-          currentWeek: t.currentWeek,
-          goToCurrentWeek: t.goToCurrentWeek,
-          addWorkout: t.addWorkout,
-          restDay: t.restDay,
-          planned: t.planned,
-          completed: t.completed,
-          min: t.unitMin,
-        }}
-        weekdayLabels={[t.dayMon, t.dayTue, t.dayWed, t.dayThu, t.dayFri, t.daySat, t.daySun]}
-      />
+     <WeekPlanner
+  workouts={workouts.map((w) => ({
+    id: w.id,
+    name: w.name,
+    description: w.description,
+    goal: w.goal,
+    difficulty: w.difficulty,
+    duration: w.duration,
+    exerciseCount: w.exerciseCount,
+  }))}
+  labels={{
+    title: t.thisWeekTitle,
+    prevWeek: t.prevWeek,
+    nextWeek: t.nextWeek,
+    today: t.today,
+    currentWeek: t.currentWeek,
+    goToCurrentWeek: t.goToCurrentWeek,
+    addWorkout: t.addWorkout,
+    restDay: t.restDay,
+    planned: t.planned,
+    completed: t.completed,
+    min: t.unitMin,
+    picker: {
+      title: t.pickerTitle,
+      searchPlaceholder: t.pickerSearch,
+      noMatch: t.pickerNoMatch,
+      countSummary: t.pickerCount,
+      all: t.goalAll,
+    },
+  }}
+  weekdayLabels={[t.dayMon, t.dayTue, t.dayWed, t.dayThu, t.dayFri, t.daySat, t.daySun]}
+/>
 
             {/* ── Weekly Progress ── */}
       <WeeklyProgress
