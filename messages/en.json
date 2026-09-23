@@ -897,7 +897,11 @@
       "errorAddDay": "Add at least one workout day.",
       "errorCreating": "Error creating workout: {msg}",
       "errorCreatingDay": "Error creating day: {msg}",
-      "errorSavingExercises": "Error saving exercises: {msg}"
+      "errorSavingExercises": "Error saving exercises: {msg}",
+      "pickerTitle": "Elegir rutina",
+"pickerSearch": "Buscar rutinas...",
+"pickerNoMatch": "Ninguna rutina coincide con \"{query}\".",
+"pickerCount": "{x} de {y} rutinas"
     },
     "detail": {
       "loading": "Loading workout...",
