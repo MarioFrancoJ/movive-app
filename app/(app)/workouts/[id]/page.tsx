@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import PageLoader from "@/components/ui/PageLoader";
 import { useToast } from "@/components/ui/Toast";
 import { useDictionary } from "@/lib/i18n/DictionaryProvider";
+import RoutineDayCard from "@/components/training/RoutineDayCard";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -278,41 +279,22 @@ export default function WorkoutDetailPage() {
         </div>
 
         {/* Workout Days */}
-        <div className="flex flex-col gap-4">
-          {workout.workout_days.map((day) => (
-            <div key={day.id} className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-              <p className="mb-3 text-sm font-semibold text-zinc-900">{day.day_name}</p>
-              {day.workout_exercises.length === 0 ? (
-                <p className="text-xs text-zinc-400">{t.restDay}</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm">
-                    <thead>
-                      <tr className="border-b border-zinc-100">
-                        <th className="pb-2 text-xs font-semibold text-zinc-400">{t.colExercise}</th>
-                        <th className="pb-2 text-xs font-semibold text-zinc-400">{t.colSets}</th>
-                        <th className="pb-2 text-xs font-semibold text-zinc-400">{t.colReps}</th>
-                        <th className="pb-2 text-xs font-semibold text-zinc-400">{t.colRest}</th>
-                        <th className="pb-2 text-xs font-semibold text-zinc-400">{t.colNotes}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {day.workout_exercises.map((ex, i) => (
-                        <tr key={i} className="border-b border-zinc-50">
-                          <td className="py-2 font-medium text-zinc-800">{ex.exercise_name}</td>
-                          <td className="py-2 text-zinc-600">{ex.sets}</td>
-                          <td className="py-2 text-zinc-600">{ex.reps}</td>
-                          <td className="py-2 text-zinc-600">{ex.rest_seconds}s</td>
-                          <td className="py-2 text-zinc-400">{ex.notes || "—"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          ))}
+<div className="flex flex-col gap-4">
+  {workout.workout_days.map((day) => (
+    <div key={day.id} className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <p className="mb-3 text-sm font-semibold text-zinc-900">{day.day_name}</p>
+      {day.workout_exercises.length === 0 ? (
+        <p className="text-xs text-zinc-400">{t.restDay}</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            {/* ... toda la tabla ... */}
+          </table>
         </div>
+      )}
+    </div>
+  ))}
+</div>
       </div>
     </>
   );
