@@ -1650,6 +1650,7 @@ export type Database = {
           difficulty: Database["public"]["Enums"]["exercise_difficulty"] | null
           duration: number | null
           is_template: boolean
+          is_planner_copy: boolean
           created_at: string
           updated_at: string
         }
@@ -1662,6 +1663,7 @@ export type Database = {
           difficulty?: Database["public"]["Enums"]["exercise_difficulty"] | null
           duration?: number | null
           is_template?: boolean
+          is_planner_copy?: boolean 
           created_at?: string
           updated_at?: string
         }
@@ -1674,6 +1676,7 @@ export type Database = {
           difficulty?: Database["public"]["Enums"]["exercise_difficulty"] | null
           duration?: number | null
           is_template?: boolean
+          is_planner_copy?: boolean
           created_at?: string
           updated_at?: string
         }
