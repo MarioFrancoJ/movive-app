@@ -904,7 +904,8 @@
       "errorAddDay": "Añade al menos un día de entrenamiento.",
       "errorCreating": "Error al crear la rutina: {msg}",
       "errorCreatingDay": "Error al crear el día: {msg}",
-      "errorSavingExercises": "Error al guardar los ejercicios: {msg}"
+      "errorSavingExercises": "Error al guardar los ejercicios: {msg}",
+      
     },
     "detail": {
       "loading": "Cargando rutina...",
@@ -937,7 +938,10 @@
     "goalAll": "Todas",
     "noMatch": "Ninguna rutina coincide con tus filtros.",
     "currentWeek": "Semana actual",
-    "goToCurrentWeek": "Ir a la semana actual"
+    "goToCurrentWeek": "Ir a la semana actual","pickerTitle": "Elegir rutina",
+"pickerSearch": "Buscar rutinas...",
+"pickerNoMatch": "Ninguna rutina coincide con \"{query}\".",
+"pickerCount": "{x} de {y} rutinas"
   },
   "progress": {
     "title": "Seguimiento del progreso",
