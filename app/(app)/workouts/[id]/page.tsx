@@ -278,23 +278,21 @@ export default function WorkoutDetailPage() {
           </div>
         </div>
 
-        {/* Workout Days */}
-<div className="flex flex-col gap-4">
-  {workout.workout_days.map((day) => (
-    <div key={day.id} className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-      <p className="mb-3 text-sm font-semibold text-zinc-900">{day.day_name}</p>
-      {day.workout_exercises.length === 0 ? (
-        <p className="text-xs text-zinc-400">{t.restDay}</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            {/* ... toda la tabla ... */}
-          </table>
+                {/* Workout Days */}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {workout.workout_days.map((day) => (
+            <div key={day.id} className="flex flex-col gap-2">
+              <p className="text-sm font-semibold text-zinc-900">{day.day_name}</p>
+              <RoutineDayCard
+                exercises={day.workout_exercises}
+                labels={{
+                  restDay: t.restDay,
+                  rest: "Descanso",
+                }}
+              />
+            </div>
+          ))}
         </div>
-      )}
-    </div>
-  ))}
-</div>
       </div>
     </>
   );
