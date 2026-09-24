@@ -34,6 +34,14 @@ export interface WeekPlannerProps {
       noMatch: string;
       countSummary: string;
       all: string;
+      goalLabels: {
+        FatLoss: string;
+        MuscleGain: string;
+        Strength: string;
+        Endurance: string;
+        Mobility: string;
+        GeneralFitness: string;
+      };
     };
     confirm: {
       title: string;
@@ -82,7 +90,6 @@ function mondayKey(monday: Date): string {
 }
 
 function formatWeekRange(monday: Date): string {
-  // Semana visual: domingo anterior → sábado siguiente.
   const sundayBefore = new Date(monday);
   sundayBefore.setDate(monday.getDate() - 1);
   const saturdayAfter = new Date(monday);
@@ -98,10 +105,8 @@ function formatDayDate(date: Date): string {
 }
 
 function translateDay(day: DayName, weekdayLabels: string[]): string {
-  // Orden interno: DAYS = ["Sunday", "Monday", ...]
   const idx = DAYS.indexOf(day);
   if (idx < 0) return day;
-  // weekdayLabels viene en el mismo orden (Sunday primero).
   return weekdayLabels[idx] ?? day;
 }
 
@@ -126,22 +131,21 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPla
   const weekStart = useMemo(() => mondayKey(monday), [monday]);
 
   const dayDates = useMemo(() => {
-  // DAYS empieza con Sunday → offset -1 desde monday
-  const offsetByDay: Record<DayName, number> = {
-    Sunday: -1,
-    Monday: 0,
-    Tuesday: 1,
-    Wednesday: 2,
-    Thursday: 3,
-    Friday: 4,
-    Saturday: 5,
-  };
-  return DAYS.map((day) => {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + offsetByDay[day]);
-    return d;
-  });
-}, [monday]);
+    const offsetByDay: Record<DayName, number> = {
+      Sunday: -1,
+      Monday: 0,
+      Tuesday: 1,
+      Wednesday: 2,
+      Thursday: 3,
+      Friday: 4,
+      Saturday: 5,
+    };
+    return DAYS.map((day) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + offsetByDay[day]);
+      return d;
+    });
+  }, [monday]);
 
   // ── Fetch planner assignments for the current week ──
   const loadWeek = useCallback(async () => {
@@ -215,14 +219,11 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPla
 
   // ── Apply template handler ──
   async function runApply(templateId: string, mode: PlannerMode, targetDay?: DayName) {
-    // Si es un día específico, solo aplicamos ese día (no toda la semana)
-    // Por ahora, si targetDay existe, forzamos modo "replace" y limpiamos solo ese día.
     if (targetDay) {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Borrar solo ese día
       await supabase
         .from("training_planner")
         .delete()
@@ -230,16 +231,12 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPla
         .eq("week_start_date", weekStart)
         .eq("day_of_week", targetDay);
 
-      // Reutilizamos applyTemplateToPlanner pero con fill_empty (que solo rellena vacíos)
-      // y luego filtramos para que solo quede el día objetivo.
-      // Simplificación: aplicamos "replace" al template completo y luego borramos los días que no sean targetDay.
       const res = await applyTemplateToPlanner(templateId, weekStart, "replace");
       if (!res.ok) {
         showToast(`Error: ${res.error ?? "UNKNOWN"}`);
         return;
       }
 
-      // Ahora borramos todo menos targetDay
       await supabase
         .from("training_planner")
         .delete()
@@ -252,7 +249,6 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPla
       return;
     }
 
-    // Sin targetDay: aplicamos a toda la semana
     const res = await applyTemplateToPlanner(templateId, weekStart, mode);
     if (!res.ok) {
       showToast(`Error: ${res.error ?? "UNKNOWN"}`);
@@ -262,19 +258,16 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPla
     showToast(`${res.plannerRowsCreated ?? 0} days assigned`);
   }
 
-  // Cuando el picker selecciona un template
   async function handleTemplateSelected(templateId: string) {
     const targetDay = pickerTarget;
     setGlobalPickerOpen(false);
     setPickerTarget(null);
 
-    // Si es un día específico → aplica solo ese día
     if (targetDay) {
       await runApply(templateId, "replace", targetDay);
       return;
     }
 
-    // Si es global y la semana está vacía → aplica directo
     if (assignments.length === 0) {
       await runApply(templateId, "replace");
     } else {
