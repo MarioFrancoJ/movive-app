@@ -115,12 +115,22 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPla
   const weekStart = useMemo(() => mondayKey(monday), [monday]);
 
   const dayDates = useMemo(() => {
-    return DAYS.map((_, i) => {
-      const d = new Date(monday);
-      d.setDate(monday.getDate() + i);
-      return d;
-    });
-  }, [monday]);
+  // DAYS empieza con Sunday → offset -1 desde monday
+  const offsetByDay: Record<DayName, number> = {
+    Sunday: -1,
+    Monday: 0,
+    Tuesday: 1,
+    Wednesday: 2,
+    Thursday: 3,
+    Friday: 4,
+    Saturday: 5,
+  };
+  return DAYS.map((day) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + offsetByDay[day]);
+    return d;
+  });
+}, [monday]);
 
   // ── Fetch planner assignments for the current week ──
   const loadWeek = useCallback(async () => {
