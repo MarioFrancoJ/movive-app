@@ -851,11 +851,11 @@
     "completed": "Completed",
     "unitMin": "min",
       "applyTemplate": "Apply template",
-"confirmTitle": "This week already has workouts",
-"confirmMessage": "What do you want to do with the template?",
-"confirmReplace": "Replace week",
-"confirmFillEmpty": "Add only to empty days",
-"confirmCancel": "Cancel",
+    "confirmTitle": "This week already has workouts",
+    "confirmMessage": "What do you want to do with the template?",
+    "confirmReplace": "Replace week",
+    "confirmFillEmpty": "Add only to empty days",
+    "confirmCancel": "Cancel",
     "weeklyProgressTitle": "Weekly Progress",
     "weeklyProgressSubtitle": "This week's training summary",
     "weeklyProgressCompleted": "Completed",
@@ -905,6 +905,7 @@
       "errorCreatingDay": "Error creating day: {msg}",
       "errorSavingExercises": "Error saving exercises: {msg}"
       
+      
     },
     "detail": {
       "loading": "Loading workout...",
@@ -918,7 +919,14 @@
       "colSets": "Sets",
       "colReps": "Reps",
       "colRest": "Rest",
-      "colNotes": "Notes"
+      "colNotes": "Notes",
+      "addExercise": "+ Add exercise",
+      "removeExercise": "Remove",
+      "pickerExerciseTitle": "Choose an exercise",
+      "pickerExerciseSearch": "Search exercises...",
+      "pickerExerciseNoMatch": "No exercises match \"{query}\".",
+      "pickerExerciseCount": "{x} of {y} exercises",
+      "pickerExerciseAll": "All"
     },
     "goalFatLoss": "Fat Loss",
     "goalMuscleGain": "Muscle Gain",
