@@ -933,7 +933,16 @@
       "pickerExerciseSearch": "Buscar ejercicios...",
       "pickerExerciseNoMatch": "Ningún ejercicio coincide con \"{query}\".",
       "pickerExerciseCount": "{x} de {y} ejercicios",
-      "pickerExerciseAll": "Todos"
+      "pickerExerciseAll": "Todos",
+      "editExercise": "Editar",
+      "editExerciseTitle": "Editar ejercicio",
+      "editSets": "Series",
+      "editReps": "Reps",
+      "editRest": "Descanso (s)",
+      "editNotes": "Notas",
+      "editNotesPlaceholder": "Notas opcionales",
+      "editSave": "Guardar",
+      "editCancel": "Cancelar"
     },
     "goalFatLoss": "Pérdida de grasa",
     "goalMuscleGain": "Ganancia muscular",
