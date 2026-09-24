@@ -28,6 +28,13 @@ export interface WeekPlannerProps {
     min: string;
     applyTemplate: string;
     removeFromPlanner: string;
+    exercisesSuffix: string;
+    verRutina: string;
+    difficultyLabels: {
+      Beginner: string;
+      Intermediate: string;
+      Advanced: string;
+    };
     picker: {
       title: string;
       searchPlaceholder: string;
@@ -59,11 +66,14 @@ interface PlannerAssignment {
   workout_id: string;
   workout_name: string;
   workout_duration: number | null;
+  workout_difficulty: string | null;
+  workout_exerciseCount: number;
+  workout_dayNames: string[];
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-// Orden de render: Domingo → Sábado (para alinear al standard visual).
+// Orden de render: Domingo → Sábado.
 // Nota: el week_start_date sigue siendo el lunes de la semana.
 const DAYS: DayName[] = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -176,7 +186,13 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPla
     const workoutIds = plannerRows.map((r) => r.workout_id);
     const { data: workoutRows, error: workoutError } = await supabase
       .from("workouts")
-      .select("id, name, duration")
+      .select(`
+        id, name, duration, difficulty,
+        workout_days (
+          id, day_name,
+          workout_exercises (id)
+        )
+      `)
       .in("id", workoutIds);
 
     if (workoutError) {
@@ -186,7 +202,33 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPla
       return;
     }
 
-    const workoutMap = new Map((workoutRows ?? []).map((w) => [w.id, w]));
+    const workoutMap = new Map<string, {
+      id: string;
+      name: string;
+      duration: number | null;
+      difficulty: string | null;
+      exerciseCount: number;
+      dayNames: string[];
+    }>();
+
+    for (const w of workoutRows ?? []) {
+      const days = w.workout_days ?? [];
+      const exerciseCount = days.reduce(
+        (sum, d) => sum + ((d.workout_exercises ?? []).length),
+        0
+      );
+      const dayNames = days.map((d) => d.day_name);
+
+      workoutMap.set(w.id, {
+        id: w.id,
+        name: w.name,
+        duration: w.duration,
+        difficulty: w.difficulty,
+        exerciseCount,
+        dayNames,
+      });
+    }
+
     const mapped: PlannerAssignment[] = plannerRows.map((row) => {
       const w = workoutMap.get(row.workout_id);
       return {
@@ -194,6 +236,9 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPla
         workout_id: row.workout_id,
         workout_name: w?.name ?? "Workout",
         workout_duration: w?.duration ?? null,
+        workout_difficulty: w?.difficulty ?? null,
+        workout_exerciseCount: w?.exerciseCount ?? 0,
+        workout_dayNames: w?.dayNames ?? [],
       };
     });
 
@@ -378,6 +423,19 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPla
               const isPlanned = !!a;
               const variant = getVariant(day);
 
+              // Traduce la dificultad (Beginner → Principiante)
+              const difficultyLabelText = a?.workout_difficulty
+                ? (labels.difficultyLabels[a.workout_difficulty as "Beginner" | "Intermediate" | "Advanced"] ?? a.workout_difficulty)
+                : null;
+
+              // Días activos: "Mar · Jue · Sáb"
+              const activeDaysLabel =
+                a?.workout_dayNames && a.workout_dayNames.length > 0
+                  ? a.workout_dayNames
+                      .map((d) => translateDay(d as DayName, weekdayLabels))
+                      .join(" · ")
+                  : undefined;
+
               return (
                 <DayCard
                   key={day}
@@ -385,6 +443,9 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPla
                   variant={variant}
                   workoutName={a?.workout_name}
                   duration={a?.workout_duration ?? undefined}
+                  exerciseCount={a?.workout_exerciseCount}
+                  difficulty={difficultyLabelText}
+                  activeDaysLabel={activeDaysLabel}
                   onClick={() => {
                     if (isPlanned && a) {
                       router.push(`/workouts/${a.workout_id}`);
@@ -398,6 +459,8 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPla
                     planned: labels.planned,
                     completed: labels.completed,
                     min: labels.min,
+                    exercisesSuffix: labels.exercisesSuffix,
+                    verRutina: labels.verRutina,
                   }}
                   menu={
                     isPlanned && a ? (
