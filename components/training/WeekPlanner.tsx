@@ -97,6 +97,14 @@ function formatDayDate(date: Date): string {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
+function translateDay(day: DayName, weekdayLabels: string[]): string {
+  // Orden interno: DAYS = ["Sunday", "Monday", ...]
+  const idx = DAYS.indexOf(day);
+  if (idx < 0) return day;
+  // weekdayLabels viene en el mismo orden (Sunday primero).
+  return weekdayLabels[idx] ?? day;
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPlannerProps) {
@@ -433,7 +441,7 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPla
       {pickerTarget && (
         <WorkoutPicker
           workouts={workouts}
-          dayLabel={pickerTarget}
+          dayLabel={translateDay(pickerTarget, weekdayLabels)}
           labels={labels.picker}
           onSelect={handleTemplateSelected}
           onClose={() => setPickerTarget(null)}
