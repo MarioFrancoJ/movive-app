@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import DayCard, { type DayName, type DayVariant } from "./DayCard";
 import WeekDayHeader from "@/components/ui/WeekDayHeader";
 import WorkoutPicker, { type WorkoutPickerItem } from "./WorkoutPicker";
-import ApplyTemplateModal from "./ApplyTemplateModal";
 import { createClient } from "@/lib/supabase/client";
 import { applyTemplateToPlanner, type PlannerMode } from "@/lib/training/planner";
 import { useToast } from "@/components/ui/Toast";
@@ -59,6 +58,8 @@ export interface WeekPlannerProps {
     };
   };
   weekdayLabels: string[];
+  /** Al cambiar, el planner recarga la semana (útil cuando el padre aplica un template). */
+  refreshSignal?: number;
 }
 
 interface PlannerAssignment {
@@ -122,15 +123,13 @@ function translateDay(day: DayName, weekdayLabels: string[]): string {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPlannerProps) {
+export default function WeekPlanner({ workouts, labels, weekdayLabels, refreshSignal }: WeekPlannerProps) {
   const router = useRouter();
   const { success: showToast } = useToast();
   const [monday, setMonday] = useState<Date>(() => getMonday(new Date()));
   const [assignments, setAssignments] = useState<PlannerAssignment[]>([]);
   const [weekLoading, setWeekLoading] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<DayName | null>(null);
-  const [globalPickerOpen, setGlobalPickerOpen] = useState(false);
-  const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
 
   const isCurrentWeek = useMemo(() => {
     const today = getMonday(new Date());
@@ -248,6 +247,13 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPla
 
   useEffect(() => { loadWeek(); }, [loadWeek]);
 
+  // El padre puede forzar un reload incrementando refreshSignal.
+  useEffect(() => {
+    if (refreshSignal === undefined) return;
+    loadWeek();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshSignal]);
+
   // ── Week navigation ──
   function goPrev() { setMonday((m) => shiftWeek(m, -1)); }
   function goNext() { setMonday((m) => shiftWeek(m, 1)); }
@@ -262,7 +268,7 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPla
     return getAssignment(day) ? "planned" : "empty";
   }
 
-  // ── Apply template handler ──
+  // ── Apply template handler (por día) ──
   async function runApply(templateId: string, mode: PlannerMode, targetDay?: DayName) {
     if (targetDay) {
       const supabase = createClient();
@@ -305,26 +311,9 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPla
 
   async function handleTemplateSelected(templateId: string) {
     const targetDay = pickerTarget;
-    setGlobalPickerOpen(false);
     setPickerTarget(null);
-
-    if (targetDay) {
-      await runApply(templateId, "replace", targetDay);
-      return;
-    }
-
-    if (assignments.length === 0) {
-      await runApply(templateId, "replace");
-    } else {
-      setPendingTemplateId(templateId);
-    }
-  }
-
-  async function handleModalConfirm(mode: PlannerMode) {
-    if (!pendingTemplateId) return;
-    const id = pendingTemplateId;
-    setPendingTemplateId(null);
-    await runApply(id, mode);
+    if (!targetDay) return;
+    await runApply(templateId, "replace", targetDay);
   }
 
   async function removeAssignment(day: DayName) {
@@ -390,17 +379,6 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPla
           <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
             <path fillRule="evenodd" d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
           </svg>
-        </button>
-      </div>
-
-      {/* ── Apply Template button ── */}
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={() => setGlobalPickerOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-primary-hover"
-        >
-          {labels.applyTemplate}
         </button>
       </div>
 
@@ -482,17 +460,6 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPla
         </div>
       </div>
 
-      {/* ── Picker modal (global) ── */}
-      {globalPickerOpen && (
-        <WorkoutPicker
-          workouts={workouts}
-          dayLabel=""
-          labels={labels.picker}
-          onSelect={handleTemplateSelected}
-          onClose={() => setGlobalPickerOpen(false)}
-        />
-      )}
-
       {/* ── Picker modal (per-day) ── */}
       {pickerTarget && (
         <WorkoutPicker
@@ -501,16 +468,6 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPla
           labels={labels.picker}
           onSelect={handleTemplateSelected}
           onClose={() => setPickerTarget(null)}
-        />
-      )}
-
-      {/* ── Confirm modal (solo si la semana tiene workouts) ── */}
-      {pendingTemplateId && (
-        <ApplyTemplateModal
-          labels={labels.confirm}
-          onReplace={() => handleModalConfirm("replace")}
-          onFillEmpty={() => handleModalConfirm("fill_empty")}
-          onCancel={() => setPendingTemplateId(null)}
         />
       )}
     </div>
