@@ -18,15 +18,19 @@ export interface DayCardProps {
     planned: string;
     completed: string;
     min: string;
+    replaceWorkout?: string;
+    removeWorkout?: string;
   };
   onClick?: () => void;
+  /** Menú de acciones secundarias (solo cuando planned/completed). */
+  menu?: React.ReactNode;
 }
 
 // ── Variant styles ────────────────────────────────────────────────────────────
 
 const VARIANT_STYLES: Record<DayVariant, string> = {
   empty:     "border-dashed border-zinc-300 bg-white hover:border-zinc-400 hover:bg-zinc-50",
-  planned:   "border-solid border-blue-200 bg-blue-50",
+  planned:   "border-solid border-blue-200 bg-blue-50 hover:border-blue-300",
   completed: "border-solid border-success-light bg-success-light",
   rest:      "border-solid border-zinc-200 bg-zinc-50",
 };
@@ -40,11 +44,13 @@ export default function DayCard({
   duration,
   labels,
   onClick,
+  menu,
 }: DayCardProps) {
   const interactive = typeof onClick === "function";
+  const showMenu = (variant === "planned" || variant === "completed") && !!menu;
 
   const baseClasses = [
-    "flex min-h-[100px] w-full flex-col items-center justify-center gap-2 rounded-xl border p-4 text-center transition-all",
+    "group relative flex min-h-[100px] w-full flex-col items-center justify-center gap-2 rounded-xl border p-4 text-center transition-all",
     VARIANT_STYLES[variant],
     interactive ? "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30" : "",
   ].join(" ");
@@ -105,17 +111,36 @@ export default function DayCard({
     </>
   );
 
-  if (interactive) {
-    return (
-      <button type="button" onClick={onClick} className={baseClasses} aria-label={day}>
-        {content}
-      </button>
-    );
-  }
-
   return (
-    <div className={baseClasses} role="group">
+    <div
+      role={interactive ? "button" : "group"}
+      tabIndex={interactive ? 0 : -1}
+      onClick={interactive ? onClick : undefined}
+      onKeyDown={
+        interactive
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onClick?.();
+              }
+            }
+          : undefined
+      }
+      aria-label={day}
+      className={baseClasses}
+    >
       {content}
+
+      {/* Menú secundario (···) — aparece en hover cuando hay menu y el variant lo permite */}
+      {showMenu && (
+        <div
+          className="absolute right-1.5 top-1.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
+          {menu}
+        </div>
+      )}
     </div>
   );
 }
