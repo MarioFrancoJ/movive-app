@@ -8,6 +8,7 @@ import PageLoader from "@/components/ui/PageLoader";
 import { useToast } from "@/components/ui/Toast";
 import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 import RoutineDayCard from "@/components/training/RoutineDayCard";
+import ExercisePicker, { type ExercisePickerItem } from "@/components/training/ExercisePicker";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -17,6 +18,8 @@ type WorkoutDifficulty = "Beginner" | "Intermediate" | "Advanced";
 type WorkoutGoal = "Fat Loss" | "Muscle Gain" | "Strength" | "Endurance" | "Mobility" | "General Fitness";
 
 interface WorkoutExercise {
+  id: string;
+  exercise_id: string | null;
   exercise_name: string;
   sets: number;
   reps: number;
@@ -65,7 +68,6 @@ function goalColor(g: WorkoutGoal | null): string {
   }
 }
 
-// Localized display label for a goal value (value stays the logic/DB key).
 function goalLabel(g: WorkoutGoal | null, w: WorkoutsDict): string {
   switch (g) {
     case "Fat Loss":        return w.goalFatLoss;
@@ -78,7 +80,6 @@ function goalLabel(g: WorkoutGoal | null, w: WorkoutsDict): string {
   }
 }
 
-// Localized display label for a difficulty value (value stays the logic/DB key).
 function difficultyLabel(d: WorkoutDifficulty | null, w: WorkoutsDict): string {
   switch (d) {
     case "Beginner":     return w.difficultyBeginner;
@@ -99,55 +100,54 @@ export default function WorkoutDetailPage() {
   const router = useRouter();
   const [workout, setWorkout] = useState<WorkoutDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pickerDayId, setPickerDayId] = useState<string | null>(null);
 
+  // ── Load workout ──
+  const loadWorkout = useCallback(async () => {
+    const supabase = createClient();
 
-  useEffect(() => {
-    async function loadWorkout() {
-      const supabase = createClient();
-
-      const { data, error } = await supabase
-        .from("workouts")
-        .select(`
-          id, name, description, goal, difficulty, duration,
-          workout_days (
-            id, day_name, sort_order,
-            workout_exercises (
-              exercise_name, sets, reps, rest_seconds, notes, sort_order
-            )
+    const { data, error } = await supabase
+      .from("workouts")
+      .select(`
+        id, name, description, goal, difficulty, duration,
+        workout_days (
+          id, day_name, sort_order,
+          workout_exercises (
+            id, exercise_id, exercise_name, sets, reps, rest_seconds, notes, sort_order
           )
-        `)
-        .eq("id", params.id)
-        .single();
+        )
+      `)
+      .eq("id", params.id)
+      .single();
 
-      if (!error && data) {
-        // Sort days and exercises by sort_order
-        const sortedDays = (data.workout_days || [])
-          .sort((a: WorkoutDay, b: WorkoutDay) => a.sort_order - b.sort_order)
-          .map((day: WorkoutDay) => ({
-            ...day,
-            workout_exercises: (day.workout_exercises || [])
-              .sort((a: WorkoutExercise, b: WorkoutExercise) => a.sort_order - b.sort_order),
-          }));
+    if (!error && data) {
+      const sortedDays = (data.workout_days || [])
+        .sort((a: WorkoutDay, b: WorkoutDay) => a.sort_order - b.sort_order)
+        .map((day: WorkoutDay) => ({
+          ...day,
+          workout_exercises: (day.workout_exercises || [])
+            .sort((a: WorkoutExercise, b: WorkoutExercise) => a.sort_order - b.sort_order),
+        }));
 
-        setWorkout({
-          id: data.id,
-          name: data.name,
-          description: data.description,
-          goal: data.goal as WorkoutGoal | null,
-          difficulty: data.difficulty as WorkoutDifficulty | null,
-          duration: data.duration,
-          workout_days: sortedDays,
-        });
-      }
-
-      setLoading(false);
+      setWorkout({
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        goal: data.goal as WorkoutGoal | null,
+        difficulty: data.difficulty as WorkoutDifficulty | null,
+        duration: data.duration,
+        workout_days: sortedDays,
+      });
     }
 
-    loadWorkout();
+    setLoading(false);
   }, [params.id]);
 
-  // ── Delete ────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    loadWorkout();
+  }, [loadWorkout]);
 
+  // ── Delete workout ──
   async function handleDelete() {
     const supabase = createClient();
     const { error } = await supabase.from("workouts").delete().eq("id", params.id);
@@ -156,15 +156,13 @@ export default function WorkoutDetailPage() {
     }
   }
 
-  // ── Duplicate ─────────────────────────────────────────────────────────────
-
+  // ── Duplicate workout ──
   async function handleDuplicate() {
     if (!workout) return;
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // 1. Create new workout
     const { data: newWorkout } = await supabase
       .from("workouts")
       .insert({
@@ -175,13 +173,13 @@ export default function WorkoutDetailPage() {
         difficulty: workout.difficulty,
         duration: workout.duration,
         is_template: false,
+        is_planner_copy: false,
       })
       .select("id")
       .single();
 
     if (!newWorkout) return;
 
-    // 2. Copy days and exercises
     for (const day of workout.workout_days) {
       const { data: newDay } = await supabase
         .from("workout_days")
@@ -200,6 +198,7 @@ export default function WorkoutDetailPage() {
         const exerciseInserts = day.workout_exercises.map((ex) => ({
           workout_day_id: newDay.id,
           user_id: user.id,
+          exercise_id: ex.exercise_id,
           exercise_name: ex.exercise_name,
           sets: ex.sets,
           reps: ex.reps,
@@ -216,18 +215,64 @@ export default function WorkoutDetailPage() {
     router.push(`/workouts/${newWorkout.id}`);
   }
 
+  // ── Add exercise to a day ──
+  async function handleAddExercise(exercise: ExercisePickerItem) {
+    if (!pickerDayId || !workout) return;
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const day = workout.workout_days.find((d) => d.id === pickerDayId);
+    const nextOrder = day?.workout_exercises.length ?? 0;
+
+    const { error } = await supabase.from("workout_exercises").insert({
+      workout_day_id: pickerDayId,
+      user_id: user.id,
+      exercise_id: exercise.id,
+      exercise_name: exercise.name,
+      sets: 3,
+      reps: 10,
+      rest_seconds: 60,
+      sort_order: nextOrder,
+    });
+
+    if (error) {
+      showToast(`Error: ${error.message}`);
+      return;
+    }
+
+    setPickerDayId(null);
+    await loadWorkout();
+  }
+
+  // ── Remove exercise from a day ──
+  async function handleRemoveExercise(exerciseId: string) {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("workout_exercises")
+      .delete()
+      .eq("id", exerciseId);
+
+    if (error) {
+      showToast(`Error: ${error.message}`);
+      return;
+    }
+
+    await loadWorkout();
+  }
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   if (loading) {
-    return (
-      <PageLoader text={t.loading} />
-    );
+    return <PageLoader text={t.loading} />;
   }
 
   if (!workout) {
     return (
       <div className="flex flex-col gap-6">
-        <Link href="/workouts" className="text-sm font-medium text-zinc-500 hover:text-zinc-900">{t.backToWorkouts}</Link>
+        <Link href="/workouts" className="text-sm font-medium text-zinc-500 hover:text-zinc-900">
+          {t.backToWorkouts}
+        </Link>
         <div className="flex h-48 items-center justify-center rounded-xl border border-zinc-200 bg-white">
           <p className="text-sm text-zinc-400">{t.notFound}</p>
         </div>
@@ -273,12 +318,24 @@ export default function WorkoutDetailPage() {
                 {t.startWorkout}
               </span>
             )}
-            <button type="button" onClick={handleDuplicate} className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50">{dict.common.duplicate}</button>
-            <button type="button" onClick={handleDelete} className="rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50">{dict.common.delete}</button>
+            <button
+              type="button"
+              onClick={handleDuplicate}
+              className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50"
+            >
+              {dict.common.duplicate}
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50"
+            >
+              {dict.common.delete}
+            </button>
           </div>
         </div>
 
-                {/* Workout Days */}
+        {/* Workout Days */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {workout.workout_days.map((day) => (
             <div key={day.id} className="flex flex-col gap-2">
@@ -288,12 +345,31 @@ export default function WorkoutDetailPage() {
                 labels={{
                   restDay: t.restDay,
                   rest: "Descanso",
+                  addExercise: t.addExercise,
+                  removeExercise: t.removeExercise,
                 }}
+                onAddExercise={() => setPickerDayId(day.id)}
+                onRemoveExercise={handleRemoveExercise}
               />
             </div>
           ))}
         </div>
       </div>
+
+      {/* Exercise Picker Modal */}
+      {pickerDayId && (
+        <ExercisePicker
+          labels={{
+            title: t.pickerExerciseTitle,
+            searchPlaceholder: t.pickerExerciseSearch,
+            noMatch: t.pickerExerciseNoMatch,
+            countSummary: t.pickerExerciseCount,
+            all: t.pickerExerciseAll,
+          }}
+          onSelect={handleAddExercise}
+          onClose={() => setPickerDayId(null)}
+        />
+      )}
     </>
   );
 }
