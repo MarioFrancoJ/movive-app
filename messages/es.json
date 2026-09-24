@@ -850,6 +850,7 @@
   "planned": "Planificado",
   "completed": "Completado",
   "unitMin": "min",
+  "removeFromPlanner": "Quitar del planner",
   "applyTemplate": "Aplicar plantilla",
   "confirmTitle": "Esta semana ya tiene entrenamientos",
   "confirmMessage": "¿Qué quieres hacer con la plantilla?",
