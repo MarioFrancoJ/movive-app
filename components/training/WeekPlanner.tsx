@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import DayCard, { type DayName, type DayVariant } from "./DayCard";
 import WeekDayHeader from "@/components/ui/WeekDayHeader";
 import WorkoutPicker, { type WorkoutPickerItem } from "./WorkoutPicker";
@@ -26,6 +27,7 @@ export interface WeekPlannerProps {
     completed: string;
     min: string;
     applyTemplate: string;
+    removeFromPlanner: string;
     picker: {
       title: string;
       searchPlaceholder: string;
@@ -71,7 +73,10 @@ function shiftWeek(monday: Date, weeks: number): Date {
 }
 
 function mondayKey(monday: Date): string {
-  return monday.toISOString().slice(0, 10);
+  const y = monday.getFullYear();
+  const m = String(monday.getMonth() + 1).padStart(2, "0");
+  const d = String(monday.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
 function formatWeekRange(monday: Date): string {
@@ -90,6 +95,7 @@ function formatDayDate(date: Date): string {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPlannerProps) {
+  const router = useRouter();
   const { success: showToast } = useToast();
   const [monday, setMonday] = useState<Date>(() => getMonday(new Date()));
   const [assignments, setAssignments] = useState<PlannerAssignment[]>([]);
@@ -122,49 +128,49 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels }: WeekPla
 
     setWeekLoading(true);
     const { data: plannerRows, error } = await supabase
-  .from("training_planner")
-  .select("day_of_week, workout_id")
-  .eq("user_id", user.id)
-  .eq("week_start_date", weekStart);
+      .from("training_planner")
+      .select("day_of_week, workout_id")
+      .eq("user_id", user.id)
+      .eq("week_start_date", weekStart);
 
-if (error) {
-  console.error("[WeekPlanner] planner fetch error:", error);
-  setAssignments([]);
-  setWeekLoading(false);
-  return;
-}
+    if (error) {
+      console.error("[WeekPlanner] planner fetch error:", error);
+      setAssignments([]);
+      setWeekLoading(false);
+      return;
+    }
 
-if (!plannerRows || plannerRows.length === 0) {
-  setAssignments([]);
-  setWeekLoading(false);
-  return;
-}
+    if (!plannerRows || plannerRows.length === 0) {
+      setAssignments([]);
+      setWeekLoading(false);
+      return;
+    }
 
-const workoutIds = plannerRows.map((r) => r.workout_id);
-const { data: workoutRows, error: workoutError } = await supabase
-  .from("workouts")
-  .select("id, name, duration")
-  .in("id", workoutIds);
+    const workoutIds = plannerRows.map((r) => r.workout_id);
+    const { data: workoutRows, error: workoutError } = await supabase
+      .from("workouts")
+      .select("id, name, duration")
+      .in("id", workoutIds);
 
-if (workoutError) {
-  console.error("[WeekPlanner] workouts fetch error:", workoutError);
-  setAssignments([]);
-  setWeekLoading(false);
-  return;
-}
+    if (workoutError) {
+      console.error("[WeekPlanner] workouts fetch error:", workoutError);
+      setAssignments([]);
+      setWeekLoading(false);
+      return;
+    }
 
-const workoutMap = new Map((workoutRows ?? []).map((w) => [w.id, w]));
-const mapped: PlannerAssignment[] = plannerRows.map((row) => {
-  const w = workoutMap.get(row.workout_id);
-  return {
-    day_of_week: row.day_of_week as DayName,
-    workout_id: row.workout_id,
-    workout_name: w?.name ?? "Workout",
-    workout_duration: w?.duration ?? null,
-  };
-});
+    const workoutMap = new Map((workoutRows ?? []).map((w) => [w.id, w]));
+    const mapped: PlannerAssignment[] = plannerRows.map((row) => {
+      const w = workoutMap.get(row.workout_id);
+      return {
+        day_of_week: row.day_of_week as DayName,
+        workout_id: row.workout_id,
+        workout_name: w?.name ?? "Workout",
+        workout_duration: w?.duration ?? null,
+      };
+    });
 
-setAssignments(mapped);
+    setAssignments(mapped);
     setWeekLoading(false);
   }, [weekStart]);
 
@@ -185,7 +191,45 @@ setAssignments(mapped);
   }
 
   // ── Apply template handler ──
-  async function runApply(templateId: string, mode: PlannerMode) {
+  async function runApply(templateId: string, mode: PlannerMode, targetDay?: DayName) {
+    // Si es un día específico, solo aplicamos ese día (no toda la semana)
+    // Por ahora, si targetDay existe, forzamos modo "replace" y limpiamos solo ese día.
+    if (targetDay) {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Borrar solo ese día
+      await supabase
+        .from("training_planner")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("week_start_date", weekStart)
+        .eq("day_of_week", targetDay);
+
+      // Reutilizamos applyTemplateToPlanner pero con fill_empty (que solo rellena vacíos)
+      // y luego filtramos para que solo quede el día objetivo.
+      // Simplificación: aplicamos "replace" al template completo y luego borramos los días que no sean targetDay.
+      const res = await applyTemplateToPlanner(templateId, weekStart, "replace");
+      if (!res.ok) {
+        showToast(`Error: ${res.error ?? "UNKNOWN"}`);
+        return;
+      }
+
+      // Ahora borramos todo menos targetDay
+      await supabase
+        .from("training_planner")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("week_start_date", weekStart)
+        .neq("day_of_week", targetDay);
+
+      await loadWeek();
+      showToast(`1 day assigned`);
+      return;
+    }
+
+    // Sin targetDay: aplicamos a toda la semana
     const res = await applyTemplateToPlanner(templateId, weekStart, mode);
     if (!res.ok) {
       showToast(`Error: ${res.error ?? "UNKNOWN"}`);
@@ -197,14 +241,20 @@ setAssignments(mapped);
 
   // Cuando el picker selecciona un template
   async function handleTemplateSelected(templateId: string) {
+    const targetDay = pickerTarget;
     setGlobalPickerOpen(false);
     setPickerTarget(null);
 
-    // Si la semana está vacía → aplica directo "replace"
+    // Si es un día específico → aplica solo ese día
+    if (targetDay) {
+      await runApply(templateId, "replace", targetDay);
+      return;
+    }
+
+    // Si es global y la semana está vacía → aplica directo
     if (assignments.length === 0) {
       await runApply(templateId, "replace");
     } else {
-      // Si ya hay workouts → abrir modal de confirmación
       setPendingTemplateId(templateId);
     }
   }
@@ -214,6 +264,25 @@ setAssignments(mapped);
     const id = pendingTemplateId;
     setPendingTemplateId(null);
     await runApply(id, mode);
+  }
+
+  async function removeAssignment(day: DayName) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase
+      .from("training_planner")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("week_start_date", weekStart)
+      .eq("day_of_week", day);
+
+    if (error) {
+      showToast(`Error: ${error.message}`);
+      return;
+    }
+    await loadWeek();
   }
 
   return (
@@ -287,7 +356,7 @@ setAssignments(mapped);
             ))}
           </div>
 
-                    <div className="grid grid-cols-7 gap-3">
+          <div className="grid grid-cols-7 gap-3">
             {DAYS.map((day) => {
               const a = getAssignment(day);
               const isPlanned = !!a;
@@ -302,10 +371,8 @@ setAssignments(mapped);
                   duration={a?.workout_duration ?? undefined}
                   onClick={() => {
                     if (isPlanned && a) {
-                      // Navega al detalle del workout copia
-                      window.location.href = `/workouts/${a.workout_id}`;
+                      router.push(`/workouts/${a.workout_id}`);
                     } else {
-                      // Día vacío → abre picker
                       setPickerTarget(day);
                     }
                   }}
@@ -320,17 +387,12 @@ setAssignments(mapped);
                     isPlanned && a ? (
                       <PlannerDayMenu
                         day={day}
-                        workoutName={a.workout_name}
                         labels={{
                           replace: labels.confirm?.replace ?? "Replace",
                           remove: labels.removeFromPlanner ?? "Remove from planner",
                         }}
-                        onReplace={() => {
-                          setPickerTarget(day);
-                        }}
-                        onRemove={async () => {
-                          await removeAssignment(day);
-                        }}
+                        onReplace={() => setPickerTarget(day)}
+                        onRemove={() => removeAssignment(day)}
                       />
                     ) : undefined
                   }
@@ -371,6 +433,88 @@ setAssignments(mapped);
           onFillEmpty={() => handleModalConfirm("fill_empty")}
           onCancel={() => setPendingTemplateId(null)}
         />
+      )}
+    </div>
+  );
+}
+
+// ── Day menu (··· button con Reemplazar / Quitar) ─────────────────────────────
+
+function PlannerDayMenu({
+  day,
+  labels,
+  onReplace,
+  onRemove,
+}: {
+  day: DayName;
+  labels: { replace: string; remove: string };
+  onReplace: () => void;
+  onRemove: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((o) => !o);
+        }}
+        aria-label={`${day} options`}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className="flex h-6 w-6 items-center justify-center rounded-md bg-white/80 text-zinc-500 shadow-sm transition-colors hover:bg-white hover:text-zinc-900"
+      >
+        <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5">
+          <path d="M10 6a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM10 11.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM11.5 15.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />
+        </svg>
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 top-7 z-20 w-44 overflow-hidden rounded-lg border border-zinc-200 bg-white py-1 shadow-lg"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              onReplace();
+            }}
+            className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-zinc-700 transition-colors hover:bg-zinc-50"
+          >
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5 text-zinc-400">
+              <path d="M10 5a.75.75 0 0 1 .75.75v3.5h3.5a.75.75 0 0 1 0 1.5h-3.5v3.5a.75.75 0 0 1-1.5 0v-3.5h-3.5a.75.75 0 0 1 0-1.5h3.5v-3.5A.75.75 0 0 1 10 5Z" />
+            </svg>
+            {labels.replace}
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              onRemove();
+            }}
+            className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-red-600 transition-colors hover:bg-red-50"
+          >
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5">
+              <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41 41 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5Z" clipRule="evenodd" />
+            </svg>
+            {labels.remove}
+          </button>
+        </div>
       )}
     </div>
   );
