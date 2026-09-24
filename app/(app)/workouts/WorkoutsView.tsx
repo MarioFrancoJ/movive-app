@@ -272,12 +272,20 @@ export default function WorkoutsView() {
             fillEmpty: t.confirmFillEmpty,
             cancel: t.confirmCancel,
           },
-          picker: {
+            picker: {
             title: t.pickerTitle,
             searchPlaceholder: t.pickerSearch,
             noMatch: t.pickerNoMatch,
             countSummary: t.pickerCount,
             all: t.goalAll,
+            goalLabels: {
+              FatLoss:        t.goalFatLoss,
+              MuscleGain:     t.goalMuscleGain,
+              Strength:       t.goalStrength,
+              Endurance:      t.goalEndurance,
+              Mobility:       t.goalMobility,
+              GeneralFitness: t.goalGeneralFitness,
+            },
           },
         }}
         weekdayLabels={[t.daySun, t.dayMon, t.dayTue, t.dayWed, t.dayThu, t.dayFri, t.daySat]}
