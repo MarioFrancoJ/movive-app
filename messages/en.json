@@ -850,6 +850,8 @@
     "planned": "Planned",
     "completed": "Completed",
     "unitMin": "min",
+    "exercisesSuffix": "exercises",
+    "verRutina": "View routine →",
     "removeFromPlanner": "Remove from planner",
     "applyTemplate": "Apply template",
     "confirmTitle": "This week already has workouts",
