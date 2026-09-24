@@ -852,6 +852,8 @@
   "unitMin": "min",
   "removeFromPlanner": "Quitar del planner",
   "applyTemplate": "Aplicar plantilla",
+  "exercisesSuffix": "ejercicios",
+  "verRutina": "Ver rutina →",
   "confirmTitle": "Esta semana ya tiene entrenamientos",
   "confirmMessage": "¿Qué quieres hacer con la plantilla?",
   "confirmReplace": "Reemplazar semana",
