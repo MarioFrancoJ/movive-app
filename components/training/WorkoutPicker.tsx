@@ -23,6 +23,14 @@ export interface WorkoutPickerProps {
     noMatch: string;
     countSummary: string;
     all: string;
+    goalLabels: {
+      FatLoss: string;
+      MuscleGain: string;
+      Strength: string;
+      Endurance: string;
+      Mobility: string;
+      GeneralFitness: string;
+    };
   };
   onSelect: (workoutId: string) => void;
   onClose: () => void;
@@ -39,6 +47,20 @@ function goalBadgeColor(goal: string | null): string {
     case "Fat Loss":     return "bg-rose-50 text-rose-700";
     case "Endurance":    return "bg-orange-50 text-orange-700";
     default:             return "bg-zinc-100 text-zinc-600";
+  }
+}
+
+// Traduce el valor crudo del goal (ej. "Strength") al label local (ej. "Fuerza").
+function goalLabel(goal: string | null, labels: WorkoutPickerProps["labels"]): string {
+  if (!goal) return "";
+  switch (goal) {
+    case "Fat Loss":        return labels.goalLabels.FatLoss;
+    case "Muscle Gain":     return labels.goalLabels.MuscleGain;
+    case "Strength":        return labels.goalLabels.Strength;
+    case "Endurance":       return labels.goalLabels.Endurance;
+    case "Mobility":        return labels.goalLabels.Mobility;
+    case "General Fitness": return labels.goalLabels.GeneralFitness;
+    default:                return goal;
   }
 }
 
@@ -132,7 +154,7 @@ export default function WorkoutPicker({
                     : "border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50",
                 ].join(" ")}
               >
-                {g === "All" ? labels.all : g}
+                {g === "All" ? labels.all : goalLabel(g, labels)}
               </button>
             ))}
           </div>
@@ -171,7 +193,7 @@ export default function WorkoutPicker({
                     </span>
                     {w.goal && (
                       <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${goalBadgeColor(w.goal)}`}>
-                        {w.goal}
+                        {goalLabel(w.goal, labels)}
                       </span>
                     )}
                   </button>
