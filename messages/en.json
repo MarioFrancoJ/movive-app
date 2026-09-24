@@ -883,6 +883,8 @@
     "assign": "Assign",
     "assignedThisWeek": "Assigned {n} times this week",
     "notUsedThisWeek": "Not used this week",
+    "dropdownViewTemplates": "View templates",
+    "dropdownApplyTemplate": "Apply template",
     "new": {
       "loading": "Loading exercises...",
       "title": "Create Workout",
