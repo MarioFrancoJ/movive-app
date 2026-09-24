@@ -883,6 +883,8 @@
   "assign": "Asignar",
   "assignedThisWeek": "Asignada {n} veces esta semana",
   "notUsedThisWeek": "No usada esta semana",
+     "dropdownViewTemplates": "Ver plantillas",
+"dropdownApplyTemplate": "Aplicar plantilla",
   "new": {
     "loading": "Cargando ejercicios...",
     "title": "Crear rutina",
