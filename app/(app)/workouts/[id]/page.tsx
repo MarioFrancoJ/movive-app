@@ -9,6 +9,8 @@ import { useToast } from "@/components/ui/Toast";
 import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 import RoutineDayCard from "@/components/training/RoutineDayCard";
 import ExercisePicker, { type ExercisePickerItem } from "@/components/training/ExercisePicker";
+import ExerciseEditModal from "@/components/training/ExerciseEditModal";
+import type { RoutineExercise } from "@/components/training/RoutineDayCard";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -113,6 +115,7 @@ export default function WorkoutDetailPage() {
   const [workout, setWorkout] = useState<WorkoutDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [pickerDayId, setPickerDayId] = useState<string | null>(null);
+  const [editingExercise, setEditingExercise] = useState<RoutineExercise | null>(null);
 
   // ── Load workout ──
   const loadWorkout = useCallback(async () => {
@@ -169,6 +172,34 @@ export default function WorkoutDetailPage() {
   }
 
   // ── Duplicate workout ──
+    async function handleUpdateExercise(
+    exerciseId: string,
+    updates: { sets: number; reps: number; rest_seconds: number; notes?: string | null }
+  ) {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("workout_exercises")
+      .update(updates)
+      .eq("id", exerciseId);
+
+    if (error) {
+      showToast(`Error: ${error.message}`);
+      return;
+    }
+    await loadWorkout();
+  }
+
+  async function handleSaveFromModal(updates: {
+    sets: number;
+    reps: number;
+    rest_seconds: number;
+    notes: string | null;
+  }) {
+    if (!editingExercise) return;
+    const id = editingExercise.id;
+    setEditingExercise(null);
+    await handleUpdateExercise(id, updates);
+  }
   async function handleDuplicate() {
     if (!workout) return;
     const supabase = createClient();
@@ -352,23 +383,26 @@ export default function WorkoutDetailPage() {
           {workout.workout_days.map((day) => (
             <div key={day.id} className="flex flex-col gap-2">
               <p className="text-sm font-semibold text-zinc-900">{dayLabel(day.day_name, w)}</p>
-              <RoutineDayCard
+                            <RoutineDayCard
                 exercises={day.workout_exercises}
                 labels={{
                   restDay: t.restDay,
                   rest: "Descanso",
                   addExercise: t.addExercise,
                   removeExercise: t.removeExercise,
+                  editExercise: t.editExercise,
                 }}
                 onAddExercise={() => setPickerDayId(day.id)}
                 onRemoveExercise={handleRemoveExercise}
+                onUpdateExercise={handleUpdateExercise}
+                onOpenEditModal={(ex) => setEditingExercise(ex)}
               />
             </div>
           ))}
         </div>
       </div>
 
-      {/* Exercise Picker Modal */}
+            {/* Exercise Picker Modal */}
       {pickerDayId && (
         <ExercisePicker
           labels={{
@@ -380,6 +414,25 @@ export default function WorkoutDetailPage() {
           }}
           onSelect={handleAddExercise}
           onClose={() => setPickerDayId(null)}
+        />
+      )}
+
+      {/* Exercise Edit Modal */}
+      {editingExercise && (
+        <ExerciseEditModal
+          exercise={editingExercise}
+          labels={{
+            title: t.editExerciseTitle,
+            sets: t.editSets,
+            reps: t.editReps,
+            rest: t.editRest,
+            notes: t.editNotes,
+            notesPlaceholder: t.editNotesPlaceholder,
+            save: t.editSave,
+            cancel: t.editCancel,
+          }}
+          onSave={handleSaveFromModal}
+          onClose={() => setEditingExercise(null)}
         />
       )}
     </>
