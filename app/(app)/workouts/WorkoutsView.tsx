@@ -248,7 +248,7 @@ export default function WorkoutsView() {
         </div>
       </div>
 
-      {/* ── Week Planner ── */}
+            {/* ── Week Planner ── */}
       <WeekPlanner
         workouts={templates}
         labels={{
@@ -263,7 +263,14 @@ export default function WorkoutsView() {
           planned: t.planned,
           completed: t.completed,
           min: t.unitMin,
-          removeFromPlanner: t.removeFromPlanner,   // ← AGREGA ESTA LÍNEA
+          exercisesSuffix: t.exercisesSuffix,       // ← NUEVO
+          verRutina: t.verRutina,                   // ← NUEVO
+          difficultyLabels: {                       // ← NUEVO
+            Beginner:     t.difficultyBeginner,
+            Intermediate: t.difficultyIntermediate,
+            Advanced:     t.difficultyAdvanced,
+          },
+          removeFromPlanner: t.removeFromPlanner,
           applyTemplate: t.applyTemplate,
           confirm: {
             title: t.confirmTitle,
@@ -272,7 +279,7 @@ export default function WorkoutsView() {
             fillEmpty: t.confirmFillEmpty,
             cancel: t.confirmCancel,
           },
-            picker: {
+          picker: {
             title: t.pickerTitle,
             searchPlaceholder: t.pickerSearch,
             noMatch: t.pickerNoMatch,
