@@ -279,7 +279,7 @@ export default function WorkoutsView() {
             all: t.goalAll,
           },
         }}
-        weekdayLabels={[t.dayMon, t.dayTue, t.dayWed, t.dayThu, t.dayFri, t.daySat, t.daySun]}
+        weekdayLabels={[t.daySun, t.dayMon, t.dayTue, t.dayWed, t.dayThu, t.dayFri, t.daySat]}
       />
 
       {/* ── Weekly Progress ── */}
