@@ -935,7 +935,16 @@
       "pickerExerciseSearch": "Search exercises...",
       "pickerExerciseNoMatch": "No exercises match \"{query}\".",
       "pickerExerciseCount": "{x} of {y} exercises",
-      "pickerExerciseAll": "All"
+      "pickerExerciseAll": "All",
+      "editExercise": "Edit",
+      "editExerciseTitle": "Edit exercise",
+      "editSets": "Sets",
+      "editReps": "Reps",
+      "editRest": "Rest (s)",
+      "editNotes": "Notes",
+      "editNotesPlaceholder": "Optional notes",
+      "editSave": "Save",
+      "editCancel": "Cancel"
     },
     "goalFatLoss": "Fat Loss",
     "goalMuscleGain": "Muscle Gain",
