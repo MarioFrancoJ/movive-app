@@ -850,7 +850,7 @@
     "planned": "Planned",
     "completed": "Completed",
     "unitMin": "min",
-    "removeFromPlanner": "Quitar del planner",
+    "removeFromPlanner": "Remove from planner",
     "applyTemplate": "Apply template",
     "confirmTitle": "This week already has workouts",
     "confirmMessage": "What do you want to do with the template?",
