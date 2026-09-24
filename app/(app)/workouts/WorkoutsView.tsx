@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import PageLoader from "@/components/ui/PageLoader";
 import { useToast } from "@/components/ui/Toast";
 import EmptyState from "@/components/ui/EmptyState";
 import Chip from "@/components/ui/Chip";
+import DropdownMenu from "@/components/ui/DropdownMenu";
 import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 import WorkoutCard, {
   type WorkoutItem,
@@ -14,7 +16,9 @@ import WorkoutCard, {
 } from "@/components/training/WorkoutCard";
 import WeekPlanner from "@/components/training/WeekPlanner";
 import WeeklyProgress, { type NextWorkoutInfo } from "@/components/training/WeeklyProgress";
-import type { WorkoutPickerItem } from "@/components/training/WorkoutPicker";
+import WorkoutPicker, { type WorkoutPickerItem } from "@/components/training/WorkoutPicker";
+import ApplyTemplateModal from "@/components/training/ApplyTemplateModal";
+import { applyTemplateToPlanner, type PlannerMode } from "@/lib/training/planner";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -60,6 +64,8 @@ function getSundayKey(mondayKey: string): string {
 export default function WorkoutsView() {
   const { dict } = useDictionary();
   const t = dict.workouts;
+  const router = useRouter();
+  const { success: showToast } = useToast();
   const [myWorkouts, setMyWorkouts] = useState<WorkoutItem[]>([]);
   const [templates, setTemplates] = useState<WorkoutPickerItem[]>([]);
   const [weeklyStats, setWeeklyStats] = useState<WeeklyStats>({
@@ -72,6 +78,11 @@ export default function WorkoutsView() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterCategory>("All");
   const [loading, setLoading] = useState(true);
+
+  // Global "Apply template" state
+  const [globalPickerOpen, setGlobalPickerOpen] = useState(false);
+  const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
+  const [plannerRefreshKey, setPlannerRefreshKey] = useState(0);
 
   useEffect(() => {
     loadData();
@@ -292,6 +303,50 @@ export default function WorkoutsView() {
     };
   }
 
+  // ── Global "Apply template" handlers ──
+  async function handleGlobalTemplateSelected(templateId: string) {
+    setGlobalPickerOpen(false);
+
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const mondayKey = getMondayKey(new Date());
+    const { data: existing } = await supabase
+      .from("training_planner")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("week_start_date", mondayKey)
+      .limit(1);
+
+    const weekHasWorkouts = (existing?.length ?? 0) > 0;
+
+    if (weekHasWorkouts) {
+      setPendingTemplateId(templateId);
+    } else {
+      await runGlobalApply(templateId, "replace");
+    }
+  }
+
+  async function runGlobalApply(templateId: string, mode: PlannerMode) {
+    const mondayKey = getMondayKey(new Date());
+    const res = await applyTemplateToPlanner(templateId, mondayKey, mode);
+    if (!res.ok) {
+      showToast(`Error: ${res.error ?? "UNKNOWN"}`);
+      return;
+    }
+    setPlannerRefreshKey((k) => k + 1);
+    await loadWeeklyStats();
+    showToast(`${res.plannerRowsCreated ?? 0} días asignados`);
+  }
+
+  async function handleModalConfirm(mode: PlannerMode) {
+    if (!pendingTemplateId) return;
+    const id = pendingTemplateId;
+    setPendingTemplateId(null);
+    await runGlobalApply(id, mode);
+  }
+
   const filteredWorkouts = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return myWorkouts;
@@ -310,13 +365,31 @@ export default function WorkoutsView() {
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900">{t.title}</h1>
           <p className="mt-1 text-sm text-zinc-500">{t.subtitle}</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href="/training/templates"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-xs font-medium text-zinc-500 hover:bg-zinc-50 hover:text-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
-          >
-            {t.templates}
-          </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <DropdownMenu
+            align="right"
+            triggerClassName="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-50 hover:text-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300"
+            trigger={
+              <>
+                {t.templates}
+                <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
+                  <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+                </svg>
+              </>
+            }
+            items={[
+              {
+                key: "view",
+                label: t.dropdownViewTemplates,
+                onClick: () => router.push("/training/templates"),
+              },
+              {
+                key: "apply",
+                label: t.dropdownApplyTemplate,
+                onClick: () => setGlobalPickerOpen(true),
+              },
+            ]}
+          />
           <Link
             href="/workouts/new"
             className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
@@ -351,6 +424,7 @@ export default function WorkoutsView() {
 
       {/* ── Week Planner ── */}
       <WeekPlanner
+        refreshSignal={plannerRefreshKey}
         workouts={templates}
         labels={{
           title: t.thisWeekTitle,
@@ -454,6 +528,47 @@ export default function WorkoutsView() {
           </div>
         )}
       </div>
+
+      {/* ── Global WorkoutPicker (Aplicar plantilla) ── */}
+      {globalPickerOpen && (
+        <WorkoutPicker
+          workouts={templates}
+          dayLabel=""
+          labels={{
+            title: t.pickerTitle,
+            searchPlaceholder: t.pickerSearch,
+            noMatch: t.pickerNoMatch,
+            countSummary: t.pickerCount,
+            all: t.goalAll,
+            goalLabels: {
+              FatLoss:        t.goalFatLoss,
+              MuscleGain:     t.goalMuscleGain,
+              Strength:       t.goalStrength,
+              Endurance:      t.goalEndurance,
+              Mobility:       t.goalMobility,
+              GeneralFitness: t.goalGeneralFitness,
+            },
+          }}
+          onSelect={handleGlobalTemplateSelected}
+          onClose={() => setGlobalPickerOpen(false)}
+        />
+      )}
+
+      {/* ── Global Confirm modal ── */}
+      {pendingTemplateId && (
+        <ApplyTemplateModal
+          labels={{
+            title: t.confirmTitle,
+            message: t.confirmMessage,
+            replace: t.confirmReplace,
+            fillEmpty: t.confirmFillEmpty,
+            cancel: t.confirmCancel,
+          }}
+          onReplace={() => handleModalConfirm("replace")}
+          onFillEmpty={() => handleModalConfirm("fill_empty")}
+          onCancel={() => setPendingTemplateId(null)}
+        />
+      )}
     </div>
   );
 }
