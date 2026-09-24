@@ -82,12 +82,15 @@ function mondayKey(monday: Date): string {
 }
 
 function formatWeekRange(monday: Date): string {
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
+  // Semana visual: domingo anterior → sábado siguiente.
+  const sundayBefore = new Date(monday);
+  sundayBefore.setDate(monday.getDate() - 1);
+  const saturdayAfter = new Date(monday);
+  saturdayAfter.setDate(monday.getDate() + 5);
   const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
-  const startStr = monday.toLocaleDateString("en-US", opts);
-  const endStr = sunday.toLocaleDateString("en-US", opts);
-  return `${startStr} – ${endStr}, ${sunday.getFullYear()}`;
+  const startStr = sundayBefore.toLocaleDateString("en-US", opts);
+  const endStr = saturdayAfter.toLocaleDateString("en-US", opts);
+  return `${startStr} – ${endStr}, ${saturdayAfter.getFullYear()}`;
 }
 
 function formatDayDate(date: Date): string {
