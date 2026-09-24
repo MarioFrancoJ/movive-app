@@ -248,7 +248,26 @@ export default function WorkoutsView() {
         </div>
       </div>
 
-            {/* ── Week Planner ── */}
+            
+
+      {/* ── Weekly Progress ── */}
+      <WeeklyProgress
+        workoutsCompleted={weeklyStats.workoutsCompleted}
+        totalTimeMinutes={weeklyStats.totalTimeMinutes}
+        currentStreak={weeklyStats.currentStreak}
+        labels={{
+          title: t.weeklyProgressTitle,
+          subtitle: t.weeklyProgressSubtitle,
+          workoutsCompleted: t.weeklyProgressCompleted,
+          workoutsCompletedSub: t.weeklyProgressCompletedSub,
+          totalTime: t.weeklyProgressTotalTime,
+          totalTimeSub: t.weeklyProgressTotalTimeSub,
+          currentStreak: t.weeklyProgressStreak,
+          currentStreakSub: t.weeklyProgressStreakSub,
+        }}
+      />
+
+      {/* ── Week Planner ── */}
       <WeekPlanner
         workouts={templates}
         labels={{
@@ -296,23 +315,6 @@ export default function WorkoutsView() {
           },
         }}
         weekdayLabels={[t.daySun, t.dayMon, t.dayTue, t.dayWed, t.dayThu, t.dayFri, t.daySat]}
-      />
-
-      {/* ── Weekly Progress ── */}
-      <WeeklyProgress
-        workoutsCompleted={weeklyStats.workoutsCompleted}
-        totalTimeMinutes={weeklyStats.totalTimeMinutes}
-        currentStreak={weeklyStats.currentStreak}
-        labels={{
-          title: t.weeklyProgressTitle,
-          subtitle: t.weeklyProgressSubtitle,
-          workoutsCompleted: t.weeklyProgressCompleted,
-          workoutsCompletedSub: t.weeklyProgressCompletedSub,
-          totalTime: t.weeklyProgressTotalTime,
-          totalTimeSub: t.weeklyProgressTotalTimeSub,
-          currentStreak: t.weeklyProgressStreak,
-          currentStreakSub: t.weeklyProgressStreakSub,
-        }}
       />
 
       {/* ── My Workouts ── */}
