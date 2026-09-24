@@ -287,17 +287,28 @@ setAssignments(mapped);
             ))}
           </div>
 
-          <div className="grid grid-cols-7 gap-3">
+                    <div className="grid grid-cols-7 gap-3">
             {DAYS.map((day) => {
               const a = getAssignment(day);
+              const isPlanned = !!a;
+              const variant = getVariant(day);
+
               return (
                 <DayCard
                   key={day}
                   day={day}
-                  variant={getVariant(day)}
+                  variant={variant}
                   workoutName={a?.workout_name}
                   duration={a?.workout_duration ?? undefined}
-                  onClick={() => setPickerTarget(day)}
+                  onClick={() => {
+                    if (isPlanned && a) {
+                      // Navega al detalle del workout copia
+                      window.location.href = `/workouts/${a.workout_id}`;
+                    } else {
+                      // Día vacío → abre picker
+                      setPickerTarget(day);
+                    }
+                  }}
                   labels={{
                     addWorkout: labels.addWorkout,
                     restDay: labels.restDay,
@@ -305,6 +316,24 @@ setAssignments(mapped);
                     completed: labels.completed,
                     min: labels.min,
                   }}
+                  menu={
+                    isPlanned && a ? (
+                      <PlannerDayMenu
+                        day={day}
+                        workoutName={a.workout_name}
+                        labels={{
+                          replace: labels.confirm?.replace ?? "Replace",
+                          remove: labels.removeFromPlanner ?? "Remove from planner",
+                        }}
+                        onReplace={() => {
+                          setPickerTarget(day);
+                        }}
+                        onRemove={async () => {
+                          await removeAssignment(day);
+                        }}
+                      />
+                    ) : undefined
+                  }
                 />
               );
             })}
