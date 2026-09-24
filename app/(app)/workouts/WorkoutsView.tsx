@@ -13,18 +13,31 @@ import WorkoutCard, {
   type WorkoutDifficulty,
 } from "@/components/training/WorkoutCard";
 import WeekPlanner from "@/components/training/WeekPlanner";
-import WeeklyProgress from "@/components/training/WeeklyProgress";
+import WeeklyProgress, { type NextWorkoutInfo } from "@/components/training/WeeklyProgress";
 import type { WorkoutPickerItem } from "@/components/training/WorkoutPicker";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface WeeklyStats {
   workoutsCompleted: number;
+  workoutsPlanned: number;
   totalTimeMinutes: number;
   currentStreak: number;
 }
 
 type FilterCategory = "All" | "Strength" | "Hypertrophy" | "Calisthenics" | "Mobility";
+
+// Orden interno de días para el cálculo de "próximo workout".
+// Sunday=0, Monday=1 ... Saturday=6. Coincide con Date.getDay().
+const DAY_ORDER: Record<string, number> = {
+  Sunday: 0,
+  Monday: 1,
+  Tuesday: 2,
+  Wednesday: 3,
+  Thursday: 4,
+  Friday: 5,
+  Saturday: 6,
+};
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -51,15 +64,18 @@ export default function WorkoutsView() {
   const [templates, setTemplates] = useState<WorkoutPickerItem[]>([]);
   const [weeklyStats, setWeeklyStats] = useState<WeeklyStats>({
     workoutsCompleted: 0,
+    workoutsPlanned: 0,
     totalTimeMinutes: 0,
     currentStreak: 0,
   });
+  const [nextWorkout, setNextWorkout] = useState<NextWorkoutInfo | null>(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterCategory>("All");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadData();
+    loadWeeklyStats();
   }, []);
 
   async function loadData() {
@@ -78,7 +94,7 @@ export default function WorkoutsView() {
 
     if (myData) setMyWorkouts(myData.map(mapWorkout));
 
-        // 2. Templates (is_template = true)
+    // 2. Templates (is_template = true)
     const { data: tplData } = await supabase
       .from("workouts")
       .select("id, name, description, goal, difficulty, duration")
@@ -148,6 +164,7 @@ export default function WorkoutsView() {
     const mondayKey = getMondayKey(new Date());
     const sundayKey = getSundayKey(mondayKey);
 
+    // 1. Sesiones completadas esta semana
     const { data: weekSessions } = await supabase
       .from("training_sessions")
       .select("date, duration_minutes")
@@ -163,6 +180,62 @@ export default function WorkoutsView() {
       0
     );
 
+    // 2. Planner de esta semana → count + próximo workout
+    const { data: plannerRows } = await supabase
+      .from("training_planner")
+      .select("day_of_week, workout_id")
+      .eq("user_id", user.id)
+      .eq("week_start_date", mondayKey);
+
+    const workoutsPlanned = plannerRows?.length ?? 0;
+
+    // 3. Determinar próximo workout
+    const todayDay = new Date().getDay(); // 0 = Sunday ... 6 = Saturday
+
+    const sortedPlanner = (plannerRows ?? []).slice().sort(
+      (a, b) => DAY_ORDER[a.day_of_week] - DAY_ORDER[b.day_of_week]
+    );
+
+    // Primer día con orden >= hoy
+    const nextRow = sortedPlanner.find(
+      (r) => DAY_ORDER[r.day_of_week] >= todayDay
+    );
+
+    if (nextRow) {
+      const { data: w } = await supabase
+        .from("workouts")
+        .select("id, name")
+        .eq("id", nextRow.workout_id)
+        .single();
+
+      if (w) {
+        const dayDiff = DAY_ORDER[nextRow.day_of_week] - todayDay;
+        let dayLabel: string;
+        if (dayDiff === 0) {
+          dayLabel = t.weeklyProgressNextToday;
+        } else if (dayDiff === 1) {
+          dayLabel = t.weeklyProgressNextTomorrow;
+        } else {
+          const dayMap: Record<string, string> = {
+            Sunday:    t.daySun,
+            Monday:    t.dayMon,
+            Tuesday:   t.dayTue,
+            Wednesday: t.dayWed,
+            Thursday:  t.dayThu,
+            Friday:    t.dayFri,
+            Saturday:  t.daySat,
+          };
+          dayLabel = dayMap[nextRow.day_of_week] ?? nextRow.day_of_week;
+        }
+        setNextWorkout({ workoutName: w.name, dayLabel });
+      } else {
+        setNextWorkout(null);
+      }
+    } else {
+      setNextWorkout(null);
+    }
+
+    // 4. Racha (días consecutivos con sesión completada)
     const { data: recentSessions } = await supabase
       .from("training_sessions")
       .select("date")
@@ -184,7 +257,12 @@ export default function WorkoutsView() {
       }
     }
 
-    setWeeklyStats({ workoutsCompleted, totalTimeMinutes, currentStreak: streak });
+    setWeeklyStats({
+      workoutsCompleted,
+      workoutsPlanned,
+      totalTimeMinutes,
+      currentStreak: streak,
+    });
   }
 
   function mapWorkout(w: {
@@ -248,22 +326,26 @@ export default function WorkoutsView() {
         </div>
       </div>
 
-            
-
-      {/* ── Weekly Progress ── */}
+      {/* ── Weekly Progress (arriba del planner) ── */}
       <WeeklyProgress
         workoutsCompleted={weeklyStats.workoutsCompleted}
+        workoutsPlanned={weeklyStats.workoutsPlanned}
         totalTimeMinutes={weeklyStats.totalTimeMinutes}
         currentStreak={weeklyStats.currentStreak}
+        nextWorkout={nextWorkout}
         labels={{
           title: t.weeklyProgressTitle,
           subtitle: t.weeklyProgressSubtitle,
           workoutsCompleted: t.weeklyProgressCompleted,
           workoutsCompletedSub: t.weeklyProgressCompletedSub,
+          workoutsCompletedPct: t.weeklyProgressCompletedPct,
           totalTime: t.weeklyProgressTotalTime,
           totalTimeSub: t.weeklyProgressTotalTimeSub,
           currentStreak: t.weeklyProgressStreak,
           currentStreakSub: t.weeklyProgressStreakSub,
+          nextWorkout: t.weeklyProgressNextWorkout,
+          nextWorkoutNone: t.weeklyProgressNextNone,
+          nextWorkoutCta: t.weeklyProgressNextCta,
         }}
       />
 
@@ -282,9 +364,9 @@ export default function WorkoutsView() {
           planned: t.planned,
           completed: t.completed,
           min: t.unitMin,
-          exercisesSuffix: t.exercisesSuffix,       // ← NUEVO
-          verRutina: t.verRutina,                   // ← NUEVO
-          difficultyLabels: {                       // ← NUEVO
+          exercisesSuffix: t.exercisesSuffix,
+          verRutina: t.verRutina,
+          difficultyLabels: {
             Beginner:     t.difficultyBeginner,
             Intermediate: t.difficultyIntermediate,
             Advanced:     t.difficultyAdvanced,
