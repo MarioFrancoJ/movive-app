@@ -1,23 +1,36 @@
 "use client";
 
+import Link from "next/link";
 import NavIcon from "@/components/ui/NavIcon";
 import KpiCard from "@/components/ui/KpiCard";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+export interface NextWorkoutInfo {
+  workoutName: string;
+  /** Ya traducido: "Hoy", "Mañana", "Jueves", etc. */
+  dayLabel: string;
+}
+
 export interface WeeklyProgressProps {
   workoutsCompleted: number;
+  workoutsPlanned: number;
   totalTimeMinutes: number;
   currentStreak: number;
+  nextWorkout: NextWorkoutInfo | null;
   labels: {
     title: string;
     subtitle: string;
     workoutsCompleted: string;
-    workoutsCompletedSub: string;
+    workoutsCompletedSub: string;      // "Esta semana"
+    workoutsCompletedPct: string;      // "{n}% completado"
     totalTime: string;
     totalTimeSub: string;
     currentStreak: string;
     currentStreakSub: string;
+    nextWorkout: string;               // "Próximo entrenamiento"
+    nextWorkoutNone: string;           // "Sin entrenamiento planificado"
+    nextWorkoutCta: string;            // "Planificar entrenamiento"
   };
   className?: string;
 }
@@ -37,11 +50,21 @@ function formatDuration(minutes: number): string {
 
 export default function WeeklyProgress({
   workoutsCompleted,
+  workoutsPlanned,
   totalTimeMinutes,
   currentStreak,
+  nextWorkout,
   labels,
   className = "",
 }: WeeklyProgressProps) {
+  // Adherencia semanal
+  const pct = workoutsPlanned > 0
+    ? Math.round((workoutsCompleted / workoutsPlanned) * 100)
+    : 0;
+
+  const completedValue = `${workoutsCompleted} / ${workoutsPlanned}`;
+  const completedSub = labels.workoutsCompletedPct.replace("{n}", String(pct));
+
   return (
     <div className={`flex flex-col gap-3 ${className}`}>
       {/* Section header */}
@@ -50,14 +73,15 @@ export default function WeeklyProgress({
         <p className="mt-1 text-sm text-zinc-400">{labels.subtitle}</p>
       </div>
 
-      {/* KPIs — using the unified KpiCard component */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      {/* KPIs — 4 cards en línea */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           icon={<NavIcon name="workout-complete.svg" className="h-5 w-5 text-success" />}
           label={labels.workoutsCompleted}
-          value={String(workoutsCompleted)}
-          sub={labels.workoutsCompletedSub}
+          value={completedValue}
+          sub={completedSub}
         />
+
         <KpiCard
           icon={
             <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5 text-blue-600">
@@ -68,6 +92,7 @@ export default function WeeklyProgress({
           value={formatDuration(totalTimeMinutes)}
           sub={labels.totalTimeSub}
         />
+
         <KpiCard
           icon={
             <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5 text-orange-500">
@@ -78,6 +103,42 @@ export default function WeeklyProgress({
           value={String(currentStreak)}
           sub={labels.currentStreakSub}
         />
+
+        {/* KPI 4 — Próximo entrenamiento (con variante CTA si no hay) */}
+        {nextWorkout ? (
+          <KpiCard
+            icon={
+              <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5 text-purple-600">
+                <path fillRule="evenodd" d="M5.75 2a.75.75 0 0 1 .75.75V4h7V2.75a.75.75 0 0 1 1.5 0V4h.25A2.75 2.75 0 0 1 18 6.75v8.5A2.75 2.75 0 0 1 15.25 18H4.75A2.75 2.75 0 0 1 2 15.25v-8.5A2.75 2.75 0 0 1 4.75 4H5V2.75A.75.75 0 0 1 5.75 2Zm-1 5.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-6.5c0-.69-.56-1.25-1.25-1.25H4.75Z" clipRule="evenodd" />
+              </svg>
+            }
+            label={labels.nextWorkout}
+            value={nextWorkout.workoutName}
+            sub={nextWorkout.dayLabel}
+          />
+        ) : (
+          <Link
+            href="/workouts"
+            className="group flex items-center gap-golden-3 rounded-golden-lg border border-dashed border-zinc-300 bg-white px-golden-3 py-golden-2 shadow-sm transition-all hover:border-zinc-400 hover:bg-zinc-50"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-golden-md bg-zinc-100 text-golden-md">
+              <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5 text-zinc-400">
+                <path d="M10 5a.75.75 0 0 1 .75.75v3.5h3.5a.75.75 0 0 1 0 1.5h-3.5v3.5a.75.75 0 0 1-1.5 0v-3.5h-3.5a.75.75 0 0 1 0-1.5h3.5v-3.5A.75.75 0 0 1 10 5Z" />
+              </svg>
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-golden-xs font-bold uppercase tracking-widest text-zinc-400">
+                {labels.nextWorkout}
+              </p>
+              <p className="mt-golden-1 truncate text-golden-base font-bold text-zinc-900">
+                {labels.nextWorkoutNone}
+              </p>
+              <p className="truncate text-golden-xs text-zinc-500">
+                {labels.nextWorkoutCta}
+              </p>
+            </div>
+          </Link>
+        )}
       </div>
     </div>
   );
