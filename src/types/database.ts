@@ -1586,6 +1586,10 @@ export type Database = {
           sets: number
           reps: number
           rest_seconds: number
+          weight_kg: number | null          // ← NUEVO
+          time_seconds: number | null       // ← NUEVO
+          rpe: number | null                // ← NUEVO
+          tempo: string | null              // ← NUEVO
           notes: string | null
           sort_order: number
           created_at: string
@@ -1599,6 +1603,10 @@ export type Database = {
           sets?: number
           reps?: number
           rest_seconds?: number
+          weight_kg?: number | null          // ← NUEVO
+          time_seconds?: number | null       // ← NUEVO
+          rpe?: number | null                // ← NUEVO
+          tempo?: string | null              // ← NUEVO
           notes?: string | null
           sort_order?: number
           created_at?: string
@@ -1612,6 +1620,10 @@ export type Database = {
           sets?: number
           reps?: number
           rest_seconds?: number
+          weight_kg?: number | null          // ← NUEVO
+          time_seconds?: number | null       // ← NUEVO
+          rpe?: number | null                // ← NUEVO
+          tempo?: string | null              // ← NUEVO
           notes?: string | null
           sort_order?: number
           created_at?: string
