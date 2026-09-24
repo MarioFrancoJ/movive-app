@@ -89,6 +89,18 @@ function difficultyLabel(d: WorkoutDifficulty | null, w: WorkoutsDict): string {
   }
 }
 
+function dayLabel(name: string, w: WorkoutsDict): string {
+  const map: Record<string, string> = {
+    Monday:    w.dayMon,
+    Tuesday:   w.dayTue,
+    Wednesday: w.dayWed,
+    Thursday:  w.dayThu,
+    Friday:    w.dayFri,
+    Saturday:  w.daySat,
+    Sunday:    w.daySun,
+  };
+  return map[name] ?? name;
+}
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function WorkoutDetailPage() {
@@ -339,7 +351,7 @@ export default function WorkoutDetailPage() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {workout.workout_days.map((day) => (
             <div key={day.id} className="flex flex-col gap-2">
-              <p className="text-sm font-semibold text-zinc-900">{day.day_name}</p>
+              <p className="text-sm font-semibold text-zinc-900">{dayLabel(day.day_name, w)}</p>
               <RoutineDayCard
                 exercises={day.workout_exercises}
                 labels={{
