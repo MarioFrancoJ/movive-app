@@ -917,7 +917,14 @@
       "colSets": "Series",
       "colReps": "Reps",
       "colRest": "Descanso",
-      "colNotes": "Notas"
+      "colNotes": "Notas",
+       "addExercise": "+ Agregar ejercicio",
+      "removeExercise": "Quitar",
+      "pickerExerciseTitle": "Elegir ejercicio",
+      "pickerExerciseSearch": "Buscar ejercicios...",
+      "pickerExerciseNoMatch": "Ningún ejercicio coincide con \"{query}\".",
+      "pickerExerciseCount": "{x} de {y} ejercicios",
+      "pickerExerciseAll": "Todos"
     },
     "goalFatLoss": "Pérdida de grasa",
     "goalMuscleGain": "Ganancia muscular",
