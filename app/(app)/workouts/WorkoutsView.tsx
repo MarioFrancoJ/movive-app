@@ -263,6 +263,7 @@ export default function WorkoutsView() {
           planned: t.planned,
           completed: t.completed,
           min: t.unitMin,
+          removeFromPlanner: t.removeFromPlanner,   // ← AGREGA ESTA LÍNEA
           applyTemplate: t.applyTemplate,
           confirm: {
             title: t.confirmTitle,
