@@ -55,7 +55,9 @@ interface PlannerAssignment {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const DAYS: DayName[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+// Orden de render: Domingo → Sábado (para alinear al standard visual).
+// Nota: el week_start_date sigue siendo el lunes de la semana.
+const DAYS: DayName[] = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 function getMonday(date: Date): Date {
   const d = new Date(date);
