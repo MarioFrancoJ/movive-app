@@ -774,7 +774,7 @@
         "Full Body": "Full Body"
       }
     },
-    "exercise": {
+    "exerciseDetail": {
       "loading": "Loading exercise...",
       "backToExercises": "← Back to Exercises",
       "notFound": "Exercise not found.",
@@ -790,7 +790,7 @@
       "category": "Category",
       "addToWorkout": "+ Add to Workout"
     },
-    "session": {
+    "sessionDetail": {
       "loading": "Loading session...",
       "backToHistory": "← Back to History",
       "notFound": "Session not found.",
