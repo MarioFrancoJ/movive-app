@@ -499,7 +499,7 @@
       "goalMuscleGain": "Muscle Gain",
       "goalMaintenance": "Maintenance"
     },
-    "recipe": {
+    "recipeDetail": {
       "loading": "Loading recipe...",
       "notFoundTitle": "Recipe Not Found",
       "notFoundDescription": "This recipe doesn't exist or has been removed.",
