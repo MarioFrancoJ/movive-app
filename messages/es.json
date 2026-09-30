@@ -963,7 +963,14 @@
       "focusTitle": "Enfoque del programa",
       "keyExercisesTitle": "Ejercicios clave",
       "keyExercisesMore": "más",
-      "exercisesCount": "ejercicios"
+      "exercisesCount": "ejercicios",
+      "statsTitle": "Estadísticas de la rutina",
+      "statsStrength": "Fuerza",
+      "statsCardio": "Cardio",
+      "statsCalories": "Calorías estimadas",
+      "statsLevel": "Nivel",
+      "daysSuffix": "días",
+      "exercisesSuffixShort": "ejercicios"
     },
     "goalFatLoss": "Pérdida de grasa",
     "goalMuscleGain": "Ganancia muscular",
