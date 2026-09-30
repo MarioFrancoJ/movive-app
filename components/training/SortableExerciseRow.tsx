@@ -14,6 +14,8 @@ export interface SortableExercise {
   rest_seconds: number;
   notes: string | null;
   sort_order: number;
+  image_url?: string | null;
+  video_url?: string | null;
 }
 
 export interface SortableExerciseRowProps {
@@ -29,6 +31,7 @@ export interface SortableExerciseRowProps {
   ) => void;
   onRemove?: (exerciseId: string) => void;
   onOpenEditModal?: (exercise: SortableExercise) => void;
+  onOpenVideo?: (exercise: SortableExercise) => void;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -39,6 +42,7 @@ export default function SortableExerciseRow({
   onUpdate,
   onRemove,
   onOpenEditModal,
+  onOpenVideo,
 }: SortableExerciseRowProps) {
   const [editing, setEditing] = useState(false);
 
@@ -56,31 +60,65 @@ export default function SortableExerciseRow({
     transition,
   };
 
+  const hasVideo = !!exercise.video_url;
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       className={[
-        "group flex items-start gap-2 rounded-lg transition-shadow",
+        "group flex items-start gap-3 rounded-lg transition-shadow",
         isDragging ? "opacity-50 shadow-lg z-10 relative bg-white" : "",
       ].join(" ")}
     >
-      {/* Drag handle — solo este elemento es arrastrable */}
+      {/* Drag handle */}
       <button
         type="button"
         {...attributes}
         {...listeners}
         aria-label="Drag to reorder"
         title="Arrastra para reordenar"
-        className="mt-0.5 flex h-6 w-5 shrink-0 cursor-grab items-center justify-center rounded text-zinc-300 transition-colors hover:bg-zinc-100 hover:text-zinc-600 active:cursor-grabbing"
+        className="mt-3 flex h-6 w-4 shrink-0 cursor-grab items-center justify-center rounded text-zinc-300 transition-colors hover:bg-zinc-100 hover:text-zinc-600 active:cursor-grabbing"
       >
         <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
           <path d="M7 4a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0ZM7 10a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0ZM5.5 17.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM16 4a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0ZM14.5 11.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM16 15a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />
         </svg>
       </button>
 
+      {/* Thumbnail — click abre el video si existe */}
+      <button
+        type="button"
+        onClick={() => hasVideo && onOpenVideo?.(exercise)}
+        disabled={!hasVideo}
+        aria-label={hasVideo ? `${exercise.exercise_name} — ver video` : exercise.exercise_name}
+        className={[
+          "relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-zinc-100",
+          hasVideo ? "cursor-pointer transition-transform hover:scale-105" : "cursor-default",
+        ].join(" ")}
+      >
+        {exercise.image_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={exercise.image_url}
+            alt={exercise.exercise_name}
+            loading="lazy"
+            decoding="async"
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <span className="text-2xl">💪</span>
+        )}
+        {hasVideo && (
+          <span className="absolute inset-0 flex items-center justify-center bg-black/25 opacity-0 transition-opacity group-hover:opacity-100">
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-6 w-6 text-white drop-shadow" aria-hidden="true">
+              <path d="M6.3 2.84A1.5 1.5 0 0 0 4 4.11v11.78a1.5 1.5 0 0 0 2.3 1.27l9.344-5.891a1.5 1.5 0 0 0 0-2.538L6.3 2.841Z" />
+            </svg>
+          </span>
+        )}
+      </button>
+
       {/* Content */}
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 pt-1">
         {editing ? (
           <InlineEditor
             exercise={exercise}
@@ -100,7 +138,7 @@ export default function SortableExerciseRow({
               disabled={!onUpdate}
               className="mt-0.5 block text-left text-xs text-zinc-500 transition-colors hover:text-zinc-800 disabled:cursor-default disabled:hover:text-zinc-500"
             >
-              {exercise.sets}×{exercise.reps} • {labels.rest} {exercise.rest_seconds}s
+              {exercise.sets}×{exercise.reps} · {labels.rest} {exercise.rest_seconds}s
             </button>
             {exercise.notes && (
               <p className="mt-1 text-xs text-zinc-400">{exercise.notes}</p>
@@ -111,7 +149,7 @@ export default function SortableExerciseRow({
 
       {/* Actions (hover) */}
       {!editing && (
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="mt-1 flex shrink-0 items-center gap-1">
           {onOpenEditModal && (
             <button
               type="button"
