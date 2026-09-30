@@ -970,7 +970,9 @@
       "statsCalories": "Calorías estimadas",
       "statsLevel": "Nivel",
       "daysSuffix": "días",
-      "exercisesSuffixShort": "ejercicios"
+      "exercisesSuffixShort": "ejercicios",
+      "objectivesTitle": "Objetivos de la rutina",
+      "musclesTitle": "Músculos principales"
     },
     "goalFatLoss": "Pérdida de grasa",
     "goalMuscleGain": "Ganancia muscular",
