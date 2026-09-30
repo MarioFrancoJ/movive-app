@@ -15,14 +15,12 @@ export default function StrengthCardioBar({
   cardioPct,
   labels,
 }: StrengthCardioBarProps) {
-  // Si ambos son 0, no renderizar.
   if (strengthPct === 0 && cardioPct === 0) return null;
 
   return (
     <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
       <p className="text-sm font-semibold text-zinc-900">{labels.title}</p>
 
-      {/* Labels con porcentajes */}
       <div className="mt-3 flex items-center justify-between text-xs font-medium">
         <span className="inline-flex items-center gap-1.5 text-zinc-700">
           <span aria-hidden="true">💪</span>
@@ -36,18 +34,18 @@ export default function StrengthCardioBar({
         </span>
       </div>
 
-      {/* Barra apilada */}
+      {/* Barra apilada — verde Movive para Fuerza, naranja para Cardio */}
       <div className="mt-2 flex h-2 w-full overflow-hidden rounded-full bg-zinc-100">
         {strengthPct > 0 && (
           <div
-            className="h-full bg-purple-500 transition-all"
+            className="h-full bg-primary transition-all"
             style={{ width: `${strengthPct}%` }}
             aria-label={`${labels.strength}: ${strengthPct}%`}
           />
         )}
         {cardioPct > 0 && (
           <div
-            className="h-full bg-rose-500 transition-all"
+            className="h-full bg-orange-500 transition-all"
             style={{ width: `${cardioPct}%` }}
             aria-label={`${labels.cardio}: ${cardioPct}%`}
           />
