@@ -11,6 +11,7 @@ import RoutineDayCard from "@/components/training/RoutineDayCard";
 import ExercisePicker, { type ExercisePickerItem } from "@/components/training/ExercisePicker";
 import ExerciseEditModal from "@/components/training/ExerciseEditModal";
 import ExerciseVideoModal from "@/components/training/ExerciseVideoModal";
+import StrengthCardioBar from "@/components/training/StrengthCardioBar";
 import type { RoutineExercise } from "@/components/training/RoutineDayCard";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -57,11 +58,6 @@ interface WorkoutDetail {
 interface VideoExercise {
   name: string;
   video_url: string;
-}
-
-interface ObjectiveItem {
-  icon: string;
-  label: string;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -121,62 +117,83 @@ function dayLabel(name: string, w: WorkoutsDict): string {
   return map[name] ?? name;
 }
 
-/** Traduce el muscle_group a display label reusando dict.training.exercises.muscles. */
 function muscleLabel(muscle: string, training: TrainingDict): string {
   const map = training.exercises.muscles as Record<string, string>;
   return map[muscle] ?? muscle;
 }
 
-/** Redondea al múltiplo de 5 más cercano entre 0-100. */
 function roundTo5(n: number): number {
   return Math.max(0, Math.min(100, Math.round(n / 5) * 5));
 }
 
-/** Objetivos derivados del goal — mapeo fijo. */
-function objectivesForGoal(goal: WorkoutGoal | null): ObjectiveItem[] {
+function objectivesForGoal(goal: WorkoutGoal | null): string[] {
+  switch (goal) {
+    case "Fat Loss":
+      return ["Pérdida de grasa", "Resistencia cardiovascular", "Acondicionamiento físico"];
+    case "Muscle Gain":
+      return ["Hipertrofia", "Fuerza", "Acondicionamiento"];
+    case "Strength":
+      return ["Fuerza máxima", "Potencia", "Acondicionamiento"];
+    case "Endurance":
+      return ["Resistencia cardiovascular", "Capacidad aeróbica", "Acondicionamiento"];
+    case "Mobility":
+      return ["Flexibilidad", "Movilidad articular", "Prevención de lesiones"];
+    case "General Fitness":
+      return ["Equilibrio general", "Salud cardiovascular", "Fuerza funcional"];
+    default:
+      return [];
+  }
+}
+
+function expectedResultsForGoal(goal: WorkoutGoal | null): string[] {
   switch (goal) {
     case "Fat Loss":
       return [
-        { icon: "🔥", label: "Pérdida de grasa" },
-        { icon: "❤️", label: "Resistencia cardiovascular" },
-        { icon: "⚡", label: "Acondicionamiento físico" },
+        "Mayor gasto calórico",
+        "Mejora de la resistencia cardiovascular",
+        "Entrenamiento de cuerpo completo",
+        "Sesiones rápidas y efectivas",
       ];
     case "Muscle Gain":
       return [
-        { icon: "💪", label: "Hipertrofia" },
-        { icon: "🏋️", label: "Fuerza" },
-        { icon: "⚡", label: "Acondicionamiento" },
+        "Aumento de masa muscular",
+        "Mayor fuerza progresiva",
+        "Mejor composición corporal",
+        "Progresión sostenida",
       ];
     case "Strength":
       return [
-        { icon: "🏋️", label: "Fuerza máxima" },
-        { icon: "💪", label: "Potencia" },
-        { icon: "⚡", label: "Acondicionamiento" },
+        "Incremento de fuerza máxima",
+        "Mejor control neuromuscular",
+        "Mayor potencia",
+        "Base sólida de progresión",
       ];
     case "Endurance":
       return [
-        { icon: "❤️", label: "Resistencia cardiovascular" },
-        { icon: "🫁", label: "Capacidad aeróbica" },
-        { icon: "⚡", label: "Acondicionamiento" },
+        "Mayor capacidad aeróbica",
+        "Mejor resistencia cardiovascular",
+        "Recuperación más rápida",
+        "Mayor energía diaria",
       ];
     case "Mobility":
       return [
-        { icon: "🤸", label: "Flexibilidad" },
-        { icon: "🧘", label: "Movilidad articular" },
-        { icon: "🩹", label: "Prevención de lesiones" },
+        "Mayor rango de movimiento",
+        "Menos rigidez articular",
+        "Mejor postura",
+        "Prevención de lesiones",
       ];
     case "General Fitness":
       return [
-        { icon: "⚖️", label: "Equilibrio general" },
-        { icon: "❤️", label: "Salud cardiovascular" },
-        { icon: "💪", label: "Fuerza funcional" },
+        "Mejor salud general",
+        "Mayor energía",
+        "Composición corporal equilibrada",
+        "Menos riesgo de lesión",
       ];
     default:
       return [];
   }
 }
 
-/** Top músculos por frecuencia (hasta 6). */
 function getTopMuscles(workout: WorkoutDetail, max = 6): string[] {
   const counts = new Map<string, number>();
   for (const day of workout.workout_days) {
@@ -191,7 +208,6 @@ function getTopMuscles(workout: WorkoutDetail, max = 6): string[] {
     .map(([m]) => m);
 }
 
-/** Fuerza vs Cardio — ponderado por sets. */
 function getStrengthCardioPct(workout: WorkoutDetail): { strength: number; cardio: number } {
   let strengthSets = 0;
   let cardioSets = 0;
@@ -465,6 +481,7 @@ export default function WorkoutDetailPage() {
 
   const totalExercises = workout.workout_days.reduce((s, d) => s + d.workout_exercises.length, 0);
   const objectives = objectivesForGoal(workout.goal);
+  const results = expectedResultsForGoal(workout.goal);
   const muscles = getTopMuscles(workout);
   const strengthCardio = getStrengthCardioPct(workout);
 
@@ -505,7 +522,6 @@ export default function WorkoutDetailPage() {
             </p>
           </div>
 
-          {/* CTAs — arriba a la derecha, sin iconos */}
           <div className="flex flex-wrap items-center gap-2">
             {totalExercises > 0 ? (
               <Link
@@ -539,65 +555,62 @@ export default function WorkoutDetailPage() {
           </div>
         </div>
 
-        {/* Grid 2 columnas: Objetivos + Músculos */}
-        {(objectives.length > 0 || muscles.length > 0) && (
+        {/* Grid 2 columnas: Objetivos + Músculos | Resultados esperados */}
+        {(objectives.length > 0 || results.length > 0 || muscles.length > 0) && (
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            {/* Objetivos */}
-            {objectives.length > 0 && (
+            {/* Izquierda: Objetivos + Músculos */}
+            <div className="flex flex-col gap-4">
+              {objectives.length > 0 && (
+                <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+                  <p className="text-sm font-semibold text-zinc-900">{t.objectivesTitle}</p>
+                  <ul className="mt-3 flex flex-col gap-1.5">
+                    {objectives.map((obj) => (
+                      <li key={obj} className="flex items-start gap-2 text-sm text-zinc-700">
+                        <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-zinc-400" aria-hidden="true" />
+                        <span>{obj}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {muscles.length > 0 && (
+                <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+                  <p className="text-sm font-semibold text-zinc-900">{t.musclesTitle}</p>
+                  <p className="mt-3 text-sm text-zinc-600">
+                    {muscles.map((m) => muscleLabel(m, training)).join(" · ")}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Derecha: Resultados esperados */}
+            {results.length > 0 && (
               <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-                <p className="text-sm font-semibold text-zinc-900">{t.objectivesTitle}</p>
-                <ul className="mt-3 flex flex-col gap-2">
-                  {objectives.map((obj) => (
-                    <li key={obj.label} className="flex items-center gap-2 text-sm text-zinc-700">
-                      <span aria-hidden="true">{obj.icon}</span>
-                      <span>{obj.label}</span>
+                <p className="text-sm font-semibold text-zinc-900">{t.resultsTitle}</p>
+                <ul className="mt-3 flex flex-col gap-1.5">
+                  {results.map((r) => (
+                    <li key={r} className="flex items-start gap-2 text-sm text-zinc-700">
+                      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-zinc-400" aria-hidden="true" />
+                      <span>{r}</span>
                     </li>
                   ))}
                 </ul>
               </div>
             )}
-
-            {/* Músculos */}
-            {muscles.length > 0 && (
-              <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-                <p className="text-sm font-semibold text-zinc-900">{t.musclesTitle}</p>
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {muscles.map((m) => (
-                    <span
-                      key={m}
-                      className="rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-medium text-zinc-700"
-                    >
-                      {muscleLabel(m, training)}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         )}
 
-        {/* Estadísticas de la rutina */}
-        {totalExercises > 0 && (
-          <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <p className="text-sm font-semibold text-zinc-900">{t.statsTitle}</p>
-            <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <div className="rounded-lg bg-zinc-50 p-3">
-                <p className="text-[11px] font-medium text-zinc-500">{t.statsStrength}</p>
-                <p className="mt-1 text-lg font-bold text-zinc-900">{strengthCardio.strength}%</p>
-              </div>
-              <div className="rounded-lg bg-zinc-50 p-3">
-                <p className="text-[11px] font-medium text-zinc-500">{t.statsCardio}</p>
-                <p className="mt-1 text-lg font-bold text-zinc-900">{strengthCardio.cardio}%</p>
-              </div>
-              <div className="rounded-lg bg-zinc-50 p-3">
-                <p className="text-[11px] font-medium text-zinc-500">{t.statsLevel}</p>
-                <p className="mt-1 text-lg font-bold text-zinc-900">
-                  {workout.difficulty ? difficultyLabel(workout.difficulty, w) : "—"}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Balance de entrenamiento (Strength/Cardio bar) */}
+        <StrengthCardioBar
+          strengthPct={strengthCardio.strength}
+          cardioPct={strengthCardio.cardio}
+          labels={{
+            title: t.balanceTitle,
+            strength: t.statsStrength,
+            cardio: t.statsCardio,
+          }}
+        />
 
         {/* Workout Days */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
