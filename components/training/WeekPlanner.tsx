@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import DayCard, { type DayName, type DayVariant } from "./DayCard";
 import WeekDayHeader from "@/components/ui/WeekDayHeader";
@@ -268,17 +268,15 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels, refreshSi
     if (!user) return;
 
     if (targetDay) {
-      // 1. Aplicar el template → crea workout copia + inserta filas
-      //    para TODOS los días del template.
+      // 1. Aplicar el template → crea workout copia + inserta filas para los días del template.
       const res = await applyTemplateToPlanner(templateId, weekStart, "fill_empty");
       if (!res.ok || !res.workoutId) {
         showToast(`Error: ${res.error ?? "UNKNOWN"}`);
         return;
       }
 
-      // 2. Borrar SOLO las filas que este apply acaba de crear
-      //    (identificadas por workout_id = res.workoutId). NO toca
-      //    otras semanas ni otros workouts.
+      // 2. Borrar SOLO las filas creadas por este apply (por workout_id).
+      //    No toca otros días ni otros workouts.
       await supabase
         .from("training_planner")
         .delete()
@@ -286,7 +284,7 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels, refreshSi
         .eq("week_start_date", weekStart)
         .eq("workout_id", res.workoutId);
 
-      // 3. Borrar el día target si ya existía (por si lo estabas reemplazando).
+      // 3. Borrar el día target si ya existía (reemplazar).
       await supabase
         .from("training_planner")
         .delete()
@@ -294,7 +292,7 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels, refreshSi
         .eq("week_start_date", weekStart)
         .eq("day_of_week", targetDay);
 
-      // 4. Insertar SOLO el día target apuntando a la copia.
+      // 4. Insertar SOLO el día target.
       const { error: insertError } = await supabase
         .from("training_planner")
         .insert({
@@ -445,6 +443,7 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels, refreshSi
                       setPickerTarget(day);
                     }
                   }}
+                  onRemove={isPlanned ? () => removeAssignment(day) : undefined}
                   labels={{
                     addWorkout: labels.addWorkout,
                     restDay: labels.restDay,
@@ -453,20 +452,8 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels, refreshSi
                     min: labels.min,
                     exercisesSuffix: labels.exercisesSuffix,
                     verRutina: labels.verRutina,
+                    removeFromPlanner: labels.removeFromPlanner,
                   }}
-                  menu={
-                    isPlanned && a ? (
-                      <PlannerDayMenu
-                        day={day}
-                        labels={{
-                          replace: labels.confirm?.replace ?? "Replace",
-                          remove: labels.removeFromPlanner ?? "Remove from planner",
-                        }}
-                        onReplace={() => setPickerTarget(day)}
-                        onRemove={() => removeAssignment(day)}
-                      />
-                    ) : undefined
-                  }
                 />
               );
             })}
@@ -483,88 +470,6 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels, refreshSi
           onSelect={handleTemplateSelected}
           onClose={() => setPickerTarget(null)}
         />
-      )}
-    </div>
-  );
-}
-
-// ── Day menu (··· button con Reemplazar / Quitar) ─────────────────────────────
-
-function PlannerDayMenu({
-  day,
-  labels,
-  onReplace,
-  onRemove,
-}: {
-  day: DayName;
-  labels: { replace: string; remove: string };
-  onReplace: () => void;
-  onRemove: () => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function onDocClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, []);
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen((o) => !o);
-        }}
-        aria-label={`${day} options`}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        className="flex h-6 w-6 items-center justify-center rounded-md bg-white/90 text-zinc-500 shadow-sm transition-colors hover:bg-white hover:text-zinc-900"
-      >
-        <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5">
-          <path d="M10 6a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM10 11.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM11.5 15.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />
-        </svg>
-      </button>
-
-      {open && (
-        <div
-          role="menu"
-          className="absolute right-0 top-7 z-50 w-44 overflow-hidden rounded-lg border border-zinc-200 bg-white py-1 shadow-lg"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              setOpen(false);
-              onReplace();
-            }}
-            className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-zinc-700 transition-colors hover:bg-zinc-50"
-          >
-            <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5 text-zinc-400">
-              <path d="M10 5a.75.75 0 0 1 .75.75v3.5h3.5a.75.75 0 0 1 0 1.5h-3.5v3.5a.75.75 0 0 1-1.5 0v-3.5h-3.5a.75.75 0 0 1 0-1.5h3.5v-3.5A.75.75 0 0 1 10 5Z" />
-            </svg>
-            {labels.replace}
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              setOpen(false);
-              onRemove();
-            }}
-            className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-red-600 transition-colors hover:bg-red-50"
-          >
-            <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5">
-              <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41 41 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5Z" clipRule="evenodd" />
-            </svg>
-            {labels.remove}
-          </button>
-        </div>
       )}
     </div>
   );
