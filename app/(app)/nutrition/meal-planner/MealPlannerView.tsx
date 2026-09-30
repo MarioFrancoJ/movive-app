@@ -1024,15 +1024,22 @@ export default function MealPlannerView() {
                     };
                     return selected ? (
                       // Filled slot = a draggable menu card with the recipe photo
-                      <div
+                                            <div
                         key={`${day}-${meal}`}
                         draggable
                         onDragStart={() => setDragFrom({ day, meal })}
                         onDragEnd={() => { setDragFrom(null); setDragOver(null); }}
+                        onClick={(e) => {
+                          // Evitar navegar si estamos en medio de un drag.
+                          if (!isDragging) {
+                            e.stopPropagation();
+                            window.location.href = `/nutrition/recipes/${selected.id}`;
+                          }
+                        }}
                         {...dropProps}
-                        title="Drag to move to another slot"
+                        title={`${selected.name} — Click para ver, arrastra para mover`}
                         className={[
-                          "group relative cursor-grab overflow-hidden rounded-xl border bg-white shadow-sm transition-all active:cursor-grabbing",
+                          "group relative cursor-pointer overflow-hidden rounded-xl border bg-white shadow-sm transition-all active:cursor-grabbing",
                           isDragging ? "opacity-40" : "hover:shadow-md",
                           isDropTarget ? "border-primary ring-2 ring-primary/20" : "border-zinc-200",
                         ].join(" ")}
@@ -1043,9 +1050,12 @@ export default function MealPlannerView() {
                           <p className="absolute inset-x-1.5 bottom-1 line-clamp-2 text-[11px] font-semibold leading-tight text-white drop-shadow">
                             {selected.name}{servings > 1 ? ` ×${servings}` : ""}
                           </p>
-                          <button
+                                                    <button
                             type="button"
-                            onClick={() => clearSlotFor(day, meal)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              clearSlotFor(day, meal);
+                            }}
                             aria-label={`Remove ${selected.name} from ${day} ${meal}`}
                             title={t.slotRemove}
                             className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/45 text-white opacity-0 transition-opacity hover:bg-black/70 group-hover:opacity-100"
