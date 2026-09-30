@@ -268,38 +268,54 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels, refreshSi
     return getAssignment(day) ? "planned" : "empty";
   }
 
-  // ── Apply template handler (por día) ──
+  // ── Apply template handler ──
   async function runApply(templateId: string, mode: PlannerMode, targetDay?: DayName) {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
     if (targetDay) {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      // Flujo "aplicar a un día específico":
+      // 1. applyTemplateToPlanner crea el workout copia + inserta filas para
+      //    todos los días del template en training_planner.
+      // 2. Borramos esas filas.
+      // 3. Insertamos SOLO el día target apuntando a la copia.
 
-      await supabase
-        .from("training_planner")
-        .delete()
-        .eq("user_id", user.id)
-        .eq("week_start_date", weekStart)
-        .eq("day_of_week", targetDay);
-
-      const res = await applyTemplateToPlanner(templateId, weekStart, "replace");
-      if (!res.ok) {
+      const res = await applyTemplateToPlanner(templateId, weekStart, "fill_empty");
+      if (!res.ok || !res.workoutId) {
         showToast(`Error: ${res.error ?? "UNKNOWN"}`);
         return;
       }
 
+      // Borrar las filas que applyTemplateToPlanner insertó para esta semana.
       await supabase
         .from("training_planner")
         .delete()
         .eq("user_id", user.id)
-        .eq("week_start_date", weekStart)
-        .neq("day_of_week", targetDay);
+        .eq("week_start_date", weekStart);
+
+      // Insertar SOLO el día target.
+      const { error: insertError } = await supabase
+        .from("training_planner")
+        .insert({
+          user_id: user.id,
+          week_start_date: weekStart,
+          day_of_week: targetDay,
+          workout_id: res.workoutId,
+          source_workout_id: templateId,
+        });
+
+      if (insertError) {
+        showToast(`Error: ${insertError.message}`);
+        return;
+      }
 
       await loadWeek();
       showToast(`1 day assigned`);
       return;
     }
 
+    // Flujo "aplicar a toda la semana".
     const res = await applyTemplateToPlanner(templateId, weekStart, mode);
     if (!res.ok) {
       showToast(`Error: ${res.error ?? "UNKNOWN"}`);
@@ -401,12 +417,10 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels, refreshSi
               const isPlanned = !!a;
               const variant = getVariant(day);
 
-              // Traduce la dificultad (Beginner → Principiante)
               const difficultyLabelText = a?.workout_difficulty
                 ? (labels.difficultyLabels[a.workout_difficulty as "Beginner" | "Intermediate" | "Advanced"] ?? a.workout_difficulty)
                 : null;
 
-              // Días activos: "Mar · Jue · Sáb"
               const activeDaysLabel =
                 a?.workout_dayNames && a.workout_dayNames.length > 0
                   ? a.workout_dayNames
