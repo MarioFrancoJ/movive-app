@@ -959,7 +959,11 @@
       "createExerciseCancel": "Cancelar",
       "createExerciseErrorName": "El nombre es obligatorio.",
       "createExerciseErrorGeneric": "Error al crear el ejercicio.",
-      "createExerciseBack": "Atrás"
+      "createExerciseBack": "Atrás",
+      "focusTitle": "Enfoque del programa",
+      "keyExercisesTitle": "Ejercicios clave",
+      "keyExercisesMore": "más",
+      "exercisesCount": "ejercicios"
     },
     "goalFatLoss": "Pérdida de grasa",
     "goalMuscleGain": "Ganancia muscular",
