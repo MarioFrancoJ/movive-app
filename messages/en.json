@@ -889,7 +889,7 @@
       "loading": "Loading exercises...",
       "title": "Create Workout",
       "subtitle": "Build a custom workout routine from your exercise library.",
-      "s": "Workout Details",
+      "details": "Workout Details",
       "name": "Name *",
       "namePlaceholder": "My Workout",
       "goal": "Goal",
