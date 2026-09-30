@@ -571,7 +571,7 @@
       "savePlan": "Save Plan",
       "clearWeek": "Clear Week",
       "adherence": "Adherence",
-      "adherence": "{c} of {p} meals consumed",
+      "adherenceDetail": "{c} of {p} meals consumed",
       "consumed": "Consumed",
       "pending": "Pending",
       "toastShoppingGenerated": "Shopping list updated: {added} added, {consolidated} consolidated.",
