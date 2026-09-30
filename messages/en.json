@@ -639,7 +639,7 @@
       "generate": "Generate from Meal Plan",
       "clearAll": "Clear All",
       "generatedSuccess": "✓ Ingredients added from your meal plan.",
-      "generated": "Added {added} ingredients from {recipes} recipes. {consolidated} were consolidated.",
+      "generatedDetail": "Added {added} ingredients from {recipes} recipes. {consolidated} were consolidated.",
       "generatedNoChange": "✓ Your list is already up to date.",
       "addIngredient": "Add Ingredient",
       "ingredient": "Ingredient",
