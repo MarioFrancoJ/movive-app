@@ -25,6 +25,15 @@ export interface DayCardProps {
   };
   onClick?: () => void;
   onRemove?: () => void;
+  // Drag & drop
+  draggable?: boolean;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDragLeave?: () => void;
+  onDrop?: (e: React.DragEvent) => void;
+  isDragging?: boolean;
+  isDropTarget?: boolean;
 }
 
 const VARIANT_STYLES: Record<DayVariant, string> = {
@@ -54,6 +63,14 @@ export default function DayCard({
   labels,
   onClick,
   onRemove,
+  draggable: isDraggable,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  isDragging,
+  isDropTarget,
 }: DayCardProps) {
   const interactive = typeof onClick === "function";
   const showRemove = (variant === "planned" || variant === "completed") && typeof onRemove === "function";
@@ -62,7 +79,8 @@ export default function DayCard({
   const cardClasses = [
     "relative flex min-h-[140px] w-full flex-col items-center justify-center gap-1.5 rounded-xl border p-4 text-center transition-all",
     VARIANT_STYLES[variant],
-    interactive ? "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30" : "",
+    interactive && !isDraggable ? "cursor-pointer" : "",
+    interactive ? "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30" : "",
   ].join(" ");
 
   const content = (
@@ -139,22 +157,48 @@ export default function DayCard({
   ) : null;
 
   return (
-    <div className="group relative">
+    <div
+      className={[
+        "group relative",
+        isDraggable ? "cursor-grab active:cursor-grabbing" : "",
+      ].join(" ")}
+      draggable={isDraggable}
+      onDragStart={isDraggable ? onDragStart : undefined}
+      onDragEnd={isDraggable ? onDragEnd : undefined}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+    >
       {interactive ? (
-        <button type="button" onClick={onClick} aria-label={day} className={cardClasses}>
+        <button
+          type="button"
+          onClick={onClick}
+          aria-label={day}
+          className={[
+            cardClasses,
+            isDragging ? "opacity-40" : "",
+            isDropTarget ? "ring-2 ring-primary/40 border-primary" : "",
+          ].join(" ")}
+        >
           {content}
           {hoverCta}
         </button>
       ) : (
-        <div role="group" className={cardClasses}>
+        <div
+          role="group"
+          className={[
+            cardClasses,
+            isDropTarget ? "ring-2 ring-primary/40" : "",
+          ].join(" ")}
+        >
           {content}
         </div>
       )}
 
-           {/* X para quitar del planner — mismo estilo que Meal Planner */}
       {showRemove && (
         <button
           type="button"
+          draggable={false}
           onClick={(e) => {
             e.stopPropagation();
             onRemove?.();
