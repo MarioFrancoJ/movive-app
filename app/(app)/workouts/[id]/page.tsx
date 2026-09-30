@@ -496,10 +496,6 @@ export default function WorkoutDetailPage() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <h1 className="text-3xl font-bold tracking-tight text-zinc-900">{workout.name}</h1>
-            {workout.description && (
-              <p className="mt-1 text-sm text-zinc-500">{workout.description}</p>
-            )}
-
             <div className="mt-3 flex flex-wrap items-center gap-2">
               {workout.goal && (
                 <span className={`rounded-md px-2.5 py-1 text-xs font-medium ${goalColor(workout.goal)}`}>
@@ -574,12 +570,19 @@ export default function WorkoutDetailPage() {
                 </div>
               )}
 
-              {muscles.length > 0 && (
+                            {muscles.length > 0 && (
                 <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
                   <p className="text-sm font-semibold text-zinc-900">{t.musclesTitle}</p>
-                  <p className="mt-3 text-sm text-zinc-600">
-                    {muscles.map((m) => muscleLabel(m, training)).join(" · ")}
-                  </p>
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {muscles.map((m) => (
+                      <span
+                        key={m}
+                        className="rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-medium text-zinc-700"
+                      >
+                        {muscleLabel(m, training)}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
