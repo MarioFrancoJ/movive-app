@@ -14,7 +14,6 @@ export interface DayCardProps {
   duration?: number;
   exerciseCount?: number;
   difficulty?: string | null;
-  /** Ej. "Mar · Jue · Sáb" (ya viene formateado del padre). */
   activeDaysLabel?: string;
   labels: {
     addWorkout: string;
@@ -26,7 +25,6 @@ export interface DayCardProps {
     verRutina?: string;
   };
   onClick?: () => void;
-  /** Menú de acciones secundarias (solo cuando planned/completed). */
   menu?: React.ReactNode;
 }
 
@@ -39,7 +37,6 @@ const VARIANT_STYLES: Record<DayVariant, string> = {
   rest:      "border-solid border-zinc-200 bg-zinc-50",
 };
 
-// Colores del badge de dificultad (mismo criterio que en el detalle).
 function difficultyPill(d: string | null | undefined): string {
   switch (d) {
     case "Beginner":     return "bg-success-light text-success";
@@ -71,19 +68,16 @@ export default function DayCard({
     "group relative flex min-h-[140px] w-full flex-col items-center justify-center gap-1.5 rounded-xl border p-4 text-center transition-all",
     VARIANT_STYLES[variant],
     interactive ? "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30" : "",
+    // Cuando el menú está activo, subimos el z-index del botón para que el
+    // panel no quede tapado por las cards vecinas.
+    showMenu ? "z-20" : "",
   ].join(" ");
 
-  // Contenido interno (compartido entre <button> y <div>)
   const content = (
     <>
       {variant === "empty" && (
         <>
-          <svg
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            className="h-6 w-6 text-zinc-400"
-            aria-hidden="true"
-          >
+          <svg viewBox="0 0 20 20" fill="currentColor" className="h-6 w-6 text-zinc-400" aria-hidden="true">
             <path d="M10 5a.75.75 0 0 1 .75.75v3.5h3.5a.75.75 0 0 1 0 1.5h-3.5v3.5a.75.75 0 0 1-1.5 0v-3.5h-3.5a.75.75 0 0 1 0-1.5h3.5v-3.5A.75.75 0 0 1 10 5Z" />
           </svg>
           <span className="text-xs font-medium text-zinc-500">{labels.addWorkout}</span>
@@ -101,10 +95,7 @@ export default function DayCard({
         <>
           <NavIcon
             name={variant === "completed" ? "workout-complete.svg" : "workout-planned.svg"}
-            className={[
-              "h-5 w-5",
-              variant === "completed" ? "text-success" : "text-blue-600",
-            ].join(" ")}
+            className={["h-5 w-5", variant === "completed" ? "text-success" : "text-blue-600"].join(" ")}
             aria-hidden="true"
           />
 
@@ -136,9 +127,7 @@ export default function DayCard({
           <span
             className={[
               "mt-0.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold",
-              variant === "completed"
-                ? "bg-white/60 text-success"
-                : "bg-white/60 text-blue-700",
+              variant === "completed" ? "bg-white/60 text-success" : "bg-white/60 text-blue-700",
             ].join(" ")}
           >
             {variant === "completed" ? labels.completed : labels.planned}
@@ -148,20 +137,19 @@ export default function DayCard({
     </>
   );
 
-  // Menú secundario (···) — solo cuando el variant lo permite
+  // Menú secundario (···) — subimos z-index a z-50 para que quede por encima de todo.
   const menuOverlay = showMenu ? (
     <span
       role="button"
       tabIndex={0}
       onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => e.stopPropagation()}
-      className="absolute right-1.5 top-1.5 z-10 inline-block opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
+      className="absolute right-1.5 top-1.5 z-50 inline-block opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
     >
       {menu}
     </span>
   ) : null;
 
-  // Hover CTA
   const hoverCta = showHoverCta ? (
     <span
       className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-center rounded-b-xl bg-blue-600/90 py-1.5 text-[11px] font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100"
@@ -171,15 +159,9 @@ export default function DayCard({
     </span>
   ) : null;
 
-  // Interactive: <button> real
   if (interactive) {
     return (
-      <button
-        type="button"
-        onClick={onClick}
-        aria-label={day}
-        className={baseClasses}
-      >
+      <button type="button" onClick={onClick} aria-label={day} className={baseClasses}>
         {content}
         {menuOverlay}
         {hoverCta}
@@ -187,7 +169,6 @@ export default function DayCard({
     );
   }
 
-  // Non-interactive: <div role="group">
   return (
     <div role="group" className={baseClasses}>
       {content}
