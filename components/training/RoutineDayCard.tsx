@@ -27,9 +27,12 @@ export interface RoutineExercise {
   rest_seconds: number;
   notes: string | null;
   sort_order: number;
+  image_url?: string | null;
+  video_url?: string | null;
 }
 
 export interface RoutineDayCardProps {
+  dayName?: string;
   exercises: RoutineExercise[];
   labels: {
     restDay: string;
@@ -37,6 +40,7 @@ export interface RoutineDayCardProps {
     addExercise: string;
     removeExercise: string;
     editExercise: string;
+    exercisesCount?: string;    // "ejercicios"
   };
   onAddExercise?: () => void;
   onRemoveExercise?: (exerciseId: string) => void;
@@ -46,11 +50,13 @@ export interface RoutineDayCardProps {
   ) => void;
   onOpenEditModal?: (exercise: RoutineExercise) => void;
   onReorderExercises?: (orderedIds: string[]) => void;
+  onOpenVideo?: (exercise: RoutineExercise) => void;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function RoutineDayCard({
+  dayName,
   exercises,
   labels,
   onAddExercise,
@@ -58,11 +64,10 @@ export default function RoutineDayCard({
   onUpdateExercise,
   onOpenEditModal,
   onReorderExercises,
+  onOpenVideo,
 }: RoutineDayCardProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      // Solo se activa el drag si el usuario mueve > 8px.
-      // Con eso, un click normal en el handle no inicia drag.
       activationConstraint: { distance: 8 },
     }),
     useSensor(KeyboardSensor, {
@@ -83,7 +88,17 @@ export default function RoutineDayCard({
   }
 
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+    <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+      {/* Header de la card: día + count */}
+      {dayName && (
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <p className="text-base font-bold text-zinc-900">{dayName}</p>
+          <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-semibold text-zinc-500">
+            {exercises.length} {labels.exercisesCount ?? "ejercicios"}
+          </span>
+        </div>
+      )}
+
       {exercises.length === 0 ? (
         <p className="text-sm text-zinc-400">{labels.restDay}</p>
       ) : (
@@ -96,7 +111,7 @@ export default function RoutineDayCard({
             items={exercises.map((e) => e.id)}
             strategy={verticalListSortingStrategy}
           >
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3">
               {exercises.map((ex) => (
                 <SortableExerciseRow
                   key={ex.id}
@@ -109,6 +124,7 @@ export default function RoutineDayCard({
                   onUpdate={onUpdateExercise}
                   onRemove={onRemoveExercise}
                   onOpenEditModal={onOpenEditModal}
+                  onOpenVideo={onOpenVideo}
                 />
               ))}
             </div>
