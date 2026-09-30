@@ -965,7 +965,14 @@
       "focusTitle": "Program focus",
       "keyExercisesTitle": "Key exercises",
       "keyExercisesMore": "more",
-      "exercisesCount": "exercises"
+      "exercisesCount": "exercises",
+      "statsTitle": "Routine stats",
+      "statsStrength": "Strength",
+      "statsCardio": "Cardio",
+      "statsCalories": "Est. calories",
+      "statsLevel": "Level",
+      "daysSuffix": "days",
+      "exercisesSuffixShort": "exercises"
     },
     "goalFatLoss": "Fat Loss",
     "goalMuscleGain": "Muscle Gain",
