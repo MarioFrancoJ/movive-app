@@ -19,6 +19,7 @@ type WorkoutsDict = ReturnType<typeof useDictionary>["dict"]["workouts"];
 
 type WorkoutDifficulty = "Beginner" | "Intermediate" | "Advanced";
 type WorkoutGoal = "Fat Loss" | "Muscle Gain" | "Strength" | "Endurance" | "Mobility" | "General Fitness";
+type ExerciseCategory = "Strength" | "Calisthenics" | "Cardio" | "Mobility" | "Flexibility";
 
 interface WorkoutExercise {
   id: string;
@@ -31,6 +32,7 @@ interface WorkoutExercise {
   sort_order: number;
   image_url: string | null;
   video_url: string | null;
+  category: ExerciseCategory | null;
 }
 
 interface WorkoutDay {
@@ -53,6 +55,13 @@ interface WorkoutDetail {
 interface VideoExercise {
   name: string;
   video_url: string;
+}
+
+interface RoutineStats {
+  strengthPct: number;
+  cardioPct: number;
+  caloriesMin: number;
+  caloriesMax: number;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -112,6 +121,59 @@ function dayLabel(name: string, w: WorkoutsDict): string {
   return map[name] ?? name;
 }
 
+/** Redondea un porcentaje al múltiplo de 5 más cercano (entre 0 y 100). */
+function roundTo5(n: number): number {
+  return Math.max(0, Math.min(100, Math.round(n / 5) * 5));
+}
+
+/** Calcula los stats de la rutina a partir de los ejercicios. */
+function computeRoutineStats(
+  workout: WorkoutDetail,
+  totalExercises: number
+): RoutineStats {
+  if (totalExercises === 0) {
+    return { strengthPct: 0, cardioPct: 0, caloriesMin: 0, caloriesMax: 0 };
+  }
+
+  // Fuerza vs Cardio — ponderado por sets.
+  let strengthSets = 0;
+  let cardioSets = 0;
+  for (const day of workout.workout_days) {
+    for (const ex of day.workout_exercises) {
+      const sets = Math.max(1, ex.sets || 1);
+      if (ex.category === "Cardio") {
+        cardioSets += sets;
+      } else if (
+        ex.category === "Strength" ||
+        ex.category === "Calisthenics"
+      ) {
+        strengthSets += sets;
+      }
+      // Mobility / Flexibility no suman a Fuerza ni Cardio.
+    }
+  }
+  const totalCategorized = strengthSets + cardioSets;
+  const strengthPct = totalCategorized > 0
+    ? roundTo5((strengthSets / totalCategorized) * 100)
+    : 0;
+  const cardioPct = totalCategorized > 0
+    ? 100 - strengthPct
+    : 0;
+
+  // Calorías — MET por categoría dominante × duración × peso base (70 kg).
+  const duration = workout.duration ?? 30;
+  let met = 6.0; // mixta por defecto
+  if (cardioPct >= 60) met = 8.0;
+  else if (strengthPct >= 60) met = 5.0;
+  else if (cardioPct <= 20 && strengthPct <= 20) met = 3.0;
+
+  const baseKcal = Math.round((duration * met * 70) / 60);
+  const caloriesMin = Math.round(baseKcal * 0.85);
+  const caloriesMax = Math.round(baseKcal * 1.15);
+
+  return { strengthPct, cardioPct, caloriesMin, caloriesMax };
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function WorkoutDetailPage() {
@@ -131,8 +193,6 @@ export default function WorkoutDetailPage() {
   const loadWorkout = useCallback(async () => {
     const supabase = createClient();
 
-    // JOIN con exercises para traer image_url y video_url.
-    // workout_exercises.exercise_id es nullable (custom exercises), por eso LEFT JOIN.
     const { data, error } = await supabase
       .from("workouts")
       .select(`
@@ -141,7 +201,7 @@ export default function WorkoutDetailPage() {
           id, day_name, sort_order,
           workout_exercises (
             id, exercise_id, exercise_name, sets, reps, rest_seconds, notes, sort_order,
-            exercise:exercises ( image_url, video_url )
+            exercise:exercises ( image_url, video_url, category )
           )
         )
       `)
@@ -155,24 +215,24 @@ export default function WorkoutDetailPage() {
           ...day,
           workout_exercises: (day.workout_exercises || [])
             .sort((a: any, b: any) => a.sort_order - b.sort_order)
-            .map((ex: any) => ({
-              id: ex.id,
-              exercise_id: ex.exercise_id,
-              exercise_name: ex.exercise_name,
-              sets: ex.sets,
-              reps: ex.reps,
-              rest_seconds: ex.rest_seconds,
-              notes: ex.notes,
-              sort_order: ex.sort_order,
-              // Supabase devuelve "exercise" como array u objeto según la relación.
-              // Normalizamos a valores planos.
-              image_url: Array.isArray(ex.exercise)
-                ? (ex.exercise[0]?.image_url ?? null)
-                : (ex.exercise?.image_url ?? null),
-              video_url: Array.isArray(ex.exercise)
-                ? (ex.exercise[0]?.video_url ?? null)
-                : (ex.exercise?.video_url ?? null),
-            })),
+            .map((ex: any) => {
+              const exData = Array.isArray(ex.exercise)
+                ? ex.exercise[0]
+                : ex.exercise;
+              return {
+                id: ex.id,
+                exercise_id: ex.exercise_id,
+                exercise_name: ex.exercise_name,
+                sets: ex.sets,
+                reps: ex.reps,
+                rest_seconds: ex.rest_seconds,
+                notes: ex.notes,
+                sort_order: ex.sort_order,
+                image_url: exData?.image_url ?? null,
+                video_url: exData?.video_url ?? null,
+                category: (exData?.category ?? null) as ExerciseCategory | null,
+              };
+            }),
         }));
 
       setWorkout({
@@ -398,6 +458,7 @@ export default function WorkoutDetailPage() {
   const totalExercises = workout.workout_days.reduce((s, d) => s + d.workout_exercises.length, 0);
   const keyExercises = getKeyExercises();
   const keyExercisesExtra = totalExercises - keyExercises.length;
+  const stats = computeRoutineStats(workout, totalExercises);
 
   return (
     <>
@@ -411,149 +472,162 @@ export default function WorkoutDetailPage() {
           <div className="min-w-0 flex-1">
             <h1 className="text-3xl font-bold tracking-tight text-zinc-900">{workout.name}</h1>
 
-            {/* Badges de objetivo + nivel */}
+            {/* Badges objetivo + nivel (sin iconos) */}
             <div className="mt-3 flex flex-wrap items-center gap-2">
               {workout.goal && (
-                <span className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ${goalColor(workout.goal)}`}>
-                  <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm0-2a6 6 0 1 0 0-12 6 6 0 0 0 0 12Zm0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0-2a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" clipRule="evenodd" />
-                  </svg>
+                <span className={`rounded-md px-2.5 py-1 text-xs font-medium ${goalColor(workout.goal)}`}>
                   {goalLabel(workout.goal, w)}
                 </span>
               )}
               {workout.difficulty && (
-                <span className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ${difficultyColor(workout.difficulty)}`}>
-                  <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
-                    <path d="M15.5 2A1.5 1.5 0 0 0 14 3.5V5h-1V3.5a1.5 1.5 0 0 0-3 0V5h-1V3.5a1.5 1.5 0 0 0-3 0V5H5V3.5a1.5 1.5 0 0 0-3 0v13A1.5 1.5 0 0 0 3.5 18h13a1.5 1.5 0 0 0 1.5-1.5v-13A1.5 1.5 0 0 0 16.5 2h-1ZM5 7h10v9H5V7Z" />
-                  </svg>
+                <span className={`rounded-md px-2.5 py-1 text-xs font-medium ${difficultyColor(workout.difficulty)}`}>
                   {difficultyLabel(workout.difficulty, w)}
                 </span>
               )}
             </div>
 
-            {/* Meta con iconos */}
-            <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-zinc-500">
-              {workout.duration && (
-                <span className="inline-flex items-center gap-1.5">
-                  <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-zinc-400" aria-hidden="true">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-13a.75.75 0 0 0-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 0 0 0-1.5h-3.25V5Z" clipRule="evenodd" />
-                  </svg>
-                  {workout.duration} min
+            {/* Meta (sin iconos, separado por ·) */}
+            <p className="mt-3 text-sm text-zinc-500">
+              {[
+                workout.duration ? `${workout.duration} min` : null,
+                `${workout.workout_days.length} ${t.daysSuffix ?? "días"}`,
+                `${totalExercises} ${t.exercisesSuffixShort ?? "ejercicios"}`,
+              ].filter(Boolean).join(" · ")}
+            </p>
+
+            {/* Descripción como texto plano */}
+            {workout.description && (
+              <p className="mt-3 max-w-2xl text-sm text-zinc-600">{workout.description}</p>
+            )}
+
+            {/* CTA protagonista */}
+            <div className="mt-5">
+              {totalExercises > 0 ? (
+                <Link
+                  href={`/training/start?workout=${workout.id}`}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover"
+                >
+                  {t.startWorkout}
+                </Link>
+              ) : (
+                <span
+                  title={t.startDisabledTooltip}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-zinc-100 px-6 py-3 text-sm font-semibold text-zinc-400"
+                >
+                  {t.startWorkout}
                 </span>
               )}
-              <span className="inline-flex items-center gap-1.5">
-                <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-zinc-400" aria-hidden="true">
-                  <path fillRule="evenodd" d="M5.75 2a.75.75 0 0 1 .75.75V4h7V2.75a.75.75 0 0 1 1.5 0V4h.25A2.75 2.75 0 0 1 18 6.75v8.5A2.75 2.75 0 0 1 15.25 18H4.75A2.75 2.75 0 0 1 2 15.25v-8.5A2.75 2.75 0 0 1 4.75 4H5V2.75A.75.75 0 0 1 5.75 2Zm-1 5.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-6.5c0-.69-.56-1.25-1.25-1.25H4.75Z" clipRule="evenodd" />
-                </svg>
-                {workout.workout_days.length} días
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-zinc-400" aria-hidden="true">
-                  <path d="M10 2a.75.75 0 0 1 .75.75v1.5h1.5a.75.75 0 0 1 0 1.5h-1.5v1.5a.75.75 0 0 1-1.5 0v-1.5h-1.5a.75.75 0 0 1 0-1.5h1.5v-1.5A.75.75 0 0 1 10 2ZM5.75 8a.75.75 0 0 1 .75.75v1.5h1.5a.75.75 0 0 1 0 1.5h-1.5v1.5a.75.75 0 0 1-1.5 0v-1.5h-1.5a.75.75 0 0 1 0-1.5h1.5v-1.5A.75.75 0 0 1 5.75 8ZM14.25 8a.75.75 0 0 1 .75.75v1.5h1.5a.75.75 0 0 1 0 1.5h-1.5v1.5a.75.75 0 0 1-1.5 0v-1.5h-1.5a.75.75 0 0 1 0-1.5h1.5v-1.5a.75.75 0 0 1 .75-.75Z" />
-                </svg>
-                {totalExercises} ejercicios
-              </span>
             </div>
           </div>
 
+          {/* Duplicar / Eliminar — sin iconos */}
           <div className="flex flex-wrap items-center gap-2">
-            {totalExercises > 0 ? (
-              <Link
-                href={`/training/start?workout=${workout.id}`}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary-hover"
-              >
-                <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
-                  <path d="M6.3 2.84A1.5 1.5 0 0 0 4 4.11v11.78a1.5 1.5 0 0 0 2.3 1.27l9.344-5.891a1.5 1.5 0 0 0 0-2.538L6.3 2.841Z" />
-                </svg>
-                {t.startWorkout}
-              </Link>
-            ) : (
-              <span
-                title={t.startDisabledTooltip}
-                className="cursor-not-allowed rounded-lg bg-zinc-100 px-4 py-2 text-xs font-semibold text-zinc-400"
-              >
-                {t.startWorkout}
-              </span>
-            )}
             <button
               type="button"
               onClick={handleDuplicate}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50"
+              className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50"
             >
-              <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
-                <path d="M7 3.5A1.5 1.5 0 0 1 8.5 2h5A1.5 1.5 0 0 1 15 3.5v9a1.5 1.5 0 0 1-1.5 1.5h-5A1.5 1.5 0 0 1 7 12.5v-9Z" />
-                <path d="M5 6.5A1.5 1.5 0 0 0 3.5 8v8A1.5 1.5 0 0 0 5 17.5h5A1.5 1.5 0 0 0 11.5 16H8.5A2.5 2.5 0 0 1 6 13.5V6.5H5Z" />
-              </svg>
               {dict.common.duplicate}
             </button>
             <button
               type="button"
               onClick={handleDelete}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50"
+              className="rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50"
             >
-              <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
-                <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41 41 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5Z" clipRule="evenodd" />
-              </svg>
               {dict.common.delete}
             </button>
           </div>
         </div>
 
-        {/* Enfoque del programa (description) */}
-        {workout.description && (
-          <div className="flex items-start gap-3 rounded-xl border border-success-light bg-success-light/40 p-4">
-            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white">
-              <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-success" aria-hidden="true">
-                <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm0-2a6 6 0 1 0 0-12 6 6 0 0 0 0 12Zm0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0-2a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" clipRule="evenodd" />
-              </svg>
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-zinc-900">{t.focusTitle}</p>
-              <p className="mt-0.5 text-sm text-zinc-600">{workout.description}</p>
-            </div>
-          </div>
-        )}
+        {/* Grid 2 columnas: Ejercicios clave + Estadísticas */}
+        {(keyExercises.length > 0 || totalExercises > 0) && (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {/* Ejercicios clave */}
+            {keyExercises.length > 0 && (
+              <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-zinc-400" aria-hidden="true">
+                    <path fillRule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401Z" clipRule="evenodd" />
+                  </svg>
+                  <p className="text-sm font-semibold text-zinc-900">{t.keyExercisesTitle}</p>
+                </div>
+                <div className="mt-3 flex flex-wrap items-center gap-4">
+                  {keyExercises.map((ex) => (
+                    <div key={ex.id} className="flex flex-col items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (ex.video_url) {
+                            setVideoExercise({ name: ex.exercise_name, video_url: ex.video_url });
+                          }
+                        }}
+                        disabled={!ex.video_url}
+                        className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-zinc-100 shadow-sm transition-transform hover:scale-105 disabled:hover:scale-100 disabled:cursor-default"
+                        aria-label={ex.exercise_name}
+                      >
+                        {ex.image_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={ex.image_url} alt={ex.exercise_name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
+                        ) : (
+                          <span className="text-xl">💪</span>
+                        )}
+                      </button>
+                      <span className="max-w-[70px] truncate text-center text-[11px] font-medium text-zinc-600">
+                        {ex.exercise_name}
+                      </span>
+                    </div>
+                  ))}
+                  {keyExercisesExtra > 0 && (
+                    <div className="flex h-14 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50 px-3 text-xs font-semibold text-zinc-500">
+                      +{keyExercisesExtra} {t.keyExercisesMore}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
-        {/* Ejercicios clave */}
-        {keyExercises.length > 0 && (
-          <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center gap-2">
-              <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-zinc-400" aria-hidden="true">
-                <path fillRule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401Z" clipRule="evenodd" />
-              </svg>
-              <p className="text-sm font-semibold text-zinc-900">{t.keyExercisesTitle}</p>
-            </div>
-            <div className="mt-3 flex flex-wrap items-center gap-4">
-              {keyExercises.map((ex) => (
-                <div key={ex.id} className="flex flex-col items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (ex.video_url) {
-                        setVideoExercise({ name: ex.exercise_name, video_url: ex.video_url });
-                      }
-                    }}
-                    disabled={!ex.video_url}
-                    className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-zinc-100 shadow-sm transition-transform hover:scale-105 disabled:hover:scale-100 disabled:cursor-default"
-                    aria-label={ex.exercise_name}
-                  >
-                    {ex.image_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={ex.image_url} alt={ex.exercise_name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
-                    ) : (
-                      <span className="text-xl">💪</span>
-                    )}
-                  </button>
-                  <span className="max-w-[70px] truncate text-center text-[11px] font-medium text-zinc-600">
-                    {ex.exercise_name}
-                  </span>
+            {/* Estadísticas de la rutina */}
+            <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+              <div className="flex items-center gap-2">
+                <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-zinc-400" aria-hidden="true">
+                  <path d="M2 10a8 8 0 1 1 16 0 8 8 0 0 1-16 0Zm8-6a.75.75 0 0 1 .75.75v5.19l3.72 3.72a.75.75 0 0 1-1.06 1.06l-3.5-3.5a.75.75 0 0 1-.22-.53V4.75A.75.75 0 0 1 10 4Z" />
+                </svg>
+                <p className="text-sm font-semibold text-zinc-900">{t.statsTitle}</p>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <div className="rounded-lg bg-zinc-50 p-3">
+                  <div className="flex items-center gap-1.5 text-[11px] font-medium text-zinc-500">
+                    <span aria-hidden="true">💪</span>
+                    {t.statsStrength}
+                  </div>
+                  <p className="mt-1 text-lg font-bold text-zinc-900">{stats.strengthPct}%</p>
                 </div>
-              ))}
-              {keyExercisesExtra > 0 && (
-                <div className="flex h-14 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50 px-3 text-xs font-semibold text-zinc-500">
-                  +{keyExercisesExtra} {t.keyExercisesMore}
+                <div className="rounded-lg bg-zinc-50 p-3">
+                  <div className="flex items-center gap-1.5 text-[11px] font-medium text-zinc-500">
+                    <span aria-hidden="true">❤️</span>
+                    {t.statsCardio}
+                  </div>
+                  <p className="mt-1 text-lg font-bold text-zinc-900">{stats.cardioPct}%</p>
                 </div>
-              )}
+                <div className="rounded-lg bg-zinc-50 p-3">
+                  <div className="flex items-center gap-1.5 text-[11px] font-medium text-zinc-500">
+                    <span aria-hidden="true">🔥</span>
+                    {t.statsCalories}
+                  </div>
+                  <p className="mt-1 text-lg font-bold text-zinc-900">
+                    {stats.caloriesMin}–{stats.caloriesMax}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-zinc-50 p-3">
+                  <div className="flex items-center gap-1.5 text-[11px] font-medium text-zinc-500">
+                    <span aria-hidden="true">🎯</span>
+                    {t.statsLevel}
+                  </div>
+                  <p className="mt-1 text-lg font-bold text-zinc-900">
+                    {workout.difficulty ? difficultyLabel(workout.difficulty, w) : "—"}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         )}
