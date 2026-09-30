@@ -22,8 +22,8 @@ export interface DayCardProps {
     planned: string;
     completed: string;
     min: string;
-    exercisesSuffix?: string;   // ej. "ejercicios" / "exercises"
-    verRutina?: string;         // ej. "Ver rutina →"
+    exercisesSuffix?: string;
+    verRutina?: string;
   };
   onClick?: () => void;
   /** Menú de acciones secundarias (solo cuando planned/completed). */
@@ -73,6 +73,7 @@ export default function DayCard({
     interactive ? "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30" : "",
   ].join(" ");
 
+  // Contenido interno (compartido entre <button> y <div>)
   const content = (
     <>
       {variant === "empty" && (
@@ -107,19 +108,16 @@ export default function DayCard({
             aria-hidden="true"
           />
 
-          {/* Nombre de la rutina */}
           <span className="text-xs font-semibold text-zinc-900 line-clamp-2">
             {workoutName ?? ""}
           </span>
 
-          {/* Días activos */}
           {activeDaysLabel && (
             <span className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">
               {activeDaysLabel}
             </span>
           )}
 
-          {/* Meta: ejercicios + duración */}
           <span className="text-[11px] text-zinc-500">
             {typeof exerciseCount === "number" && exerciseCount > 0 && (
               <>{exerciseCount} {labels.exercisesSuffix ?? "ex"} · </>
@@ -129,14 +127,12 @@ export default function DayCard({
             )}
           </span>
 
-          {/* Badge dificultad */}
           {difficulty && (
             <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${difficultyPill(difficulty)}`}>
               {difficulty}
             </span>
           )}
 
-          {/* Estado */}
           <span
             className={[
               "mt-0.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold",
@@ -152,8 +148,30 @@ export default function DayCard({
     </>
   );
 
-    // Interactive: <button> real (mejor soporte móvil/click) envolviendo el contenido.
-  // Non-interactive: <div role="group">.
+  // Menú secundario (···) — solo cuando el variant lo permite
+  const menuOverlay = showMenu ? (
+    <span
+      role="button"
+      tabIndex={0}
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
+      className="absolute right-1.5 top-1.5 z-10 inline-block opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
+    >
+      {menu}
+    </span>
+  ) : null;
+
+  // Hover CTA
+  const hoverCta = showHoverCta ? (
+    <span
+      className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-center rounded-b-xl bg-blue-600/90 py-1.5 text-[11px] font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100"
+      aria-hidden="true"
+    >
+      {labels.verRutina}
+    </span>
+  ) : null;
+
+  // Interactive: <button> real
   if (interactive) {
     return (
       <button
@@ -163,34 +181,13 @@ export default function DayCard({
         className={baseClasses}
       >
         {content}
-
-        {/* Menú secundario (···) — dentro de un button real no anidamos otro button,
-            pero usamos un span clickeable con stopPropagation. */}
-        {showMenu && (
-          <span
-            role="button"
-            tabIndex={0}
-            className="absolute right-1.5 top-1.5 z-10 inline-block opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.stopPropagation()}
-          >
-            {menu}
-          </span>
-        )}
-
-        {/* Hover CTA */}
-        {showHoverCta && (
-          <span
-            className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-center rounded-b-xl bg-blue-600/90 py-1.5 text-[11px] font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100"
-            aria-hidden="true"
-          >
-            {labels.verRutina}
-          </span>
-        )}
+        {menuOverlay}
+        {hoverCta}
       </button>
     );
   }
 
+  // Non-interactive: <div role="group">
   return (
     <div role="group" className={baseClasses}>
       {content}
