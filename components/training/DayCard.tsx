@@ -2,8 +2,6 @@
 
 import NavIcon from "@/components/ui/NavIcon";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-
 export type DayName = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
 export type DayVariant = "empty" | "planned" | "completed" | "rest";
 
@@ -28,8 +26,6 @@ export interface DayCardProps {
   menu?: React.ReactNode;
 }
 
-// ── Variant styles ────────────────────────────────────────────────────────────
-
 const VARIANT_STYLES: Record<DayVariant, string> = {
   empty:     "border-dashed border-zinc-300 bg-white hover:border-zinc-400 hover:bg-zinc-50",
   planned:   "border-solid border-blue-200 bg-blue-50 hover:border-blue-300",
@@ -45,8 +41,6 @@ function difficultyPill(d: string | null | undefined): string {
     default:             return "bg-zinc-100 text-zinc-600";
   }
 }
-
-// ── Component ─────────────────────────────────────────────────────────────────
 
 export default function DayCard({
   day,
@@ -64,13 +58,10 @@ export default function DayCard({
   const showMenu = (variant === "planned" || variant === "completed") && !!menu;
   const showHoverCta = variant === "planned" && !!labels.verRutina;
 
-  const baseClasses = [
+  const cardClasses = [
     "group relative flex min-h-[140px] w-full flex-col items-center justify-center gap-1.5 rounded-xl border p-4 text-center transition-all",
     VARIANT_STYLES[variant],
     interactive ? "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30" : "",
-    // Cuando el menú está activo, subimos el z-index del botón para que el
-    // panel no quede tapado por las cards vecinas.
-    showMenu ? "z-20" : "",
   ].join(" ");
 
   const content = (
@@ -137,19 +128,6 @@ export default function DayCard({
     </>
   );
 
-  // Menú secundario (···) — subimos z-index a z-50 para que quede por encima de todo.
-  const menuOverlay = showMenu ? (
-    <span
-      role="button"
-      tabIndex={0}
-      onClick={(e) => e.stopPropagation()}
-      onKeyDown={(e) => e.stopPropagation()}
-      className="absolute right-1.5 top-1.5 z-50 inline-block opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
-    >
-      {menu}
-    </span>
-  ) : null;
-
   const hoverCta = showHoverCta ? (
     <span
       className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-center rounded-b-xl bg-blue-600/90 py-1.5 text-[11px] font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100"
@@ -159,19 +137,26 @@ export default function DayCard({
     </span>
   ) : null;
 
-  if (interactive) {
-    return (
-      <button type="button" onClick={onClick} aria-label={day} className={baseClasses}>
-        {content}
-        {menuOverlay}
-        {hoverCta}
-      </button>
-    );
-  }
-
+  // El menú va FUERA del <button> (hermano), para que no se recorte.
+  // El wrapper relativo controla la posición.
   return (
-    <div role="group" className={baseClasses}>
-      {content}
+    <div className="relative">
+      {interactive ? (
+        <button type="button" onClick={onClick} aria-label={day} className={cardClasses}>
+          {content}
+          {hoverCta}
+        </button>
+      ) : (
+        <div role="group" className={cardClasses}>
+          {content}
+        </div>
+      )}
+
+      {showMenu && (
+        <div className="absolute right-1.5 top-1.5 z-50 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+          {menu}
+        </div>
+      )}
     </div>
   );
 }
