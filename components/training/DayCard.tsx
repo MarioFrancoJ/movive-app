@@ -21,9 +21,10 @@ export interface DayCardProps {
     min: string;
     exercisesSuffix?: string;
     verRutina?: string;
+    removeFromPlanner?: string;
   };
   onClick?: () => void;
-  menu?: React.ReactNode;
+  onRemove?: () => void;
 }
 
 const VARIANT_STYLES: Record<DayVariant, string> = {
@@ -52,14 +53,14 @@ export default function DayCard({
   activeDaysLabel,
   labels,
   onClick,
-  menu,
+  onRemove,
 }: DayCardProps) {
   const interactive = typeof onClick === "function";
-  const showMenu = (variant === "planned" || variant === "completed") && !!menu;
+  const showRemove = (variant === "planned" || variant === "completed") && typeof onRemove === "function";
   const showHoverCta = variant === "planned" && !!labels.verRutina;
 
   const cardClasses = [
-    "group relative flex min-h-[140px] w-full flex-col items-center justify-center gap-1.5 rounded-xl border p-4 text-center transition-all",
+    "relative flex min-h-[140px] w-full flex-col items-center justify-center gap-1.5 rounded-xl border p-4 text-center transition-all",
     VARIANT_STYLES[variant],
     interactive ? "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30" : "",
   ].join(" ");
@@ -137,10 +138,8 @@ export default function DayCard({
     </span>
   ) : null;
 
-  // El menú va FUERA del <button> (hermano), para que no se recorte.
-  // El wrapper relativo controla la posición.
   return (
-    <div className="relative">
+    <div className="group relative">
       {interactive ? (
         <button type="button" onClick={onClick} aria-label={day} className={cardClasses}>
           {content}
@@ -152,10 +151,22 @@ export default function DayCard({
         </div>
       )}
 
-      {showMenu && (
-        <div className="absolute right-1.5 top-1.5 z-50 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-          {menu}
-        </div>
+      {/* X para quitar del planner — fuera del botón para que no se recorte */}
+      {showRemove && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove?.();
+          }}
+          aria-label={labels.removeFromPlanner ?? "Remove from planner"}
+          title={labels.removeFromPlanner ?? "Remove from planner"}
+          className="absolute right-1.5 top-1.5 z-20 flex h-6 w-6 items-center justify-center rounded-md bg-white/90 text-zinc-400 shadow-sm transition-colors hover:bg-red-50 hover:text-red-600"
+        >
+          <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
+            <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+          </svg>
+        </button>
       )}
     </div>
   );
