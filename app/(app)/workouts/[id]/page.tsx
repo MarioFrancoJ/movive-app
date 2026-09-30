@@ -16,6 +16,7 @@ import type { RoutineExercise } from "@/components/training/RoutineDayCard";
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type WorkoutsDict = ReturnType<typeof useDictionary>["dict"]["workouts"];
+type TrainingDict = ReturnType<typeof useDictionary>["dict"]["training"];
 
 type WorkoutDifficulty = "Beginner" | "Intermediate" | "Advanced";
 type WorkoutGoal = "Fat Loss" | "Muscle Gain" | "Strength" | "Endurance" | "Mobility" | "General Fitness";
@@ -33,6 +34,7 @@ interface WorkoutExercise {
   image_url: string | null;
   video_url: string | null;
   category: ExerciseCategory | null;
+  muscle_group: string | null;
 }
 
 interface WorkoutDay {
@@ -57,11 +59,9 @@ interface VideoExercise {
   video_url: string;
 }
 
-interface RoutineStats {
-  strengthPct: number;
-  cardioPct: number;
-  caloriesMin: number;
-  caloriesMax: number;
+interface ObjectiveItem {
+  icon: string;
+  label: string;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -121,57 +121,91 @@ function dayLabel(name: string, w: WorkoutsDict): string {
   return map[name] ?? name;
 }
 
-/** Redondea un porcentaje al múltiplo de 5 más cercano (entre 0 y 100). */
+/** Traduce el muscle_group a display label reusando dict.training.exercises.muscles. */
+function muscleLabel(muscle: string, training: TrainingDict): string {
+  const map = training.exercises.muscles as Record<string, string>;
+  return map[muscle] ?? muscle;
+}
+
+/** Redondea al múltiplo de 5 más cercano entre 0-100. */
 function roundTo5(n: number): number {
   return Math.max(0, Math.min(100, Math.round(n / 5) * 5));
 }
 
-/** Calcula los stats de la rutina a partir de los ejercicios. */
-function computeRoutineStats(
-  workout: WorkoutDetail,
-  totalExercises: number
-): RoutineStats {
-  if (totalExercises === 0) {
-    return { strengthPct: 0, cardioPct: 0, caloriesMin: 0, caloriesMax: 0 };
+/** Objetivos derivados del goal — mapeo fijo. */
+function objectivesForGoal(goal: WorkoutGoal | null): ObjectiveItem[] {
+  switch (goal) {
+    case "Fat Loss":
+      return [
+        { icon: "🔥", label: "Pérdida de grasa" },
+        { icon: "❤️", label: "Resistencia cardiovascular" },
+        { icon: "⚡", label: "Acondicionamiento físico" },
+      ];
+    case "Muscle Gain":
+      return [
+        { icon: "💪", label: "Hipertrofia" },
+        { icon: "🏋️", label: "Fuerza" },
+        { icon: "⚡", label: "Acondicionamiento" },
+      ];
+    case "Strength":
+      return [
+        { icon: "🏋️", label: "Fuerza máxima" },
+        { icon: "💪", label: "Potencia" },
+        { icon: "⚡", label: "Acondicionamiento" },
+      ];
+    case "Endurance":
+      return [
+        { icon: "❤️", label: "Resistencia cardiovascular" },
+        { icon: "🫁", label: "Capacidad aeróbica" },
+        { icon: "⚡", label: "Acondicionamiento" },
+      ];
+    case "Mobility":
+      return [
+        { icon: "🤸", label: "Flexibilidad" },
+        { icon: "🧘", label: "Movilidad articular" },
+        { icon: "🩹", label: "Prevención de lesiones" },
+      ];
+    case "General Fitness":
+      return [
+        { icon: "⚖️", label: "Equilibrio general" },
+        { icon: "❤️", label: "Salud cardiovascular" },
+        { icon: "💪", label: "Fuerza funcional" },
+      ];
+    default:
+      return [];
   }
+}
 
-  // Fuerza vs Cardio — ponderado por sets.
+/** Top músculos por frecuencia (hasta 6). */
+function getTopMuscles(workout: WorkoutDetail, max = 6): string[] {
+  const counts = new Map<string, number>();
+  for (const day of workout.workout_days) {
+    for (const ex of day.workout_exercises) {
+      if (!ex.muscle_group) continue;
+      counts.set(ex.muscle_group, (counts.get(ex.muscle_group) ?? 0) + 1);
+    }
+  }
+  return Array.from(counts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, max)
+    .map(([m]) => m);
+}
+
+/** Fuerza vs Cardio — ponderado por sets. */
+function getStrengthCardioPct(workout: WorkoutDetail): { strength: number; cardio: number } {
   let strengthSets = 0;
   let cardioSets = 0;
   for (const day of workout.workout_days) {
     for (const ex of day.workout_exercises) {
       const sets = Math.max(1, ex.sets || 1);
-      if (ex.category === "Cardio") {
-        cardioSets += sets;
-      } else if (
-        ex.category === "Strength" ||
-        ex.category === "Calisthenics"
-      ) {
-        strengthSets += sets;
-      }
-      // Mobility / Flexibility no suman a Fuerza ni Cardio.
+      if (ex.category === "Cardio") cardioSets += sets;
+      else if (ex.category === "Strength" || ex.category === "Calisthenics") strengthSets += sets;
     }
   }
-  const totalCategorized = strengthSets + cardioSets;
-  const strengthPct = totalCategorized > 0
-    ? roundTo5((strengthSets / totalCategorized) * 100)
-    : 0;
-  const cardioPct = totalCategorized > 0
-    ? 100 - strengthPct
-    : 0;
-
-  // Calorías — MET por categoría dominante × duración × peso base (70 kg).
-  const duration = workout.duration ?? 30;
-  let met = 6.0; // mixta por defecto
-  if (cardioPct >= 60) met = 8.0;
-  else if (strengthPct >= 60) met = 5.0;
-  else if (cardioPct <= 20 && strengthPct <= 20) met = 3.0;
-
-  const baseKcal = Math.round((duration * met * 70) / 60);
-  const caloriesMin = Math.round(baseKcal * 0.85);
-  const caloriesMax = Math.round(baseKcal * 1.15);
-
-  return { strengthPct, cardioPct, caloriesMin, caloriesMax };
+  const total = strengthSets + cardioSets;
+  if (total === 0) return { strength: 0, cardio: 0 };
+  const strength = roundTo5((strengthSets / total) * 100);
+  return { strength, cardio: 100 - strength };
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -181,6 +215,7 @@ export default function WorkoutDetailPage() {
   const { dict } = useDictionary();
   const t = dict.workouts.detail;
   const w = dict.workouts;
+  const training = dict.training;
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const [workout, setWorkout] = useState<WorkoutDetail | null>(null);
@@ -189,7 +224,6 @@ export default function WorkoutDetailPage() {
   const [editingExercise, setEditingExercise] = useState<RoutineExercise | null>(null);
   const [videoExercise, setVideoExercise] = useState<VideoExercise | null>(null);
 
-  // ── Load workout ──
   const loadWorkout = useCallback(async () => {
     const supabase = createClient();
 
@@ -201,7 +235,7 @@ export default function WorkoutDetailPage() {
           id, day_name, sort_order,
           workout_exercises (
             id, exercise_id, exercise_name, sets, reps, rest_seconds, notes, sort_order,
-            exercise:exercises ( image_url, video_url, category )
+            exercise:exercises ( image_url, video_url, category, muscle_group )
           )
         )
       `)
@@ -216,9 +250,7 @@ export default function WorkoutDetailPage() {
           workout_exercises: (day.workout_exercises || [])
             .sort((a: any, b: any) => a.sort_order - b.sort_order)
             .map((ex: any) => {
-              const exData = Array.isArray(ex.exercise)
-                ? ex.exercise[0]
-                : ex.exercise;
+              const exData = Array.isArray(ex.exercise) ? ex.exercise[0] : ex.exercise;
               return {
                 id: ex.id,
                 exercise_id: ex.exercise_id,
@@ -231,6 +263,7 @@ export default function WorkoutDetailPage() {
                 image_url: exData?.image_url ?? null,
                 video_url: exData?.video_url ?? null,
                 category: (exData?.category ?? null) as ExerciseCategory | null,
+                muscle_group: exData?.muscle_group ?? null,
               };
             }),
         }));
@@ -253,7 +286,6 @@ export default function WorkoutDetailPage() {
     loadWorkout();
   }, [loadWorkout]);
 
-  // ── Delete workout ──
   async function handleDelete() {
     const supabase = createClient();
     const { error } = await supabase.from("workouts").delete().eq("id", params.id);
@@ -262,7 +294,6 @@ export default function WorkoutDetailPage() {
     }
   }
 
-  // ── Update exercise ──
   async function handleUpdateExercise(
     exerciseId: string,
     updates: { sets: number; reps: number; rest_seconds: number; notes?: string | null }
@@ -292,7 +323,6 @@ export default function WorkoutDetailPage() {
     await handleUpdateExercise(id, updates);
   }
 
-  // ── Reorder exercises ──
   async function handleReorderExercises(dayId: string, orderedIds: string[]) {
     if (!workout) return;
     const supabase = createClient();
@@ -314,7 +344,6 @@ export default function WorkoutDetailPage() {
     await loadWorkout();
   }
 
-  // ── Duplicate workout ──
   async function handleDuplicate() {
     if (!workout) return;
     const supabase = createClient();
@@ -373,7 +402,6 @@ export default function WorkoutDetailPage() {
     router.push(`/workouts/${newWorkout.id}`);
   }
 
-  // ── Add exercise ──
   async function handleAddExercise(exercise: ExercisePickerItem) {
     if (!pickerDayId || !workout) return;
     const supabase = createClient();
@@ -403,7 +431,6 @@ export default function WorkoutDetailPage() {
     await loadWorkout();
   }
 
-  // ── Remove exercise ──
   async function handleRemoveExercise(exerciseId: string) {
     const supabase = createClient();
     const { error } = await supabase
@@ -418,25 +445,6 @@ export default function WorkoutDetailPage() {
 
     await loadWorkout();
   }
-
-  // ── "Ejercicios clave": primeros 4 únicos por sort_order global ──
-  function getKeyExercises(): WorkoutExercise[] {
-    if (!workout) return [];
-    const seen = new Set<string>();
-    const result: WorkoutExercise[] = [];
-    for (const day of workout.workout_days) {
-      for (const ex of day.workout_exercises) {
-        const key = ex.exercise_id ?? ex.exercise_name;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        result.push(ex);
-        if (result.length >= 4) return result;
-      }
-    }
-    return result;
-  }
-
-  // ── Render ────────────────────────────────────────────────────────────────
 
   if (loading) {
     return <PageLoader text={t.loading} />;
@@ -456,9 +464,9 @@ export default function WorkoutDetailPage() {
   }
 
   const totalExercises = workout.workout_days.reduce((s, d) => s + d.workout_exercises.length, 0);
-  const keyExercises = getKeyExercises();
-  const keyExercisesExtra = totalExercises - keyExercises.length;
-  const stats = computeRoutineStats(workout, totalExercises);
+  const objectives = objectivesForGoal(workout.goal);
+  const muscles = getTopMuscles(workout);
+  const strengthCardio = getStrengthCardioPct(workout);
 
   return (
     <>
@@ -471,8 +479,10 @@ export default function WorkoutDetailPage() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <h1 className="text-3xl font-bold tracking-tight text-zinc-900">{workout.name}</h1>
+            {workout.description && (
+              <p className="mt-1 text-sm text-zinc-500">{workout.description}</p>
+            )}
 
-            {/* Badges objetivo + nivel (sin iconos) */}
             <div className="mt-3 flex flex-wrap items-center gap-2">
               {workout.goal && (
                 <span className={`rounded-md px-2.5 py-1 text-xs font-medium ${goalColor(workout.goal)}`}>
@@ -486,7 +496,6 @@ export default function WorkoutDetailPage() {
               )}
             </div>
 
-            {/* Meta (sin iconos, separado por ·) */}
             <p className="mt-3 text-sm text-zinc-500">
               {[
                 workout.duration ? `${workout.duration} min` : null,
@@ -494,34 +503,25 @@ export default function WorkoutDetailPage() {
                 `${totalExercises} ${t.exercisesSuffixShort ?? "ejercicios"}`,
               ].filter(Boolean).join(" · ")}
             </p>
-
-            {/* Descripción como texto plano */}
-            {workout.description && (
-              <p className="mt-3 max-w-2xl text-sm text-zinc-600">{workout.description}</p>
-            )}
-
-            {/* CTA protagonista */}
-            <div className="mt-5">
-              {totalExercises > 0 ? (
-                <Link
-                  href={`/training/start?workout=${workout.id}`}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-hover"
-                >
-                  {t.startWorkout}
-                </Link>
-              ) : (
-                <span
-                  title={t.startDisabledTooltip}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-zinc-100 px-6 py-3 text-sm font-semibold text-zinc-400"
-                >
-                  {t.startWorkout}
-                </span>
-              )}
-            </div>
           </div>
 
-          {/* Duplicar / Eliminar — sin iconos */}
+          {/* CTAs — arriba a la derecha, sin iconos */}
           <div className="flex flex-wrap items-center gap-2">
+            {totalExercises > 0 ? (
+              <Link
+                href={`/training/start?workout=${workout.id}`}
+                className="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary-hover"
+              >
+                {t.startWorkout}
+              </Link>
+            ) : (
+              <span
+                title={t.startDisabledTooltip}
+                className="cursor-not-allowed rounded-lg bg-zinc-100 px-4 py-2 text-xs font-semibold text-zinc-400"
+              >
+                {t.startWorkout}
+              </span>
+            )}
             <button
               type="button"
               onClick={handleDuplicate}
@@ -539,94 +539,61 @@ export default function WorkoutDetailPage() {
           </div>
         </div>
 
-        {/* Grid 2 columnas: Ejercicios clave + Estadísticas */}
-        {(keyExercises.length > 0 || totalExercises > 0) && (
+        {/* Grid 2 columnas: Objetivos + Músculos */}
+        {(objectives.length > 0 || muscles.length > 0) && (
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            {/* Ejercicios clave */}
-            {keyExercises.length > 0 && (
+            {/* Objetivos */}
+            {objectives.length > 0 && (
               <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-                <div className="flex items-center gap-2">
-                  <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-zinc-400" aria-hidden="true">
-                    <path fillRule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401Z" clipRule="evenodd" />
-                  </svg>
-                  <p className="text-sm font-semibold text-zinc-900">{t.keyExercisesTitle}</p>
-                </div>
-                <div className="mt-3 flex flex-wrap items-center gap-4">
-                  {keyExercises.map((ex) => (
-                    <div key={ex.id} className="flex flex-col items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (ex.video_url) {
-                            setVideoExercise({ name: ex.exercise_name, video_url: ex.video_url });
-                          }
-                        }}
-                        disabled={!ex.video_url}
-                        className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-zinc-100 shadow-sm transition-transform hover:scale-105 disabled:hover:scale-100 disabled:cursor-default"
-                        aria-label={ex.exercise_name}
-                      >
-                        {ex.image_url ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={ex.image_url} alt={ex.exercise_name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
-                        ) : (
-                          <span className="text-xl">💪</span>
-                        )}
-                      </button>
-                      <span className="max-w-[70px] truncate text-center text-[11px] font-medium text-zinc-600">
-                        {ex.exercise_name}
-                      </span>
-                    </div>
+                <p className="text-sm font-semibold text-zinc-900">{t.objectivesTitle}</p>
+                <ul className="mt-3 flex flex-col gap-2">
+                  {objectives.map((obj) => (
+                    <li key={obj.label} className="flex items-center gap-2 text-sm text-zinc-700">
+                      <span aria-hidden="true">{obj.icon}</span>
+                      <span>{obj.label}</span>
+                    </li>
                   ))}
-                  {keyExercisesExtra > 0 && (
-                    <div className="flex h-14 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50 px-3 text-xs font-semibold text-zinc-500">
-                      +{keyExercisesExtra} {t.keyExercisesMore}
-                    </div>
-                  )}
-                </div>
+                </ul>
               </div>
             )}
 
-            {/* Estadísticas de la rutina */}
-            <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-              <div className="flex items-center gap-2">
-                <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-zinc-400" aria-hidden="true">
-                  <path d="M2 10a8 8 0 1 1 16 0 8 8 0 0 1-16 0Zm8-6a.75.75 0 0 1 .75.75v5.19l3.72 3.72a.75.75 0 0 1-1.06 1.06l-3.5-3.5a.75.75 0 0 1-.22-.53V4.75A.75.75 0 0 1 10 4Z" />
-                </svg>
-                <p className="text-sm font-semibold text-zinc-900">{t.statsTitle}</p>
+            {/* Músculos */}
+            {muscles.length > 0 && (
+              <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+                <p className="text-sm font-semibold text-zinc-900">{t.musclesTitle}</p>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {muscles.map((m) => (
+                    <span
+                      key={m}
+                      className="rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-medium text-zinc-700"
+                    >
+                      {muscleLabel(m, training)}
+                    </span>
+                  ))}
+                </div>
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-3">
-                <div className="rounded-lg bg-zinc-50 p-3">
-                  <div className="flex items-center gap-1.5 text-[11px] font-medium text-zinc-500">
-                    <span aria-hidden="true">💪</span>
-                    {t.statsStrength}
-                  </div>
-                  <p className="mt-1 text-lg font-bold text-zinc-900">{stats.strengthPct}%</p>
-                </div>
-                <div className="rounded-lg bg-zinc-50 p-3">
-                  <div className="flex items-center gap-1.5 text-[11px] font-medium text-zinc-500">
-                    <span aria-hidden="true">❤️</span>
-                    {t.statsCardio}
-                  </div>
-                  <p className="mt-1 text-lg font-bold text-zinc-900">{stats.cardioPct}%</p>
-                </div>
-                <div className="rounded-lg bg-zinc-50 p-3">
-                  <div className="flex items-center gap-1.5 text-[11px] font-medium text-zinc-500">
-                    <span aria-hidden="true">🔥</span>
-                    {t.statsCalories}
-                  </div>
-                  <p className="mt-1 text-lg font-bold text-zinc-900">
-                    {stats.caloriesMin}–{stats.caloriesMax}
-                  </p>
-                </div>
-                <div className="rounded-lg bg-zinc-50 p-3">
-                  <div className="flex items-center gap-1.5 text-[11px] font-medium text-zinc-500">
-                    <span aria-hidden="true">🎯</span>
-                    {t.statsLevel}
-                  </div>
-                  <p className="mt-1 text-lg font-bold text-zinc-900">
-                    {workout.difficulty ? difficultyLabel(workout.difficulty, w) : "—"}
-                  </p>
-                </div>
+            )}
+          </div>
+        )}
+
+        {/* Estadísticas de la rutina */}
+        {totalExercises > 0 && (
+          <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+            <p className="text-sm font-semibold text-zinc-900">{t.statsTitle}</p>
+            <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <div className="rounded-lg bg-zinc-50 p-3">
+                <p className="text-[11px] font-medium text-zinc-500">{t.statsStrength}</p>
+                <p className="mt-1 text-lg font-bold text-zinc-900">{strengthCardio.strength}%</p>
+              </div>
+              <div className="rounded-lg bg-zinc-50 p-3">
+                <p className="text-[11px] font-medium text-zinc-500">{t.statsCardio}</p>
+                <p className="mt-1 text-lg font-bold text-zinc-900">{strengthCardio.cardio}%</p>
+              </div>
+              <div className="rounded-lg bg-zinc-50 p-3">
+                <p className="text-[11px] font-medium text-zinc-500">{t.statsLevel}</p>
+                <p className="mt-1 text-lg font-bold text-zinc-900">
+                  {workout.difficulty ? difficultyLabel(workout.difficulty, w) : "—"}
+                </p>
               </div>
             </div>
           </div>
