@@ -405,12 +405,27 @@ export default function WorkoutDetailPage() {
             {/* Exercise Picker Modal */}
       {pickerDayId && (
         <ExercisePicker
-          labels={{
+                   labels={{
             title: t.pickerExerciseTitle,
             searchPlaceholder: t.pickerExerciseSearch,
             noMatch: t.pickerExerciseNoMatch,
             countSummary: t.pickerExerciseCount,
             all: t.pickerExerciseAll,
+            createCta: t.createExerciseCta,
+            createTitle: t.createExerciseTitle,
+            createName: t.createExerciseName,
+            createNamePlaceholder: t.createExerciseNamePlaceholder,
+            createCategory: t.createExerciseCategory,
+            createMuscle: t.createExerciseMuscle,
+            createEquipment: t.createExerciseEquipment,
+            createDifficulty: t.createExerciseDifficulty,
+            createDescription: t.createExerciseDescription,
+            createDescriptionPlaceholder: t.createExerciseDescriptionPlaceholder,
+            createSave: t.createExerciseSave,
+            createCancel: t.createExerciseCancel,
+            createErrorName: t.createExerciseErrorName,
+            createErrorGeneric: t.createExerciseErrorGeneric,
+            createBack: t.createExerciseBack,
           }}
           onSelect={handleAddExercise}
           onClose={() => setPickerDayId(null)}
