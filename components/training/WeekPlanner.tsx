@@ -128,6 +128,10 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels, refreshSi
   const [weekLoading, setWeekLoading] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<DayName | null>(null);
 
+  // Drag & drop state
+  const [dragFrom, setDragFrom] = useState<DayName | null>(null);
+  const [dragOver, setDragOver] = useState<DayName | null>(null);
+
   const isCurrentWeek = useMemo(() => {
     const today = getMonday(new Date());
     return today.getTime() === monday.getTime();
@@ -261,6 +265,75 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels, refreshSi
     return getAssignment(day) ? "planned" : "empty";
   }
 
+  // ── Move / Swap entre días ──
+  async function moveOrSwap(fromDay: DayName, toDay: DayName) {
+    if (fromDay === toDay) return;
+
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const fromAssignment = getAssignment(fromDay);
+    const toAssignment = getAssignment(toDay);
+    if (!fromAssignment) return;
+
+    // Caso 1: día destino vacío → MOVE
+    if (!toAssignment) {
+      const { error } = await supabase
+        .from("training_planner")
+        .update({ day_of_week: toDay })
+        .eq("user_id", user.id)
+        .eq("week_start_date", weekStart)
+        .eq("day_of_week", fromDay);
+
+      if (error) {
+        showToast(`Error: ${error.message}`);
+        return;
+      }
+      await loadWeek();
+      showToast(`${translateDay(fromDay, weekdayLabels)} → ${translateDay(toDay, weekdayLabels)}`);
+      return;
+    }
+
+    // Caso 2: día destino ocupado → SWAP
+    // Necesitamos borrar ambos e insertar invertidos.
+    // (UNIQUE(user, week, day) no permite duplicados intermedios.)
+    const tmpFrom = fromAssignment;
+    const tmpTo = toAssignment;
+
+    await supabase
+      .from("training_planner")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("week_start_date", weekStart)
+      .in("day_of_week", [fromDay, toDay]);
+
+    const { error: insertError } = await supabase
+      .from("training_planner")
+      .insert([
+        {
+          user_id: user.id,
+          week_start_date: weekStart,
+          day_of_week: toDay,
+          workout_id: tmpFrom.workout_id,
+        },
+        {
+          user_id: user.id,
+          week_start_date: weekStart,
+          day_of_week: fromDay,
+          workout_id: tmpTo.workout_id,
+        },
+      ]);
+
+    if (insertError) {
+      showToast(`Error: ${insertError.message}`);
+      return;
+    }
+
+    await loadWeek();
+    showToast(`${translateDay(fromDay, weekdayLabels)} ⇄ ${translateDay(toDay, weekdayLabels)}`);
+  }
+
   // ── Apply template handler ──
   async function runApply(templateId: string, mode: PlannerMode, targetDay?: DayName) {
     const supabase = createClient();
@@ -268,15 +341,12 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels, refreshSi
     if (!user) return;
 
     if (targetDay) {
-      // 1. Aplicar el template → crea workout copia + inserta filas para los días del template.
       const res = await applyTemplateToPlanner(templateId, weekStart, "fill_empty");
       if (!res.ok || !res.workoutId) {
         showToast(`Error: ${res.error ?? "UNKNOWN"}`);
         return;
       }
 
-      // 2. Borrar SOLO las filas creadas por este apply (por workout_id).
-      //    No toca otros días ni otros workouts.
       await supabase
         .from("training_planner")
         .delete()
@@ -284,7 +354,6 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels, refreshSi
         .eq("week_start_date", weekStart)
         .eq("workout_id", res.workoutId);
 
-      // 3. Borrar el día target si ya existía (reemplazar).
       await supabase
         .from("training_planner")
         .delete()
@@ -292,7 +361,6 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels, refreshSi
         .eq("week_start_date", weekStart)
         .eq("day_of_week", targetDay);
 
-      // 4. Insertar SOLO el día target.
       const { error: insertError } = await supabase
         .from("training_planner")
         .insert({
@@ -313,7 +381,6 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels, refreshSi
       return;
     }
 
-    // Flujo "aplicar a toda la semana".
     const res = await applyTemplateToPlanner(templateId, weekStart, mode);
     if (!res.ok) {
       showToast(`Error: ${res.error ?? "UNKNOWN"}`);
@@ -426,6 +493,9 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels, refreshSi
                       .join(" · ")
                   : undefined;
 
+              const isDragSource = dragFrom === day;
+              const isDropTarget = !!dragFrom && dragOver === day && dragFrom !== day;
+
               return (
                 <DayCard
                   key={day}
@@ -444,6 +514,28 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels, refreshSi
                     }
                   }}
                   onRemove={isPlanned ? () => removeAssignment(day) : undefined}
+                  draggable={isPlanned}
+                  onDragStart={() => setDragFrom(day)}
+                  onDragEnd={() => { setDragFrom(null); setDragOver(null); }}
+                  onDragOver={(e) => {
+                    if (dragFrom && dragFrom !== day) {
+                      e.preventDefault();
+                      setDragOver(day);
+                    }
+                  }}
+                  onDragLeave={() => {
+                    setDragOver((d) => (d === day ? null : d));
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (dragFrom && dragFrom !== day) {
+                      moveOrSwap(dragFrom, day);
+                    }
+                    setDragFrom(null);
+                    setDragOver(null);
+                  }}
+                  isDragging={isDragSource}
+                  isDropTarget={isDropTarget}
                   labels={{
                     addWorkout: labels.addWorkout,
                     restDay: labels.restDay,
