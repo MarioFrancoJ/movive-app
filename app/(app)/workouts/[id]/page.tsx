@@ -103,6 +103,7 @@ function dayLabel(name: string, w: WorkoutsDict): string {
   };
   return map[name] ?? name;
 }
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function WorkoutDetailPage() {
@@ -171,8 +172,8 @@ export default function WorkoutDetailPage() {
     }
   }
 
-  // ── Duplicate workout ──
-    async function handleUpdateExercise(
+  // ── Update exercise (sets/reps/rest/notes) ──
+  async function handleUpdateExercise(
     exerciseId: string,
     updates: { sets: number; reps: number; rest_seconds: number; notes?: string | null }
   ) {
@@ -200,6 +201,32 @@ export default function WorkoutDetailPage() {
     setEditingExercise(null);
     await handleUpdateExercise(id, updates);
   }
+
+  // ── Reorder exercises within a day ──
+  async function handleReorderExercises(dayId: string, orderedIds: string[]) {
+    if (!workout) return;
+    const supabase = createClient();
+
+    // Actualiza sort_order en batch. Una query por ejercicio.
+    // Para listas < 20 ejercicios, es aceptable.
+    const updates = orderedIds.map((id, index) =>
+      supabase
+        .from("workout_exercises")
+        .update({ sort_order: index })
+        .eq("id", id)
+    );
+
+    const results = await Promise.all(updates);
+    const failed = results.find((r) => r.error);
+    if (failed?.error) {
+      showToast(`Error: ${failed.error.message}`);
+      return;
+    }
+
+    await loadWorkout();
+  }
+
+  // ── Duplicate workout ──
   async function handleDuplicate() {
     if (!workout) return;
     const supabase = createClient();
@@ -383,7 +410,7 @@ export default function WorkoutDetailPage() {
           {workout.workout_days.map((day) => (
             <div key={day.id} className="flex flex-col gap-2">
               <p className="text-sm font-semibold text-zinc-900">{dayLabel(day.day_name, w)}</p>
-                            <RoutineDayCard
+              <RoutineDayCard
                 exercises={day.workout_exercises}
                 labels={{
                   restDay: t.restDay,
@@ -396,16 +423,17 @@ export default function WorkoutDetailPage() {
                 onRemoveExercise={handleRemoveExercise}
                 onUpdateExercise={handleUpdateExercise}
                 onOpenEditModal={(ex) => setEditingExercise(ex)}
+                onReorderExercises={(orderedIds) => handleReorderExercises(day.id, orderedIds)}
               />
             </div>
           ))}
         </div>
       </div>
 
-            {/* Exercise Picker Modal */}
+      {/* Exercise Picker Modal */}
       {pickerDayId && (
         <ExercisePicker
-                   labels={{
+          labels={{
             title: t.pickerExerciseTitle,
             searchPlaceholder: t.pickerExerciseSearch,
             noMatch: t.pickerExerciseNoMatch,
