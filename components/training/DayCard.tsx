@@ -151,7 +151,7 @@ export default function DayCard({
         </div>
       )}
 
-      {/* X para quitar del planner — fuera del botón para que no se recorte */}
+           {/* X para quitar del planner — mismo estilo que Meal Planner */}
       {showRemove && (
         <button
           type="button"
@@ -161,9 +161,9 @@ export default function DayCard({
           }}
           aria-label={labels.removeFromPlanner ?? "Remove from planner"}
           title={labels.removeFromPlanner ?? "Remove from planner"}
-          className="absolute right-1.5 top-1.5 z-20 flex h-6 w-6 items-center justify-center rounded-md bg-white/90 text-zinc-400 shadow-sm transition-colors hover:bg-red-50 hover:text-red-600"
+          className="absolute right-1.5 top-1.5 z-20 flex h-5 w-5 items-center justify-center rounded-full bg-black/45 text-white opacity-0 transition-opacity hover:bg-black/70 group-hover:opacity-100 focus-visible:opacity-100"
         >
-          <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5" aria-hidden="true">
+          <svg viewBox="0 0 20 20" fill="currentColor" className="h-3 w-3" aria-hidden="true">
             <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
           </svg>
         </button>
