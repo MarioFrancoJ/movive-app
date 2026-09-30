@@ -152,46 +152,48 @@ export default function DayCard({
     </>
   );
 
+    // Interactive: <button> real (mejor soporte móvil/click) envolviendo el contenido.
+  // Non-interactive: <div role="group">.
+  if (interactive) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={day}
+        className={baseClasses}
+      >
+        {content}
+
+        {/* Menú secundario (···) — dentro de un button real no anidamos otro button,
+            pero usamos un span clickeable con stopPropagation. */}
+        {showMenu && (
+          <span
+            role="button"
+            tabIndex={0}
+            className="absolute right-1.5 top-1.5 z-10 inline-block opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
+            {menu}
+          </span>
+        )}
+
+        {/* Hover CTA */}
+        {showHoverCta && (
+          <span
+            className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-center rounded-b-xl bg-blue-600/90 py-1.5 text-[11px] font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100"
+            aria-hidden="true"
+          >
+            {labels.verRutina}
+          </span>
+        )}
+      </button>
+    );
+  }
+
   return (
-    <div
-      role={interactive ? "button" : "group"}
-      tabIndex={interactive ? 0 : -1}
-      onClick={interactive ? onClick : undefined}
-      onKeyDown={
-        interactive
-          ? (e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                onClick?.();
-              }
-            }
-          : undefined
-      }
-      aria-label={day}
-      className={baseClasses}
-    >
+    <div role="group" className={baseClasses}>
       {content}
-
-      {/* Menú secundario (···) — aparece en hover cuando hay menu y el variant lo permite */}
-      {showMenu && (
-        <div
-          className="absolute right-1.5 top-1.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100"
-          onClick={(e) => e.stopPropagation()}
-          onKeyDown={(e) => e.stopPropagation()}
-        >
-          {menu}
-        </div>
-      )}
-
-      {/* Hover CTA: "Ver rutina →" superpuesto en la parte inferior (no desplaza layout) */}
-      {showHoverCta && (
-        <span
-          className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-center rounded-b-xl bg-blue-600/90 py-1.5 text-[11px] font-semibold text-white opacity-0 transition-opacity group-hover:opacity-100"
-          aria-hidden="true"
-        >
-          {labels.verRutina}
-        </span>
-      )}
     </div>
   );
 }
