@@ -972,7 +972,9 @@
       "daysSuffix": "días",
       "exercisesSuffixShort": "ejercicios",
       "objectivesTitle": "Objetivos de la rutina",
-      "musclesTitle": "Músculos principales"
+      "musclesTitle": "Músculos principales",
+      "resultsTitle": "Resultados esperados",
+      "balanceTitle": "Balance de entrenamiento"
     },
     "goalFatLoss": "Pérdida de grasa",
     "goalMuscleGain": "Ganancia muscular",
