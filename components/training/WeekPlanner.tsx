@@ -58,7 +58,6 @@ export interface WeekPlannerProps {
     };
   };
   weekdayLabels: string[];
-  /** Al cambiar, el planner recarga la semana (útil cuando el padre aplica un template). */
   refreshSignal?: number;
 }
 
@@ -74,8 +73,6 @@ interface PlannerAssignment {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-// Orden de render: Domingo → Sábado.
-// Nota: el week_start_date sigue siendo el lunes de la semana.
 const DAYS: DayName[] = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 function getMonday(date: Date): Date {
@@ -156,7 +153,6 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels, refreshSi
     });
   }, [monday]);
 
-  // ── Fetch planner assignments for the current week ──
   const loadWeek = useCallback(async () => {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -247,19 +243,16 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels, refreshSi
 
   useEffect(() => { loadWeek(); }, [loadWeek]);
 
-  // El padre puede forzar un reload incrementando refreshSignal.
   useEffect(() => {
     if (refreshSignal === undefined) return;
     loadWeek();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshSignal]);
 
-  // ── Week navigation ──
   function goPrev() { setMonday((m) => shiftWeek(m, -1)); }
   function goNext() { setMonday((m) => shiftWeek(m, 1)); }
   function goToday() { setMonday(getMonday(new Date())); }
 
-  // ── Day helpers ──
   function getAssignment(day: DayName): PlannerAssignment | undefined {
     return assignments.find((a) => a.day_of_week === day);
   }
@@ -275,26 +268,33 @@ export default function WeekPlanner({ workouts, labels, weekdayLabels, refreshSi
     if (!user) return;
 
     if (targetDay) {
-      // Flujo "aplicar a un día específico":
-      // 1. applyTemplateToPlanner crea el workout copia + inserta filas para
-      //    todos los días del template en training_planner.
-      // 2. Borramos esas filas.
-      // 3. Insertamos SOLO el día target apuntando a la copia.
-
+      // 1. Aplicar el template → crea workout copia + inserta filas
+      //    para TODOS los días del template.
       const res = await applyTemplateToPlanner(templateId, weekStart, "fill_empty");
       if (!res.ok || !res.workoutId) {
         showToast(`Error: ${res.error ?? "UNKNOWN"}`);
         return;
       }
 
-      // Borrar las filas que applyTemplateToPlanner insertó para esta semana.
+      // 2. Borrar SOLO las filas que este apply acaba de crear
+      //    (identificadas por workout_id = res.workoutId). NO toca
+      //    otras semanas ni otros workouts.
       await supabase
         .from("training_planner")
         .delete()
         .eq("user_id", user.id)
-        .eq("week_start_date", weekStart);
+        .eq("week_start_date", weekStart)
+        .eq("workout_id", res.workoutId);
 
-      // Insertar SOLO el día target.
+      // 3. Borrar el día target si ya existía (por si lo estabas reemplazando).
+      await supabase
+        .from("training_planner")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("week_start_date", weekStart)
+        .eq("day_of_week", targetDay);
+
+      // 4. Insertar SOLO el día target apuntando a la copia.
       const { error: insertError } = await supabase
         .from("training_planner")
         .insert({
@@ -523,7 +523,7 @@ function PlannerDayMenu({
         aria-label={`${day} options`}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="flex h-6 w-6 items-center justify-center rounded-md bg-white/80 text-zinc-500 shadow-sm transition-colors hover:bg-white hover:text-zinc-900"
+        className="flex h-6 w-6 items-center justify-center rounded-md bg-white/90 text-zinc-500 shadow-sm transition-colors hover:bg-white hover:text-zinc-900"
       >
         <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5">
           <path d="M10 6a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM10 11.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM11.5 15.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />
@@ -533,7 +533,7 @@ function PlannerDayMenu({
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-7 z-20 w-44 overflow-hidden rounded-lg border border-zinc-200 bg-white py-1 shadow-lg"
+          className="absolute right-0 top-7 z-50 w-44 overflow-hidden rounded-lg border border-zinc-200 bg-white py-1 shadow-lg"
           onClick={(e) => e.stopPropagation()}
         >
           <button
