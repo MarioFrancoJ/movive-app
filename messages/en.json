@@ -974,7 +974,9 @@
       "daysSuffix": "days",
       "exercisesSuffixShort": "exercises",
       "objectivesTitle": "Routine objectives",
-      "musclesTitle": "Main muscles"
+      "musclesTitle": "Main muscles",
+      "resultsTitle": "Expected results",
+      "balanceTitle": "Training balance"
     },
     "goalFatLoss": "Fat Loss",
     "goalMuscleGain": "Muscle Gain",
