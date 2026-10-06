@@ -10,7 +10,7 @@ import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 import RoutineDayCard from "@/components/training/RoutineDayCard";
 import ExercisePicker, { type ExercisePickerItem } from "@/components/training/ExercisePicker";
 import ExerciseEditModal from "@/components/training/ExerciseEditModal";
-import ExerciseVideoModal from "@/components/training/ExerciseVideoModal";
+import ExerciseDetailModal, { type ExerciseDetail } from "@/components/training/ExerciseDetailModal";
 import StrengthCardioBar from "@/components/training/StrengthCardioBar";
 import type { RoutineExercise } from "@/components/training/RoutineDayCard";
 
@@ -238,7 +238,7 @@ export default function WorkoutDetailPage() {
   const [loading, setLoading] = useState(true);
   const [pickerDayId, setPickerDayId] = useState<string | null>(null);
   const [editingExercise, setEditingExercise] = useState<RoutineExercise | null>(null);
-  const [videoExercise, setVideoExercise] = useState<VideoExercise | null>(null);
+  const [detailExercise, setDetailExercise] = useState<ExerciseDetail | null>(null);
 
   const loadWorkout = useCallback(async () => {
     const supabase = createClient();
@@ -627,18 +627,28 @@ export default function WorkoutDetailPage() {
                 rest: "Descanso",
                 addExercise: t.addExercise,
                 removeExercise: t.removeExercise,
-                editExercise: t.editExercise,
+                                editExercise: t.editExercise,
                 exercisesCount: t.exercisesCount,
+                popMuscles: t.popMuscles ?? "Músculos",
+                popCategory: t.popCategory ?? "Categoría",
+                popDifficulty: t.popDifficulty ?? "Dificultad",
+                popWatchVideo: t.popWatchVideo ?? "Ver video",
+                popNoVideo: t.popNoVideo ?? "Sin video",
               }}
               onAddExercise={() => setPickerDayId(day.id)}
               onRemoveExercise={handleRemoveExercise}
               onUpdateExercise={handleUpdateExercise}
               onOpenEditModal={(ex) => setEditingExercise(ex)}
-              onReorderExercises={(orderedIds) => handleReorderExercises(day.id, orderedIds)}
-              onOpenVideo={(ex) => {
-                if (ex.video_url) {
-                  setVideoExercise({ name: ex.exercise_name, video_url: ex.video_url });
-                }
+                            onReorderExercises={(orderedIds) => handleReorderExercises(day.id, orderedIds)}
+              onOpenDetail={(ex) => {
+                setDetailExercise({
+                  name: ex.exercise_name,
+                  image_url: ex.image_url ?? null,
+                  video_url: ex.video_url ?? null,
+                  muscle_group: ex.muscle_group ?? null,
+                  category: ex.category ?? null,
+                  difficulty: ex.difficulty ?? null,
+                });
               }}
             />
           ))}
@@ -694,12 +704,19 @@ export default function WorkoutDetailPage() {
         />
       )}
 
-      {/* Exercise Video Modal */}
-      {videoExercise && (
-        <ExerciseVideoModal
-          name={videoExercise.name}
-          videoUrl={videoExercise.video_url}
-          onClose={() => setVideoExercise(null)}
+           {/* Exercise Detail Modal */}
+      {detailExercise && (
+        <ExerciseDetailModal
+          exercise={detailExercise}
+          labels={{
+            close: dict.common.close,
+            watchVideo: t.popWatchVideo ?? "Ver video",
+            noVideo: t.popNoVideo ?? "Sin video disponible",
+            muscles: t.musclesTitle,
+            category: t.popCategory ?? "Categoría",
+            difficulty: t.popDifficulty ?? "Dificultad",
+          }}
+          onClose={() => setDetailExercise(null)}
         />
       )}
     </>
