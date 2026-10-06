@@ -2,7 +2,8 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useState } from "react";
+import { useState, useRef } from "react";
+import ExercisePreviewPopover from "./ExercisePreviewPopover";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -16,6 +17,9 @@ export interface SortableExercise {
   sort_order: number;
   image_url?: string | null;
   video_url?: string | null;
+  muscle_group?: string | null;
+  category?: string | null;
+  difficulty?: string | null;
 }
 
 export interface SortableExerciseRowProps {
@@ -24,6 +28,12 @@ export interface SortableExerciseRowProps {
     rest: string;
     editExercise: string;
     removeExercise: string;
+    // Popover
+    popMuscles: string;
+    popCategory: string;
+    popDifficulty: string;
+    popWatchVideo: string;
+    popNoVideo: string;
   };
   onUpdate?: (
     exerciseId: string,
@@ -31,7 +41,7 @@ export interface SortableExerciseRowProps {
   ) => void;
   onRemove?: (exerciseId: string) => void;
   onOpenEditModal?: (exercise: SortableExercise) => void;
-  onOpenVideo?: (exercise: SortableExercise) => void;
+  onOpenDetail?: (exercise: SortableExercise) => void;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -42,9 +52,12 @@ export default function SortableExerciseRow({
   onUpdate,
   onRemove,
   onOpenEditModal,
-  onOpenVideo,
+  onOpenDetail,
 }: SortableExerciseRowProps) {
   const [editing, setEditing] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const hoverTimer = useRef<NodeJS.Timeout | null>(null);
+  const rowRef = useRef<HTMLDivElement>(null);
 
   const {
     attributes,
@@ -62,12 +75,36 @@ export default function SortableExerciseRow({
 
   const hasVideo = !!exercise.video_url;
 
+  // ── Hover handlers (solo desktop) ──
+  function handleMouseEnter() {
+    if (editing) return;
+    hoverTimer.current = setTimeout(() => setShowPreview(true), 250);
+  }
+
+  function handleMouseLeave() {
+    if (hoverTimer.current) {
+      clearTimeout(hoverTimer.current);
+      hoverTimer.current = null;
+    }
+    setShowPreview(false);
+  }
+
+  // ── Click en thumbnail → modal ──
+  function handleThumbnailClick() {
+    onOpenDetail?.(exercise);
+  }
+
   return (
     <div
-      ref={setNodeRef}
+      ref={(node) => {
+        setNodeRef(node);
+        (rowRef as any).current = node;
+      }}
       style={style}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       className={[
-        "group flex items-start gap-3 rounded-lg transition-shadow",
+        "group relative flex items-start gap-3 rounded-lg transition-shadow",
         isDragging ? "opacity-50 shadow-lg z-10 relative bg-white" : "",
       ].join(" ")}
     >
@@ -85,16 +122,12 @@ export default function SortableExerciseRow({
         </svg>
       </button>
 
-      {/* Thumbnail — click abre el video si existe */}
+      {/* Thumbnail — click abre modal */}
       <button
         type="button"
-        onClick={() => hasVideo && onOpenVideo?.(exercise)}
-        disabled={!hasVideo}
-        aria-label={hasVideo ? `${exercise.exercise_name} — ver video` : exercise.exercise_name}
-        className={[
-          "relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-zinc-100",
-          hasVideo ? "cursor-pointer transition-transform hover:scale-105" : "cursor-default",
-        ].join(" ")}
+        onClick={handleThumbnailClick}
+        aria-label={`${exercise.exercise_name} — ver detalle`}
+        className="relative flex h-14 w-14 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-zinc-100 transition-transform hover:scale-105"
       >
         {exercise.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -176,6 +209,25 @@ export default function SortableExerciseRow({
             </button>
           )}
         </div>
+      )}
+
+      {/* Hover preview popover (desktop) */}
+      {showPreview && !editing && !isDragging && (
+        <ExercisePreviewPopover
+          name={exercise.exercise_name}
+          imageUrl={exercise.image_url ?? null}
+          videoUrl={exercise.video_url ?? null}
+          muscleGroup={exercise.muscle_group ?? null}
+          category={exercise.category ?? null}
+          difficulty={exercise.difficulty ?? null}
+          labels={{
+            muscles: labels.popMuscles,
+            category: labels.popCategory,
+            difficulty: labels.popDifficulty,
+            watchVideo: labels.popWatchVideo,
+            noVideo: labels.popNoVideo,
+          }}
+        />
       )}
     </div>
   );
