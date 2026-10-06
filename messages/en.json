@@ -976,7 +976,12 @@
       "objectivesTitle": "Routine objectives",
       "musclesTitle": "Main muscles",
       "resultsTitle": "Expected results",
-      "balanceTitle": "Training balance"
+      "balanceTitle": "Training balance",
+      "popMuscles": "Muscles",
+      "popCategory": "Category",
+      "popDifficulty": "Difficulty",
+      "popWatchVideo": "Watch video",
+      "popNoVideo": "No video"
     },
     "goalFatLoss": "Fat Loss",
     "goalMuscleGain": "Muscle Gain",
