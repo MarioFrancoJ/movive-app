@@ -29,6 +29,9 @@ export interface RoutineExercise {
   sort_order: number;
   image_url?: string | null;
   video_url?: string | null;
+  muscle_group?: string | null;
+  category?: string | null;
+  difficulty?: string | null;
 }
 
 export interface RoutineDayCardProps {
@@ -40,7 +43,13 @@ export interface RoutineDayCardProps {
     addExercise: string;
     removeExercise: string;
     editExercise: string;
-    exercisesCount?: string;    // "ejercicios"
+    exercisesCount?: string;
+    // Popover labels
+    popMuscles?: string;
+    popCategory?: string;
+    popDifficulty?: string;
+    popWatchVideo?: string;
+    popNoVideo?: string;
   };
   onAddExercise?: () => void;
   onRemoveExercise?: (exerciseId: string) => void;
@@ -50,7 +59,7 @@ export interface RoutineDayCardProps {
   ) => void;
   onOpenEditModal?: (exercise: RoutineExercise) => void;
   onReorderExercises?: (orderedIds: string[]) => void;
-  onOpenVideo?: (exercise: RoutineExercise) => void;
+  onOpenDetail?: (exercise: RoutineExercise) => void;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -64,7 +73,7 @@ export default function RoutineDayCard({
   onUpdateExercise,
   onOpenEditModal,
   onReorderExercises,
-  onOpenVideo,
+  onOpenDetail,
 }: RoutineDayCardProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -120,11 +129,16 @@ export default function RoutineDayCard({
                     rest: labels.rest,
                     editExercise: labels.editExercise,
                     removeExercise: labels.removeExercise,
+                    popMuscles: labels.popMuscles ?? "Músculos",
+                    popCategory: labels.popCategory ?? "Categoría",
+                    popDifficulty: labels.popDifficulty ?? "Dificultad",
+                    popWatchVideo: labels.popWatchVideo ?? "Ver video",
+                    popNoVideo: labels.popNoVideo ?? "Sin video",
                   }}
                   onUpdate={onUpdateExercise}
                   onRemove={onRemoveExercise}
                   onOpenEditModal={onOpenEditModal}
-                  onOpenVideo={onOpenVideo}
+                  onOpenDetail={onOpenDetail}
                 />
               ))}
             </div>
