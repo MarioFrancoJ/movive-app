@@ -974,7 +974,12 @@
       "objectivesTitle": "Objetivos de la rutina",
       "musclesTitle": "Músculos principales",
       "resultsTitle": "Resultados esperados",
-      "balanceTitle": "Balance de entrenamiento"
+      "balanceTitle": "Balance de entrenamiento",
+      "popMuscles": "Músculos",
+      "popCategory": "Categoría",
+      "popDifficulty": "Dificultad",
+      "popWatchVideo": "Ver video",
+      "popNoVideo": "Sin video"
     },
     "goalFatLoss": "Pérdida de grasa",
     "goalMuscleGain": "Ganancia muscular",
